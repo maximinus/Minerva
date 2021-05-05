@@ -23,6 +23,7 @@ class TextViewWindow(Gtk.Window):
         btn_run = Gtk.ToolButton()
         btn_run.set_label('Run')
         btn_run.set_icon_name('format-text-bold-symbolic')
+        image = Gtk.Image.new_from_file('')
         toolbar.insert(btn_run, 0)
 
         btn_debug = Gtk.ToolButton()
