@@ -6,22 +6,24 @@ from gi.repository import Gtk
 from pathlib import Path
 
 from minerva.menu import get_menu_from_config
+from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, create_text_view
 from minerva.actions import get_action, add_window_actions
+from minerva.console import Console
+
 
 VERSION = '0.02'
 
 # TODO:
 # Add a repl window at the bottom
-# * Add a results thing at the bottom
-# Add messagebox on all non-working links
+# Improve the statusbar to show text position
 # Add HTML view on help menu
-# Add proper about box
-# * Add save and load menus for text, and they work
-# * Allow to close a buffer from the tab
+# Allow to close a buffer from the tab
 # Show errors in example code
-# * Add custom icons for menu
-# Add custom icons for toolbar
+# allow turning off icons and menus from other actions
+# add a simple settings menu
+# grab settings from config file
+# open a REPL with SBCL and use the console
 
 
 def action_router(caller, action, data=None):
@@ -42,20 +44,20 @@ class MinervaWindow(Gtk.Window):
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
-
-        #toolbar = ui_manager.get_widget("/ToolBar")
-        #box.pack_start(toolbar, False, False, 0)
+        box.pack_start(get_toolbar_from_config(action_router), False, False, 0)
 
         self.notebook = Gtk.Notebook()
         self.buffers = []
         page_data = create_text_view()
         self.buffers.append(TextBuffer(page_data[1]))
         self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
-        box.pack_start(self.notebook, True, True, 0)
-
         # add callback for change of text view
         self.current_page_index = 0
         self.notebook.connect('switch_page', self.switch_page)
+        box.pack_start(self.notebook, True, True, 0)
+
+        self.console = Console()
+        box.pack_start(self.console.text_view, True, True, 0)
 
         # This status bar actually needs to hold more than just messages
         # Add the cursor position on the RHS somehow

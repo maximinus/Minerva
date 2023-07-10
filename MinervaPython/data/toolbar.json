@@ -1,0 +1,6 @@
+[
+  {"icon": "new", "tooltip": "Create new Lisp file", "action": "new_file"},
+  {"icon": "open", "tooltip": "Load file", "action": "load_file"},
+  {"icon": "save", "tooltip": "Save file", "action": "new_file"},
+  {"icon": "run", "tooltip": "Run current file", "action": "run_code"}
+]

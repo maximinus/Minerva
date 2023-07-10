@@ -2,3 +2,4 @@ venv/
 gfx/
 HyperSpec/
 .idea/
+__pycache__/
