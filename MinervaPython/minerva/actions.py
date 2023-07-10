@@ -1,24 +1,24 @@
 from enum import Enum
 
+# we need a hash table of actions and the functions to call
+# we don't care where the functions are, however maybe we want to namespace them (?)
 
-class Actions(Enum):
-    NEW_FILE = 0
-    LOAD_FILE = 1
-    SAVE_FILE = 2
-    QUIT_MINERVA = 3
-    RUN_CODE = 4
-    DEBUG_CODE = 5
-    SHOW_HELP = 6
-    SHOW_ABOUT = 7
-
-
-ACTION_TEXT = {
-    "new_file": Actions.NEW_FILE,
-    "load_file": Actions.LOAD_FILE,
-    "save_file": Actions.SAVE_FILE,
-    "quit_minerva": Actions.QUIT_MINERVA,
-    "run_code": Actions.RUN_CODE,
-    "debug_code": Actions.DEBUG_CODE,
-    "show_help": Actions.SHOW_HELP,
-    "show_about": Actions.SHOW_ABOUT
+ACTIONS = {
 }
+
+
+def get_action(action):
+    if action in ACTIONS:
+        return ACTIONS[action]
+
+
+def add_window_actions(window):
+    # actions that pertain to the window
+    ACTIONS['new_file'] = window.new_file
+    ACTIONS['load_file'] = window.load_file
+    ACTIONS['save_file'] = window.save_file
+    ACTIONS['quit_minerva'] = window.quit_minerva
+    ACTIONS['run_code'] = window.run_code
+    ACTIONS['debug_code'] = window.debug_code
+    ACTIONS['show_help'] = window.show_help
+    ACTIONS['show_about'] = window.show_about

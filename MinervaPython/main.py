@@ -7,6 +7,7 @@ from pathlib import Path
 
 from minerva.menu import get_menu_from_config
 from minerva.text import TextBuffer, create_text_view
+from minerva.actions import get_action, add_window_actions
 
 VERSION = '0.02'
 
@@ -24,18 +25,20 @@ VERSION = '0.02'
 
 
 def action_router(caller, action, data=None):
-    print('Called!')
+    function = get_action(action)
+    if function is not None:
+        if data is not None:
+            function(kwargs=data)
+        else:
+            function()
 
 
 class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
-
-        # add a simple menu
         self.set_default_size(800, 600)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
@@ -61,71 +64,25 @@ class MinervaWindow(Gtk.Window):
         self.status.push(self.status_id, f'Minerva v{VERSION}')
         box.pack_start(self.status, False, False, 0)
 
+        add_window_actions(self)
         self.add(box)
 
-    def add_file_menu_actions(self, action_group):
-        file_menu = Gtk.Action(name='FileMenu', label='File')
-        action_group.add_action(file_menu)
-
-        file_new = Gtk.Action(name='FileNew', stock_id=Gtk.STOCK_NEW, tooltip='Create a new file')
-        file_new.connect('activate', self.add_new_empty)
-        action_group.add_action_with_accel(file_new, '<Control>n')
-
-        file_open = Gtk.Action(name='FileOpen', stock_id=Gtk.STOCK_OPEN, tooltip='Open a file')
-        file_open.connect('activate', lambda x: self.load_file())
-        action_group.add_action_with_accel(file_open, '<Control>o')
-
-        # replace the stock id
-        file_save = Gtk.Action(name='FileSave', label='Save', tooltip='Save current file')
-        file_save.connect('activate', self.save_file)
-        action_group.add_action_with_accel(file_save, '<Control>s')
-
-        file_quit = Gtk.Action(name='FileQuit', stock_id=Gtk.STOCK_QUIT)
-        # add the callback
-        file_quit.connect('activate', self.on_menu_file_quit)
-        action_group.add_action_with_accel(file_quit, '<Control>q')
-
-    def add_lisp_menu_actions(self, action_group):
-        lisp_run = Gtk.Action(name='LispRun', label='Run')
-        lisp_run.connect('activate', self.messagebox, 'Not programmed yet')
-        action_group.add_action_with_accel(lisp_run, 'F5')
-
-        lisp_debug = Gtk.Action(name='LispDebug', label='Debug')
-        lisp_debug.connect('activate', self.messagebox, 'Not programmed yet')
-        action_group.add_action_with_accel(lisp_debug, 'F6')
-
-    def add_help_menu_actions(self, action_group):
-        help_help = Gtk.Action(name='HelpHelp', stock_id=Gtk.STOCK_HELP)
-        help_help.connect('activate', self.messagebox, 'Not programmed yet')
-        action_group.add_action_with_accel(help_help, 'F1')
-
-        help_about = Gtk.Action(name='HelpAbout', stock_id=Gtk.STOCK_ABOUT)
-        help_about.connect('activate', self.show_about_dialog)
-        action_group.add_action(help_about)
-
-    def on_menu_file_quit(self, _caller):
-        Gtk.main_quit()
-
-    def messagebox(self, _caller, message, icon=Gtk.MessageType.INFO):
+    def messagebox(self, message, icon=Gtk.MessageType.INFO):
         dialog = Gtk.MessageDialog(
             transient_for=self, flags=0, message_type=icon, buttons=Gtk.ButtonsType.OK, text=message)
         dialog.run()
         dialog.destroy()
 
-    def show_about_dialog(self, caller):
-        dlg = Gtk.AboutDialog()
-        dlg.set_program_name('Minerva')
-        dlg.set_version(VERSION)
-        dlg.set_copyright(None)
-        dlg.set_license(None)
-        dlg.set_website('https://github.com/maximinus/Minerva')
-        image = Gtk.Image()
-        image.set_from_file('./gfx/logo.png')
-        dlg.set_logo(image.get_pixbuf())
-        dlg.run()
-        dlg.destroy()
+    def new_file(self):
+        # add an empty notebook
+        page_data = create_text_view()
+        self.buffers.append(TextBuffer(page_data[1]))
+        self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
+        self.notebook.show_all()
+        self.notebook.set_current_page(-1)
+        self.current_page_index = self.notebook.get_current_page()
 
-    def save_file(self, _caller):
+    def save_file(self):
         self.buffers[self.current_page_index].save_file(self)
         # we likely need to update the name on the tab
         page = self.notebook.get_nth_page(self.notebook.get_current_page())
@@ -156,7 +113,7 @@ class MinervaWindow(Gtk.Window):
             # load the file and add to the textview
             with open(filename) as f:
                 text = ''.join(f.readlines())
-            page_data = self.create_text_view(text=text)
+            page_data = create_text_view(text=text)
             self.buffers.append(TextBuffer(page_data[1], filename))
             self.status.push(self.status_id, f'Loaded {filename}')
             self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
@@ -166,14 +123,30 @@ class MinervaWindow(Gtk.Window):
             self.current_page_index = self.notebook.get_current_page()
         dialog.destroy()
 
-    def add_new_empty(self, _caller):
-        # add an empty notebook
-        page_data = self.create_textview()
-        self.buffers.append(TextBuffer(page_data[1]))
-        self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
-        self.notebook.show_all()
-        self.notebook.set_current_page(-1)
-        self.current_page_index = self.notebook.get_current_page()
+    def quit_minerva(self):
+        Gtk.main_quit()
+
+    def run_code(self):
+        self.messagebox('Running code')
+
+    def debug_code(self):
+        self.messagebox('Debugging code')
+
+    def show_help(self):
+        self.messagebox('This is the help')
+
+    def show_about(self):
+        dlg = Gtk.AboutDialog()
+        dlg.set_program_name('Minerva')
+        dlg.set_version(VERSION)
+        dlg.set_copyright(None)
+        dlg.set_license(None)
+        dlg.set_website('https://github.com/maximinus/Minerva')
+        image = Gtk.Image()
+        image.set_from_file('./gfx/logo.png')
+        dlg.set_logo(image.get_pixbuf())
+        dlg.run()
+        dlg.destroy()
 
     def switch_page(self, _notebook, _page, page_num):
         if self.current_page_index == page_num:
