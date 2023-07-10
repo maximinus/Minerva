@@ -1,2 +1,4 @@
 # Minerva
-Lisp IDE written with GTK4 and Lisp
+Lisp IDE written with GTK3 and Lisp
+
+Prototype version in Python + PyGTK3
