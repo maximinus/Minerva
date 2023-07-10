@@ -1,0 +1,15 @@
+[
+  {"text": "File",
+   "items": [{"text": "New", "icon": "new", "shortcut": "<Control>n", "action": "new_file"},
+             {"text": "Open", "icon": "open", "shortcut": "<Control>o", "action": "load_file"},
+             {"text": "Save", "icon": "save", "shortcut": "<Control>s", "action":  "save_file"},
+             {"text": "-"},
+             {"text": "Quit", "shortcut": "<Control>q", "action": "quit_minerva"}]},
+  {"text": "Lisp",
+   "items": [{"text": "Run", "icon": "run", "shortcut": "F5", "action":  "run_code"},
+             {"text": "Debug", "shortcut": "F6", "action":  "debug_code"}]},
+  {"text": "Help",
+   "items": [{"text": "Help",  "icon": "help", "shortcut": "F1", "action": "show_help"},
+             {"text": "-"},
+             {"text": "About", "icon": "info", "action": "show_about"}]}
+]

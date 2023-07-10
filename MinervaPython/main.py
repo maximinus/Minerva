@@ -1,159 +1,30 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk
 
 from pathlib import Path
 
-COLOR_RED = '#FF8888'
-COLOR_BLUE = '#8888FF'
+from minerva.menu import get_menu_from_config
+from minerva.text import TextBuffer, create_text_view
 
 VERSION = '0.02'
 
 # TODO:
-# * Add menubar with icons and shortcuts; understand
-# * Add toolbar with icons and tooltips
-# * Add text editing window
-# * change font in textview
 # Add a repl window at the bottom
 # * Add a results thing at the bottom
-# * Add messagebox on all non-working links
+# Add messagebox on all non-working links
 # Add HTML view on help menu
-# * Add proper about box
+# Add proper about box
 # * Add save and load menus for text, and they work
-# Allow to close a buffer from the tab
+# * Allow to close a buffer from the tab
 # Show errors in example code
 # * Add custom icons for menu
 # Add custom icons for toolbar
 
 
-MENU_DATA = """
-<ui>
-  <menubar name='MenuBar'>
-    <menu action='FileMenu'>
-      <menuitem action='FileNew' />
-      <menuitem action='FileOpen' />
-      <menuitem action='FileSave' />
-      <separator />
-      <menuitem action='FileQuit' />
-    </menu>
-    <menu action='LispMenu'>
-      <menuitem action='LispRun' />
-      <menuitem action='LispDebug' />
-    </menu>
-    <menu action='HelpMenu'>
-      <menuitem action='HelpHelp'/>
-      <separator />
-      <menuitem action='HelpAbout'/>
-    </menu>
-  </menubar>
-  <toolbar name='ToolBar'>
-    <toolitem action='FileNew' />
-    <toolitem action='FileOpen' />
-    <toolitem action='FileSave' />
-  </toolbar>
-</ui>
-"""
-
-# write our menu in Json: convert to Lisp later
-MENUS = [{'text': 'File',
-          'items': [{'text': 'New', 'icon': 'new', 'shortcut': '<Control>n'},
-                    {'text': 'Open', 'icon': 'open', 'shortcut': '<Control>o'},
-                    {'text': 'Save', 'icon': 'save', 'shortcut': '<Control>s'},
-                    {'text': '-'},
-                    {'text': 'Quit', 'icon': 'quit', 'shortcut': '<Control>q'}]},
-         {'text': 'Lisp',
-          'items': [{'text': 'Run', 'icon': 'run', 'shortcut': 'F5'},
-                    {'text': 'Debug', 'icon': 'debug', 'shortcut': 'F6'}]},
-         {'text': 'Help',
-          'items': [{'text': 'Help',  'icon': 'help', 'shortcut': 'F1'},
-                    {'text': '-'},
-                    {'text': 'About', 'icon': 'debug'}]}]
-
-
-class TextBuffer:
-    def __init__(self, text_view, filename=None):
-        self.text_view = text_view
-        self.filename = filename
-        self.saved = False
-        if filename is not None:
-            self.saved = True
-
-    def get_label(self):
-        if self.filename is None:
-            display_name = 'empty'
-        else:
-            display_name = self.filename.name
-        if self.saved:
-            return get_label(display_name, COLOR_BLUE)
-        return get_label(f'<i>{display_name}</i>', COLOR_RED)
-
-    def save_file(self, window):
-        # if the filename exists, just save it there
-        if self.filename is not None:
-            filename = self.filename
-        else:
-            filename = self.get_filename(window)
-            if filename is None:
-                # no filename selected
-                return
-        with open(filename, 'w') as file:
-            buffer = self.text_view.get_buffer()
-            start = buffer.get_start_iter()
-            end = buffer.get_end_iter()
-            file.write(buffer.get_text(start, end, True))
-        if self.filename is None:
-            self.filename = filename
-        self.saved = True
-
-    def get_filename(self, window):
-        dialog = Gtk.FileChooserDialog(title="Select file", parent=window, action=Gtk.FileChooserAction.SAVE)
-        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
-        dialog.set_do_overwrite_confirmation(True)
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            filename = Path(dialog.get_filename())
-        else:
-            filename = None
-        dialog.destroy()
-        return filename
-
-
-def get_label(html_text, color=None):
-    # return a label with markup
-    label = Gtk.Label()
-    if color is None:
-        label.set_markup(html_text)
-    else:
-        label.set_markup(f'<span color="{color}">{html_text}</span>')
-    return label
-
-
-def get_menu_from_config(accel_group):
-    # get our own menubar
-    menu_bar = Gtk.MenuBar()
-    for menu_item in MENUS:
-        new_menu = Gtk.Menu()
-        menu_top = Gtk.MenuItem(menu_item['text'])
-        menu_top.set_submenu(new_menu)
-        for menu_choice in menu_item['items']:
-            if menu_choice['text'] == '-':
-                new_menu.append(Gtk.SeparatorMenuItem())
-                continue
-            else:
-                if 'icon' in menu_choice:
-                    menu_item = Gtk.ImageMenuItem(label=menu_choice['text'])
-                    image = Gtk.Image()
-                    image.set_from_file('./gfx/icons/save.png')
-                    menu_item.set_image(image)
-                else:
-                    menu_item = Gtk.MenuItem(label=menu_choice['text'])
-                if 'shortcut' in menu_choice:
-                    key, mod = Gtk.accelerator_parse(menu_choice['shortcut'])
-                    menu_item.add_accelerator('activate', accel_group, key, mod, Gtk.AccelFlags.VISIBLE)
-                new_menu.append(menu_item)
-        menu_bar.append(menu_top)
-    return menu_bar
+def action_router(caller, action, data=None):
+    print('Called!')
 
 
 class MinervaWindow(Gtk.Window):
@@ -163,29 +34,18 @@ class MinervaWindow(Gtk.Window):
         # add a simple menu
         self.set_default_size(800, 600)
 
-        #action_group = Gtk.ActionGroup(name="my_actions")
-
-        #self.add_file_menu_actions(action_group)
-        #self.add_lisp_menu_actions(action_group)
-        #self.add_help_menu_actions(action_group)
-
-        #ui_manager = self.create_ui_manager()
-        #ui_manager.insert_action_group(action_group)
-
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-
-        #menubar = ui_manager.get_widget("/MenuBar")
 
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
-        box.pack_start(get_menu_from_config(self.accel_group), False, False, 0)
+        box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
 
         #toolbar = ui_manager.get_widget("/ToolBar")
         #box.pack_start(toolbar, False, False, 0)
 
         self.notebook = Gtk.Notebook()
         self.buffers = []
-        page_data = self.create_textview()
+        page_data = create_text_view()
         self.buffers.append(TextBuffer(page_data[1]))
         self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
         box.pack_start(self.notebook, True, True, 0)
@@ -202,32 +62,6 @@ class MinervaWindow(Gtk.Window):
         box.pack_start(self.status, False, False, 0)
 
         self.add(box)
-
-
-    def create_textview(self, text=None):
-        # textview needs to go into a scrolled window of course
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_hexpand(True)
-        scrolled_window.set_vexpand(True)
-
-        text_view = Gtk.TextView()
-        text_view.override_font(Pango.FontDescription('inconsolata 12'))
-        if text is None:
-            text_view.get_buffer().set_text('')
-        else:
-            text_view.get_buffer().set_text(text)
-
-        scrolled_window.add(text_view)
-        return [scrolled_window, text_view]
-
-    def create_ui_manager(self):
-        ui_manager = Gtk.UIManager()
-        # Throws exception if something went wrong
-        ui_manager.add_ui_from_string(MENU_DATA)
-        # Add the accelerator group to the toplevel window
-        accel_group = ui_manager.get_accel_group()
-        self.add_accel_group(accel_group)
-        return ui_manager
 
     def add_file_menu_actions(self, action_group):
         file_menu = Gtk.Action(name='FileMenu', label='File')
@@ -252,9 +86,6 @@ class MinervaWindow(Gtk.Window):
         action_group.add_action_with_accel(file_quit, '<Control>q')
 
     def add_lisp_menu_actions(self, action_group):
-        lisp_menu = Gtk.Action(name='LispMenu', label='Lisp')
-        action_group.add_action(lisp_menu)
-
         lisp_run = Gtk.Action(name='LispRun', label='Run')
         lisp_run.connect('activate', self.messagebox, 'Not programmed yet')
         action_group.add_action_with_accel(lisp_run, 'F5')
@@ -264,9 +95,6 @@ class MinervaWindow(Gtk.Window):
         action_group.add_action_with_accel(lisp_debug, 'F6')
 
     def add_help_menu_actions(self, action_group):
-        help_menu = Gtk.Action(name='HelpMenu', label='Help')
-        action_group.add_action(help_menu)
-
         help_help = Gtk.Action(name='HelpHelp', stock_id=Gtk.STOCK_HELP)
         help_help.connect('activate', self.messagebox, 'Not programmed yet')
         action_group.add_action_with_accel(help_help, 'F1')
@@ -328,7 +156,7 @@ class MinervaWindow(Gtk.Window):
             # load the file and add to the textview
             with open(filename) as f:
                 text = ''.join(f.readlines())
-            page_data = self.create_textview(text=text)
+            page_data = self.create_text_view(text=text)
             self.buffers.append(TextBuffer(page_data[1], filename))
             self.status.push(self.status_id, f'Loaded {filename}')
             self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
