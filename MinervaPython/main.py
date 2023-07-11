@@ -2,7 +2,6 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
-
 from pathlib import Path
 
 from minerva.menu import get_menu_from_config
@@ -16,6 +15,7 @@ VERSION = '0.02'
 
 # TODO:
 # Add a repl window at the bottom
+# Make REPL resizeable / hideable
 # Improve the statusbar to show text position
 # Add HTML view on help menu
 # Allow to close a buffer from the tab
@@ -55,7 +55,6 @@ class MinervaWindow(Gtk.Window):
         self.current_page_index = 0
         self.notebook.connect('switch_page', self.switch_page)
         box.pack_start(self.notebook, True, True, 0)
-
         self.console = Console()
         box.pack_start(self.console.text_view, True, True, 0)
 
