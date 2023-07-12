@@ -112,13 +112,17 @@ class Console:
             if xpos >= event.x:
                 # put the cursor here and we are done
                 self.buffer.place_cursor(start_iter)
+                self.text_view.grab_focus()
+                return True
             # move along characters
             if start_iter.forward_char() is False:
                 # hit end of text, so exit the loop
                 break
         # no match, so put the cursor at the end
         self.buffer.place_cursor(end_iter)
-        return False
+        # make the text view active
+        self.text_view.grab_focus()
+        return True
 
     def autoscroll(self, *args):
         # the text area size has got bigger (we added more text)
