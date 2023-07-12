@@ -37,7 +37,7 @@ class Console:
         self.line_end = Gtk.TextMark.new('line-start', True)
         self.setup_text_view()
         self.history = []
-        self.history_index = -1
+        self.history_index = 0
 
     def setup_text_view(self):
         self.text_view.override_font(Pango.FontDescription('inconsolata 12'))
@@ -66,7 +66,25 @@ class Console:
         return False
 
     def show_history(self, direction):
-        pass
+        # self.history is a list of previous commands
+        # history[-1] is the most recent, and history[0] is the most recent
+        # if there is no history, do nothing
+        if len(self.history) == 0:
+            return True
+        index_to_show = self.history_index + direction
+        if index_to_show < 0 or index_to_show >= len(self.history):
+            # out of bounds
+            return True
+        # set the new index
+        self.history_index = index_to_show
+        # delete everything after line-start
+        start_iter = self.buffer.get_iter_at_mark(self.buffer.get_mark('line-start'))
+        self.buffer.delete(start_iter, self.buffer.get_end_iter())
+        # add command from line-start
+        self.buffer.insert(start_iter, self.history[self.history_index])
+        # place cursor at end of buffer
+        new_end = self.buffer.get_end_iter()
+        self.buffer.place_cursor(new_end)
 
     def check_left(self):
         # if the cursor is on the line_start tag, then return False
@@ -80,11 +98,14 @@ class Console:
 
     def process(self, command):
         # process the command and return the response
+        self.history.append(command)
+        # point tht index at this most recent + 1
+        self.history_index = len(self.history)
         response = 'Error: Could not find SBCL binary'
         return response
 
     def handle_input(self):
-        # return has been pressed, so execute the statment
+        # return has been pressed, so execute the statement
         # grab the current line the cursor is on
         # print it
         line_start_pos = self.buffer.get_iter_at_mark(self.buffer.get_mark('line-start'))
