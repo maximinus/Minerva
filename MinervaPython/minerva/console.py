@@ -21,10 +21,18 @@ TAGS = ['line-start']
 # unicode charaters = offsets
 # byte count = indexes
 
+# TODO:
+# Does not get larger when adding text
+# When clicked, cursor can only go to the bottom line
+
 
 class Console:
     def __init__(self):
+        self.widget = Gtk.ScrolledWindow()
+        self.widget.set_hexpand(True)
+        self.widget.set_vexpand(True)
         self.text_view = Gtk.TextView()
+        self.widget.add(self.text_view)
         self.buffer = self.text_view.get_buffer()
         self.line_end = Gtk.TextMark.new('line-start', True)
         self.setup_text_view()
@@ -33,13 +41,15 @@ class Console:
 
     def setup_text_view(self):
         self.text_view.override_font(Pango.FontDescription('inconsolata 12'))
-        self.buffer.set_text('> ')
+        self.buffer.set_text('* SBCL 2.1.11\n* ')
         end_pos = self.buffer.get_end_iter()
         self.buffer.place_cursor(end_pos)
         # put a mark here for the start of the line
         # True = Left gravity, mark is moved left
         self.buffer.add_mark(self.line_end, end_pos)
         self.text_view.connect('key-press-event', self.key_press)
+        self.text_view.connect('button-press-event', self.clicked)
+        self.text_view.connect('size-allocate', self.autoscroll)
 
     def key_press(self, _widget, event):
         if event.keyval == Keys.RETURN.value:
@@ -83,7 +93,7 @@ class Console:
         line_text = self.buffer.get_slice(line_start_pos, end_line_pos, False)
         response = self.process(line_text)
         # insert new text to the end of the buffer, move the cursor and set the line start again
-        new_text = f'\n> {response}\n> '
+        new_text = f'\n* {response}\n* '
         self.buffer.insert(end_line_pos, new_text)
         new_end = self.buffer.get_end_iter()
         self.buffer.place_cursor(new_end)
@@ -91,3 +101,27 @@ class Console:
         self.buffer.delete_mark(self.line_end)
         # and move it back to the where we are now
         self.buffer.add_mark(self.line_end, new_end)
+
+    def clicked(self, _widget, event):
+        # get the positions of the line_start and end iters
+        start_iter = self.buffer.get_iter_at_mark(self.buffer.get_mark('line-start'))
+        end_iter = self.buffer.get_end_iter()
+        while start_iter != end_iter:
+            start_pos = self.text_view.get_iter_location(start_iter)
+            xpos = self.text_view.buffer_to_window_coords(Gtk.TextWindowType.WIDGET, start_pos.x, start_pos.y)[0]
+            if xpos >= event.x:
+                # put the cursor here and we are done
+                self.buffer.place_cursor(start_iter)
+            # move along characters
+            if start_iter.forward_char() is False:
+                # hit end of text, so exit the loop
+                break
+        # no match, so put the cursor at the end
+        self.buffer.place_cursor(end_iter)
+        return False
+
+    def autoscroll(self, *args):
+        # the text area size has got bigger (we added more text)
+        # so make sure to scroll to the bottom
+        adj = self.widget.get_vadjustment()
+        adj.set_value(adj.get_upper() - adj.get_page_size())

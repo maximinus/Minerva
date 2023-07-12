@@ -46,6 +46,7 @@ class MinervaWindow(Gtk.Window):
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
         box.pack_start(get_toolbar_from_config(action_router), False, False, 0)
 
+        # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
         self.buffers = []
         page_data = create_text_view()
@@ -54,9 +55,11 @@ class MinervaWindow(Gtk.Window):
         # add callback for change of text view
         self.current_page_index = 0
         self.notebook.connect('switch_page', self.switch_page)
-        box.pack_start(self.notebook, True, True, 0)
         self.console = Console()
-        box.pack_start(self.console.text_view, True, True, 0)
+        panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        panel.pack1(self.notebook, True, True)
+        panel.pack2(self.console.widget, True, True)
+        box.pack_start(panel, True, True, 0)
 
         # This status bar actually needs to hold more than just messages
         # Add the cursor position on the RHS somehow
