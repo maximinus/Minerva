@@ -9,6 +9,8 @@ from pathlib import Path
 COLOR_RED = '#FF8888'
 COLOR_BLUE = '#8888FF'
 
+NOTEBOOK_LABEL_MARGIN = 2
+
 
 def get_name_label(html_text, color=None):
     # return a label with markup
@@ -29,13 +31,36 @@ class TextBuffer:
             self.saved = True
 
     def get_label(self):
+        # this is actually a box
+        # on the left, a text view of the file
+        # on the right, an icon to close the window
+        head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+
+        # get the components
         if self.filename is None:
             display_name = 'empty'
         else:
             display_name = self.filename.name
         if self.saved:
-            return get_name_label(display_name, COLOR_BLUE)
-        return get_name_label(f'<i>{display_name}</i>', COLOR_RED)
+            name_label = get_name_label(display_name, COLOR_BLUE)
+        else:
+            name_label = get_name_label(f'<i>{display_name}</i>', COLOR_RED)
+        name_label.set_margin_right(NOTEBOOK_LABEL_MARGIN)
+        name_label.set_xalign(0.0)
+        name_label.set_yalign(0.4)
+
+        image = Gtk.Image()
+        image.set_from_file(f'./gfx/icons/close_tiny.png')
+        button = Gtk.Button()
+        button.set_image(image)
+        button.set_alignment(1.0, 0.5)
+        button.set_relief(Gtk.ReliefStyle.NONE)
+        button.set_focus_on_click(False)
+
+        head.pack_start(name_label, False, False, 0)
+        head.pack_start(button, False, False, 0)
+        head.show_all()
+        return head
 
     def save_file(self, window):
         # if the filename exists, just save it there

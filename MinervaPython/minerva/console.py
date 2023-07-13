@@ -21,11 +21,6 @@ TAGS = ['line-start']
 # unicode charaters = offsets
 # byte count = indexes
 
-# TODO:
-# Does not get larger when adding text
-# When clicked, cursor can only go to the bottom line
-
-
 class Console:
     def __init__(self):
         self.widget = Gtk.ScrolledWindow()

@@ -14,13 +14,12 @@ from minerva.console import Console
 VERSION = '0.02'
 
 # TODO:
-# Add a repl window at the bottom
-# Make REPL resizeable / hideable
+# Make REPL hideable
+# add home key and end keys to REPL
 # Improve the statusbar to show text position
 # Add HTML view on help menu
 # Allow to close a buffer from the tab
 # Show errors in example code
-# allow turning off icons and menus from other actions
 # add a simple settings menu
 # grab settings from config file
 # open a REPL with SBCL and use the console
