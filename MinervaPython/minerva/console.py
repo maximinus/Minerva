@@ -16,11 +16,6 @@ class Keys(Enum):
     DELETE = 65535
 
 
-TAGS = ['line-start']
-
-# unicode charaters = offsets
-# byte count = indexes
-
 class Console:
     def __init__(self):
         self.widget = Gtk.ScrolledWindow()

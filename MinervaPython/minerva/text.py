@@ -1,7 +1,7 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
 
@@ -34,6 +34,7 @@ class TextBuffer:
         # this is actually a box
         # on the left, a text view of the file
         # on the right, an icon to close the window
+        widget = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
         # get the components
@@ -60,6 +61,7 @@ class TextBuffer:
         head.pack_start(name_label, False, False, 0)
         head.pack_start(button, False, False, 0)
         head.show_all()
+
         return head
 
     def save_file(self, window):

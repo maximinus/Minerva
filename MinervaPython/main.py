@@ -9,6 +9,7 @@ from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, create_text_view
 from minerva.actions import get_action, add_window_actions
 from minerva.console import Console
+from minerva.searchbar import SearchBar
 
 
 VERSION = '0.02'
@@ -43,7 +44,9 @@ class MinervaWindow(Gtk.Window):
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
-        box.pack_start(get_toolbar_from_config(action_router), False, False, 0)
+
+        self.search = SearchBar(get_toolbar_from_config(action_router))
+        box.pack_start(self.search.box, False, False, 0)
 
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
