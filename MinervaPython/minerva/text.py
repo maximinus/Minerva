@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
+from minerva.logs import logger
 
 
 COLOR_RED = '#FF8888'
@@ -80,6 +81,7 @@ class TextBuffer:
             file.write(buffer.get_text(start, end, True))
         if self.filename is None:
             self.filename = filename
+        logger.info(f'Saved file to {filename}')
         self.saved = True
 
     def get_filename(self, window):

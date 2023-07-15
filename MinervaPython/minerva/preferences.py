@@ -6,6 +6,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from pathlib import Path
 
+from minerva.logs import logger
+
 
 PREFERENCES_FILE = Path('./glade/preferences.glade')
 DEFAULT_CONFIG_FILE = Path('./config/minerva.config')
@@ -29,8 +31,10 @@ class Config:
             self.editor_font = data['editor_font']
             self.repl_font = data['repl_font']
             self.lisp_binary = data['lisp_binary']
+            logger.info(f'Loaded config file at {DEFAULT_CONFIG_FILE}')
         except (ValueError, OSError):
             # could not load the file
+            logger.warning(f'Failed to load config file at {DEFAULT_CONFIG_FILE}')
             self.valid = False
 
     def create_default_config(self):
@@ -46,6 +50,7 @@ class Config:
         # save the config fie as values have changed
         with open(DEFAULT_CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
+        logger.info('Updated config file')
 
 
 class PreferencesDialog:
@@ -62,15 +67,21 @@ class PreferencesDialog:
 
     def set_editor_font(self, widget):
         # get the font
-        config.editor_font = widget.get_font_name()
+        font = widget.get_font_name()
+        logger.info(f'Setting editor font to {font}')
+        config.editor_font = font
         config.update()
 
     def set_repl_font(self, widget):
-        config.repl_font = widget.get_font_name()
+        font = widget.get_font_name()
+        logger.info(f'Setting REPL font to {font}')
+        config.repl_font = font
         config.update()
 
     def lisp_binary_chosen(self, widget):
-        config.lisp_binary = widget.get_file().get_path()
+        binary_path = widget.get_file().get_path()
+        logger.info(f'Setting LISP binary to {binary_path}')
+        config.lisp_binary = binary_path
         config.update()
 
     def close_dialog(self, _widget):

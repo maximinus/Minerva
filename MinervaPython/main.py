@@ -11,6 +11,7 @@ from minerva.actions import get_action, add_window_actions
 from minerva.console import Console
 from minerva.searchbar import SearchBar
 from minerva.preferences import show_preferences
+from minerva.logs import logger
 
 
 VERSION = '0.02'
@@ -39,6 +40,7 @@ def action_router(caller, action, data=None):
 class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
+        logger.info('Starting Minerva')
         self.set_default_size(800, 600)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -73,6 +75,7 @@ class MinervaWindow(Gtk.Window):
 
         add_window_actions(self)
         self.add(box)
+        logger.info('Finished setup')
 
     def messagebox(self, message, icon=Gtk.MessageType.INFO):
         dialog = Gtk.MessageDialog(
@@ -128,6 +131,7 @@ class MinervaWindow(Gtk.Window):
             self.notebook.show_all()
             self.notebook.set_current_page(-1)
             self.current_page_index = self.notebook.get_current_page()
+            logger.info(f'Loaded file from {filename}')
         dialog.destroy()
 
     def quit_minerva(self):
