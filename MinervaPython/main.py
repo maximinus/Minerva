@@ -88,6 +88,10 @@ class MinervaWindow(Gtk.Window):
         # pass messages on to the correct area
         if message.address == Target.BUFFERS:
             buffers.message(message)
+        elif message.address == Target.CONSOLE:
+            self.console.message(message)
+        else:
+            logger.error(f'No target for message to {message.action}')
 
     def new_file(self):
         # add an empty notebook

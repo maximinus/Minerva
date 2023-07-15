@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, Pango
 
 from enum import Enum
+from logs import logger
 
 
 class Keys(Enum):
@@ -144,7 +145,11 @@ class Console:
         adj = self.widget.get_vadjustment()
         adj.set_value(adj.get_upper() - adj.get_page_size())
 
-    def handle_message(self, message):
+    def message(self, message):
         # this is a message we need to handle
         if message.action == 'update_font':
             self.text_view.override_font(message.data)
+        elif message.action == 'update_binary':
+            pass
+        else:
+            logger.error(f'Console cannot understand action {message.action}')

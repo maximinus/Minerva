@@ -71,7 +71,7 @@ class PreferencesDialog:
         font = widget.get_font_name()
         logger.info(f'Setting editor font to {font}')
         config.editor_font = font
-        #config.update()
+        config.update()
         message_queue.message(Message(Target.BUFFERS, 'update_font', font))
 
     def set_repl_font(self, widget):
@@ -79,12 +79,14 @@ class PreferencesDialog:
         logger.info(f'Setting REPL font to {font}')
         config.repl_font = font
         config.update()
+        message_queue.message(Message(Target.CONSOLE, 'update_font', font))
 
     def lisp_binary_chosen(self, widget):
         binary_path = widget.get_file().get_path()
         logger.info(f'Setting LISP binary to {binary_path}')
         config.lisp_binary = binary_path
         config.update()
+        message_queue.message(Message(Target.CONSOLE, 'update_binary', binary_path))
 
     def close_dialog(self, _widget):
         self.dialog.response(0)
