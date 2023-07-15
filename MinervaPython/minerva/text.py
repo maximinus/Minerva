@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
+from minerva.preferences import config
 from minerva.logs import logger
 
 
@@ -96,6 +97,9 @@ class TextBuffer:
         dialog.destroy()
         return filename
 
+    def update_font(self, new_font):
+        self.text_view.override_fonr(Pango.FontDescription(new_font))
+
 
 def create_text_view(text=None):
     # textview needs to go into a scrolled window of course
@@ -104,7 +108,8 @@ def create_text_view(text=None):
     scrolled_window.set_vexpand(True)
 
     text_view = Gtk.TextView()
-    text_view.override_font(Pango.FontDescription('inconsolata 12'))
+    font = config.editor_font
+    text_view.override_font(Pango.FontDescription(font))
     if text is None:
         text_view.get_buffer().set_text('')
     else:
@@ -112,3 +117,38 @@ def create_text_view(text=None):
 
     scrolled_window.add(text_view)
     return [scrolled_window, text_view]
+
+
+class Buffers:
+    def __init__(self):
+        self.buffer_list = []
+        self.iter_index = 0
+        # current page being shown
+        self.current_page = 0
+
+    def add_buffer(self, new_buffer):
+        self.buffer_list.append(new_buffer)
+
+    def update_font(self, new_font):
+        for i in self.buffer_list:
+            i.update_font(new_font)
+
+    def get_index(self, index):
+        return self.buffer_list[index]
+
+    def get_current(self):
+        return self.buffer_list[self.current_page]
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.iter_index > len(self.buffer_list):
+            self.iter_index = 0
+            raise StopIteration
+        else:
+            self.iter_index += 1
+            return self.buffer_list[self.iter_index - 1]
+
+
+buffers = Buffers()

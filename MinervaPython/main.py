@@ -6,7 +6,7 @@ from pathlib import Path
 
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
-from minerva.text import TextBuffer, create_text_view
+from minerva.text import TextBuffer, create_text_view, buffers
 from minerva.actions import get_action, add_window_actions
 from minerva.console import Console
 from minerva.searchbar import SearchBar
@@ -17,7 +17,7 @@ from minerva.logs import logger
 VERSION = '0.02'
 
 # TODO:
-# Make REPL hideable
+# Allow REPL to be hidden
 # add home key and end keys to REPL
 # Improve the statusbar to show text position
 # Add HTML view on help menu
@@ -53,12 +53,10 @@ class MinervaWindow(Gtk.Window):
 
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
-        self.buffers = []
         page_data = create_text_view()
-        self.buffers.append(TextBuffer(page_data[1]))
-        self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
+        buffers.add_buffer(TextBuffer(page_data[1]))
+        self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
         # add callback for change of text view
-        self.current_page_index = 0
         self.notebook.connect('switch_page', self.switch_page)
         self.console = Console()
         panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
@@ -86,17 +84,17 @@ class MinervaWindow(Gtk.Window):
     def new_file(self):
         # add an empty notebook
         page_data = create_text_view()
-        self.buffers.append(TextBuffer(page_data[1]))
-        self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
+        buffers.add_buffer(TextBuffer(page_data[1]))
+        self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
         self.notebook.show_all()
         self.notebook.set_current_page(-1)
-        self.current_page_index = self.notebook.get_current_page()
+        buffers.current_page = self.notebook.get_current_page()
 
     def save_file(self):
-        self.buffers[self.current_page_index].save_file(self)
+        buffers.get_current().save_file(self)
         # we likely need to update the name on the tab
         page = self.notebook.get_nth_page(self.notebook.get_current_page())
-        self.notebook.set_tab_label(page, self.buffers[self.current_page_index].get_label())
+        self.notebook.set_tab_label(page, buffers.get_current().get_label())
 
     def load_file(self):
         dialog = Gtk.FileChooserDialog(title="Select file", parent=self, action=Gtk.FileChooserAction.OPEN)
@@ -113,7 +111,7 @@ class MinervaWindow(Gtk.Window):
 
             # if we already have that file, just go to the tab
             index = 0
-            for i in self.buffers:
+            for i in buffers:
                 if i.filename == filename:
                     self.notebook.set_current_page(index)
                     dialog.destroy()
@@ -124,13 +122,13 @@ class MinervaWindow(Gtk.Window):
             with open(filename) as f:
                 text = ''.join(f.readlines())
             page_data = create_text_view(text=text)
-            self.buffers.append(TextBuffer(page_data[1], filename))
+            buffers.add_buffer(TextBuffer(page_data[1], filename))
             self.status.push(self.status_id, f'Loaded {filename}')
-            self.notebook.append_page(page_data[0], self.buffers[-1].get_label())
+            self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
             # switch to the one. Must display before switching
             self.notebook.show_all()
             self.notebook.set_current_page(-1)
-            self.current_page_index = self.notebook.get_current_page()
+            buffers.current_page = self.notebook.get_current_page()
             logger.info(f'Loaded file from {filename}')
         dialog.destroy()
 
@@ -160,13 +158,10 @@ class MinervaWindow(Gtk.Window):
         dlg.destroy()
 
     def show_preferences(self):
-        show_preferences()
+        show_preferences(self)
 
     def switch_page(self, _notebook, _page, page_num):
-        if self.current_page_index == page_num:
-            # nothing to do
-            return
-        self.current_page_index = page_num
+        buffers.current_page = page_num
 
 
 if __name__ == '__main__':
