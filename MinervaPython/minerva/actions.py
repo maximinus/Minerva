@@ -22,3 +22,4 @@ def add_window_actions(window):
     ACTIONS['debug_code'] = window.debug_code
     ACTIONS['show_help'] = window.show_help
     ACTIONS['show_about'] = window.show_about
+    ACTIONS['show_preferences'] = window.show_preferences

@@ -10,6 +10,7 @@ from minerva.text import TextBuffer, create_text_view
 from minerva.actions import get_action, add_window_actions
 from minerva.console import Console
 from minerva.searchbar import SearchBar
+from minerva.preferences import show_preferences
 
 
 VERSION = '0.02'
@@ -153,6 +154,9 @@ class MinervaWindow(Gtk.Window):
         dlg.set_logo(image.get_pixbuf())
         dlg.run()
         dlg.destroy()
+
+    def show_preferences(self):
+        show_preferences()
 
     def switch_page(self, _notebook, _page, page_num):
         if self.current_page_index == page_num:

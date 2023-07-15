@@ -4,6 +4,8 @@
              {"text": "Open", "icon": "open", "shortcut": "<Control>o", "action": "load_file"},
              {"text": "Save", "icon": "save", "shortcut": "<Control>s", "action":  "save_file"},
              {"text": "-"},
+             {"text": "Preferences", "shortcut":  "<Control><Alt>s", "action": "show_preferences"},
+             {"text": "-"},
              {"text": "Quit", "shortcut": "<Control>q", "action": "quit_minerva"}]},
   {"text": "Lisp",
    "items": [{"text": "Run", "icon": "run", "shortcut": "F5", "action":  "run_code"},
