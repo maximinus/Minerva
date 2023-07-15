@@ -1,7 +1,7 @@
 from enum import Enum
 
-# we need a hash table of actions and the functions to call
-# we don't care where the functions are, however maybe we want to namespace them (?)
+from minerva.logs import logger
+
 
 ACTIONS = {
 }
@@ -23,3 +23,40 @@ def add_window_actions(window):
     ACTIONS['show_help'] = window.show_help
     ACTIONS['show_about'] = window.show_about
     ACTIONS['show_preferences'] = window.show_preferences
+
+
+class Target(Enum):
+    EMPTY = 0
+    WINDOW = 1
+    CONSOLE = 2
+    BUFFERS = 3
+
+
+class Message:
+    def __init__(self, address, action=None, data=None):
+        # the address is one of the targets
+        self.address = address
+        self.action = action
+        self.data = data
+
+    def __repr__(self):
+        return f'{Target(self.address)}:{self.action}'
+
+
+class Messenger:
+    def __init__(self):
+        self.messages = []
+        # resolver is the function to call when we need to action the messages
+        self.resolver = None
+
+    def set_resolver(self, resolver):
+        self.resolver = resolver
+
+    def message(self, message):
+        if self.resolver is None:
+            logger.error(f'Cannot resolve {message} as no resolver')
+            return
+        self.resolver(message)
+
+
+message_queue = Messenger()

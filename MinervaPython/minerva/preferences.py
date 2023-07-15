@@ -7,6 +7,7 @@ from gi.repository import Gtk
 from pathlib import Path
 
 from minerva.logs import logger
+from minerva.actions import message_queue, Message, Target
 
 
 PREFERENCES_FILE = Path('./glade/preferences.glade')
@@ -70,7 +71,8 @@ class PreferencesDialog:
         font = widget.get_font_name()
         logger.info(f'Setting editor font to {font}')
         config.editor_font = font
-        config.update()
+        #config.update()
+        message_queue.message(Message(Target.BUFFERS, 'update_font', font))
 
     def set_repl_font(self, widget):
         font = widget.get_font_name()

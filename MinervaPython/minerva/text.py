@@ -4,7 +4,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
-from minerva.preferences import config
 from minerva.logs import logger
 
 
@@ -98,17 +97,16 @@ class TextBuffer:
         return filename
 
     def update_font(self, new_font):
-        self.text_view.override_fonr(Pango.FontDescription(new_font))
+        self.text_view.override_font(Pango.FontDescription(new_font))
 
 
-def create_text_view(text=None):
+def create_text_view(font, text=None):
     # textview needs to go into a scrolled window of course
     scrolled_window = Gtk.ScrolledWindow()
     scrolled_window.set_hexpand(True)
     scrolled_window.set_vexpand(True)
 
     text_view = Gtk.TextView()
-    font = config.editor_font
     text_view.override_font(Pango.FontDescription(font))
     if text is None:
         text_view.get_buffer().set_text('')
@@ -149,6 +147,10 @@ class Buffers:
         else:
             self.iter_index += 1
             return self.buffer_list[self.iter_index - 1]
+
+    def message(self, message):
+        if message.action == 'update_font':
+            self.update_font(message.data)
 
 
 buffers = Buffers()

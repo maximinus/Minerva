@@ -17,7 +17,7 @@ class Keys(Enum):
 
 
 class Console:
-    def __init__(self):
+    def __init__(self, font):
         self.widget = Gtk.ScrolledWindow()
         self.widget.set_hexpand(True)
         self.widget.set_vexpand(True)
@@ -25,12 +25,12 @@ class Console:
         self.widget.add(self.text_view)
         self.buffer = self.text_view.get_buffer()
         self.line_end = Gtk.TextMark.new('line-start', True)
-        self.setup_text_view()
+        self.setup_text_view(font)
         self.history = []
         self.history_index = 0
 
-    def setup_text_view(self):
-        self.text_view.override_font(Pango.FontDescription('inconsolata 12'))
+    def setup_text_view(self, font):
+        self.text_view.override_font(Pango.FontDescription(font))
         self.buffer.set_text('* SBCL 2.1.11\n* ')
         end_pos = self.buffer.get_end_iter()
         self.buffer.place_cursor(end_pos)
@@ -40,6 +40,9 @@ class Console:
         self.text_view.connect('key-press-event', self.key_press)
         self.text_view.connect('button-press-event', self.clicked)
         self.text_view.connect('size-allocate', self.autoscroll)
+
+    def update_font(self, font):
+        self.text_view.override_font(Pango.FontDescription(font))
 
     def key_press(self, _widget, event):
         if event.keyval == Keys.RETURN.value:
@@ -140,3 +143,8 @@ class Console:
         # so make sure to scroll to the bottom
         adj = self.widget.get_vadjustment()
         adj.set_value(adj.get_upper() - adj.get_page_size())
+
+    def handle_message(self, message):
+        # this is a message we need to handle
+        if message.action == 'update_font':
+            self.text_view.override_font(message.data)

@@ -7,11 +7,12 @@ from pathlib import Path
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, create_text_view, buffers
-from minerva.actions import get_action, add_window_actions
+from minerva.actions import get_action, add_window_actions, message_queue, Target
 from minerva.console import Console
 from minerva.searchbar import SearchBar
 from minerva.preferences import show_preferences
 from minerva.logs import logger
+from minerva.preferences import config
 
 
 VERSION = '0.02'
@@ -24,8 +25,8 @@ VERSION = '0.02'
 # Allow to close a buffer from the tab
 # Show errors in example code
 # add a simple settings menu
-# grab settings from config file
 # open a REPL with SBCL and use the console
+# BUG: log file not being written to
 
 
 def action_router(caller, action, data=None):
@@ -41,6 +42,8 @@ class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
         logger.info('Starting Minerva')
+        message_queue.set_resolver(self.resolver)
+
         self.set_default_size(800, 600)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -53,12 +56,12 @@ class MinervaWindow(Gtk.Window):
 
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
-        page_data = create_text_view()
+        page_data = create_text_view(config.editor_font)
         buffers.add_buffer(TextBuffer(page_data[1]))
         self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
         # add callback for change of text view
         self.notebook.connect('switch_page', self.switch_page)
-        self.console = Console()
+        self.console = Console(config.repl_font)
         panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         panel.pack1(self.notebook, True, True)
         panel.pack2(self.console.widget, True, True)
@@ -81,9 +84,14 @@ class MinervaWindow(Gtk.Window):
         dialog.run()
         dialog.destroy()
 
+    def resolver(self, message):
+        # pass messages on to the correct area
+        if message.address == Target.BUFFERS:
+            buffers.message(message)
+
     def new_file(self):
         # add an empty notebook
-        page_data = create_text_view()
+        page_data = create_text_view(config.editor_font)
         buffers.add_buffer(TextBuffer(page_data[1]))
         self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
         self.notebook.show_all()
@@ -121,7 +129,7 @@ class MinervaWindow(Gtk.Window):
             # load the file and add to the textview
             with open(filename) as f:
                 text = ''.join(f.readlines())
-            page_data = create_text_view(text=text)
+            page_data = create_text_view(config.editor_font, text=text)
             buffers.add_buffer(TextBuffer(page_data[1], filename))
             self.status.push(self.status_id, f'Loaded {filename}')
             self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
@@ -158,7 +166,7 @@ class MinervaWindow(Gtk.Window):
         dlg.destroy()
 
     def show_preferences(self):
-        show_preferences(self)
+        show_preferences()
 
     def switch_page(self, _notebook, _page, page_num):
         buffers.current_page = page_num
