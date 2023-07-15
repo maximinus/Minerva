@@ -62,7 +62,7 @@
           </packing>
         </child>
         <child>
-          <!-- n-columns=2 n-rows=4 -->
+          <!-- n-columns=2 n-rows=3 -->
           <object class="GtkGrid">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -104,6 +104,7 @@
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
                 <property name="margin-start">12</property>
+                <property name="margin-end">4</property>
                 <property name="margin-top">8</property>
                 <property name="margin-bottom">8</property>
                 <property name="hexpand">True</property>
@@ -123,6 +124,7 @@
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
                 <property name="margin-start">12</property>
+                <property name="margin-end">4</property>
                 <property name="margin-top">8</property>
                 <property name="margin-bottom">8</property>
                 <property name="hexpand">True</property>
@@ -141,38 +143,10 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="margin-start">12</property>
-                <property name="label" translatable="yes">Config file</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
                 <property name="label" translatable="yes">Lisp binary</property>
               </object>
               <packing>
                 <property name="left-attach">0</property>
-                <property name="top-attach">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkFileChooserButton">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="margin-start">12</property>
-                <property name="margin-top">8</property>
-                <property name="margin-bottom">8</property>
-                <property name="hexpand">True</property>
-                <property name="title" translatable="yes"/>
-                <signal name="file-set" handler="config_file_chosen" swapped="no"/>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
                 <property name="top-attach">2</property>
               </packing>
             </child>
@@ -181,6 +155,7 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="margin-start">12</property>
+                <property name="margin-end">4</property>
                 <property name="margin-top">8</property>
                 <property name="margin-bottom">8</property>
                 <property name="hexpand">True</property>
@@ -189,7 +164,7 @@
               </object>
               <packing>
                 <property name="left-attach">1</property>
-                <property name="top-attach">3</property>
+                <property name="top-attach">2</property>
               </packing>
             </child>
           </object>
