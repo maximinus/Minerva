@@ -12,4 +12,5 @@ handler.setFormatter(Formatter('%(asctime)s: %(levelname)s: %(message)s'))
 handler.setLevel(INFO)
 
 logger = getLogger('root')
+logger.addHandler(handler)
 logger.setLevel(INFO)

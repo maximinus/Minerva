@@ -11,7 +11,7 @@ from minerva.actions import get_action, add_window_actions, message_queue, Targe
 from minerva.console import Console
 from minerva.searchbar import SearchBar
 from minerva.preferences import PreferencesDialog
-from minerva.logs import logger
+from minerva.logs import logger, handler
 from minerva.preferences import config
 from minerva.helpers import messagebox
 
@@ -40,7 +40,7 @@ def action_router(caller, action, data=None):
 class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
-        logger.info('Starting Minerva')
+        logger.info('Starting Minerva GUI')
         message_queue.set_resolver(self.resolver)
         self.buffers = Buffers()
 
@@ -143,6 +143,7 @@ class MinervaWindow(Gtk.Window):
         dialog.destroy()
 
     def quit_minerva(self):
+        handler.close()
         Gtk.main_quit()
 
     def run_code(self):
