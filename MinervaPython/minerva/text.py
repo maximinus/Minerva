@@ -5,7 +5,8 @@ from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
 from minerva.logs import logger
-
+from minerva.actions import message_queue, Target, Message
+from minerva.helpers import messagebox_yes_no
 
 COLOR_RED = '#FF8888'
 COLOR_BLUE = '#8888FF'
@@ -28,6 +29,7 @@ class TextBuffer:
         self.text_view = text_view
         self.filename = filename
         self.saved = False
+        # this means we have been loaded, so therefore are also currently saved
         if filename is not None:
             self.saved = True
 
@@ -35,7 +37,6 @@ class TextBuffer:
         # this is actually a box
         # on the left, a text view of the file
         # on the right, an icon to close the window
-        widget = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
         # get the components
@@ -59,11 +60,17 @@ class TextBuffer:
         button.set_relief(Gtk.ReliefStyle.NONE)
         button.set_focus_on_click(False)
 
+        # this needs a callback
+        button.connect('clicked', self.button_clicked)
+
         head.pack_start(name_label, False, False, 0)
         head.pack_start(button, False, False, 0)
         head.show_all()
-
         return head
+
+    def button_clicked(self, button):
+        # send a message to close the buffer
+        message_queue.message(Message(Target.BUFFERS, 'close_buffer', self))
 
     def save_file(self, window):
         # if the filename exists, just save it there
@@ -96,6 +103,31 @@ class TextBuffer:
         dialog.destroy()
         return filename
 
+    def close(self):
+        # call before we remove this buffer
+        # return True if we want to close
+        if self.saved is True:
+            # nothing to do, and save is ok
+            return True
+        # get parent window
+        parent = self.text_view.get_toplevel()
+        # if we are saved and not modified, no need to ask
+        if self.filename is None:
+            # Nothing has been defined
+            if messagebox_yes_no(parent, 'Save empty buffer?') is False:
+                return True
+            # save as expected, if cancelled then return False
+            self.save_file(parent)
+            if self.saved:
+                return True
+            return False
+        if self.saved is False:
+            # have filename but not saved
+            path_file = Path(self.filename)
+            if messagebox_yes_no(parent, f'Save to {path_file.name}?') is True:
+                self.save_file(parent)
+            return True
+
     def update_font(self, new_font):
         self.text_view.override_font(Pango.FontDescription(new_font))
 
@@ -120,7 +152,6 @@ def create_text_view(font, text=None):
 class Buffers:
     def __init__(self):
         self.buffer_list = []
-        self.iter_index = 0
         # current page being shown
         self.current_page = 0
 
@@ -137,19 +168,23 @@ class Buffers:
     def get_current(self):
         return self.buffer_list[self.current_page]
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.iter_index > len(self.buffer_list):
-            self.iter_index = 0
-            raise StopIteration
-        else:
-            self.iter_index += 1
-            return self.buffer_list[self.iter_index - 1]
+    def close_buffer(self, buffer):
+        # find this matching buffer
+        index = 0
+        for i in self.buffer_list:
+            if i == buffer:
+                if i.close():
+                    # tell main window to close notebook
+                    self.buffer_list.pop(index)
+                    message_queue.message(Message(Target.WINDOW, 'close_notebook', index))
+                # either way we are done with the buffer
+                return
+            index += 1
 
     def message(self, message):
         if message.action == 'update_font':
             self.update_font(message.data)
+        elif message.action == 'close_buffer':
+            self.close_buffer(message.data)
         else:
             logger.error(f'Buffers cannot understand action {message.action}')

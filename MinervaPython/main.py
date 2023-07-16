@@ -13,18 +13,17 @@ from minerva.searchbar import SearchBar
 from minerva.preferences import PreferencesDialog
 from minerva.logs import logger
 from minerva.preferences import config
+from minerva.helpers import messagebox
 
 
 VERSION = '0.02'
 
 # TODO:
 # Allow REPL to be hidden
-# add home key and end keys to REPL
 # Improve the statusbar to show text position
 # Add HTML view on help menu
-# Allow to close a buffer from the tab
+# When last buffer is removed, keep the notebook size
 # Show errors in example code
-# add a simple settings menu
 # open a REPL with SBCL and use the console
 # BUG: log file not being written to
 
@@ -80,15 +79,12 @@ class MinervaWindow(Gtk.Window):
         self.preferences = PreferencesDialog()
         logger.info('Finished setup')
 
-    def messagebox(self, message, icon=Gtk.MessageType.INFO):
-        dialog = Gtk.MessageDialog(
-            transient_for=self, flags=0, message_type=icon, buttons=Gtk.ButtonsType.OK, text=message)
-        dialog.run()
-        dialog.destroy()
-
     def resolver(self, message):
         # pass messages on to the correct area
-        if message.address == Target.BUFFERS:
+        if message.address == Target.WINDOW:
+            # that's us
+            self.message(message)
+        elif message.address == Target.BUFFERS:
             self.buffers.message(message)
         elif message.address == Target.CONSOLE:
             self.console.message(message)
@@ -125,7 +121,7 @@ class MinervaWindow(Gtk.Window):
 
             # if we already have that file, just go to the tab
             index = 0
-            for i in self.buffers:
+            for i in self.buffers.buffer_list:
                 if i.filename == filename:
                     self.notebook.set_current_page(index)
                     dialog.destroy()
@@ -150,13 +146,13 @@ class MinervaWindow(Gtk.Window):
         Gtk.main_quit()
 
     def run_code(self):
-        self.messagebox('Running code')
+        messagebox('Running code')
 
     def debug_code(self):
-        self.messagebox('Debugging code')
+        messagebox('Debugging code')
 
     def show_help(self):
-        self.messagebox('This is the help')
+        messagebox('This is the help')
 
     def show_about(self):
         dlg = Gtk.AboutDialog()
@@ -176,6 +172,17 @@ class MinervaWindow(Gtk.Window):
 
     def switch_page(self, _notebook, _page, page_num):
         self.buffers.current_page = page_num
+
+    def close_notebook(self, index):
+        # remove the notebook on this index
+        # no need to worry about the data by this point
+        self.notebook.remove_page(index)
+
+    def message(self, message):
+        if message.action == 'close_notebook':
+            self.close_notebook(message.data)
+        else:
+            logger.error(f'Window cannot understand action {message.action}')
 
 
 if __name__ == '__main__':
