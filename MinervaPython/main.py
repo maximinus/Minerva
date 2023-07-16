@@ -6,11 +6,11 @@ from pathlib import Path
 
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
-from minerva.text import TextBuffer, create_text_view, buffers
+from minerva.text import TextBuffer, create_text_view, Buffers
 from minerva.actions import get_action, add_window_actions, message_queue, Target
 from minerva.console import Console
 from minerva.searchbar import SearchBar
-from minerva.preferences import show_preferences
+from minerva.preferences import PreferencesDialog
 from minerva.logs import logger
 from minerva.preferences import config
 
@@ -43,6 +43,7 @@ class MinervaWindow(Gtk.Window):
         super().__init__(title="Minerva Lisp IDE")
         logger.info('Starting Minerva')
         message_queue.set_resolver(self.resolver)
+        self.buffers = Buffers()
 
         self.set_default_size(800, 600)
 
@@ -57,8 +58,8 @@ class MinervaWindow(Gtk.Window):
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
         page_data = create_text_view(config.editor_font)
-        buffers.add_buffer(TextBuffer(page_data[1]))
-        self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
+        self.buffers.add_buffer(TextBuffer(page_data[1]))
+        self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         # add callback for change of text view
         self.notebook.connect('switch_page', self.switch_page)
         self.console = Console(config.repl_font)
@@ -76,6 +77,7 @@ class MinervaWindow(Gtk.Window):
 
         add_window_actions(self)
         self.add(box)
+        self.preferences = PreferencesDialog()
         logger.info('Finished setup')
 
     def messagebox(self, message, icon=Gtk.MessageType.INFO):
@@ -87,7 +89,7 @@ class MinervaWindow(Gtk.Window):
     def resolver(self, message):
         # pass messages on to the correct area
         if message.address == Target.BUFFERS:
-            buffers.message(message)
+            self.buffers.message(message)
         elif message.address == Target.CONSOLE:
             self.console.message(message)
         else:
@@ -96,17 +98,17 @@ class MinervaWindow(Gtk.Window):
     def new_file(self):
         # add an empty notebook
         page_data = create_text_view(config.editor_font)
-        buffers.add_buffer(TextBuffer(page_data[1]))
-        self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
+        self.buffers.add_buffer(TextBuffer(page_data[1]))
+        self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         self.notebook.show_all()
         self.notebook.set_current_page(-1)
-        buffers.current_page = self.notebook.get_current_page()
+        self.buffers.current_page = self.notebook.get_current_page()
 
     def save_file(self):
-        buffers.get_current().save_file(self)
+        self.buffers.get_current().save_file(self)
         # we likely need to update the name on the tab
         page = self.notebook.get_nth_page(self.notebook.get_current_page())
-        self.notebook.set_tab_label(page, buffers.get_current().get_label())
+        self.notebook.set_tab_label(page, self.buffers.get_current().get_label())
 
     def load_file(self):
         dialog = Gtk.FileChooserDialog(title="Select file", parent=self, action=Gtk.FileChooserAction.OPEN)
@@ -123,7 +125,7 @@ class MinervaWindow(Gtk.Window):
 
             # if we already have that file, just go to the tab
             index = 0
-            for i in buffers:
+            for i in self.buffers:
                 if i.filename == filename:
                     self.notebook.set_current_page(index)
                     dialog.destroy()
@@ -134,13 +136,13 @@ class MinervaWindow(Gtk.Window):
             with open(filename) as f:
                 text = ''.join(f.readlines())
             page_data = create_text_view(config.editor_font, text=text)
-            buffers.add_buffer(TextBuffer(page_data[1], filename))
+            self.buffers.add_buffer(TextBuffer(page_data[1], filename))
             self.status.push(self.status_id, f'Loaded {filename}')
-            self.notebook.append_page(page_data[0], buffers.get_index(-1).get_label())
+            self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
             # switch to the one. Must display before switching
             self.notebook.show_all()
             self.notebook.set_current_page(-1)
-            buffers.current_page = self.notebook.get_current_page()
+            self.buffers.current_page = self.notebook.get_current_page()
             logger.info(f'Loaded file from {filename}')
         dialog.destroy()
 
@@ -170,10 +172,10 @@ class MinervaWindow(Gtk.Window):
         dlg.destroy()
 
     def show_preferences(self):
-        show_preferences()
+        self.preferences_dialog.show()
 
     def switch_page(self, _notebook, _page, page_num):
-        buffers.current_page = page_num
+        self.buffers.current_page = page_num
 
 
 if __name__ == '__main__':

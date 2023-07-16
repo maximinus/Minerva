@@ -153,6 +153,3 @@ class Buffers:
             self.update_font(message.data)
         else:
             logger.error(f'Buffers cannot understand action {message.action}')
-
-
-buffers = Buffers()

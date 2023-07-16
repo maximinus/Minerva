@@ -4,7 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, Pango
 
 from enum import Enum
-from logs import logger
+from minerva.logs import logger
 
 
 class Keys(Enum):
@@ -15,6 +15,8 @@ class Keys(Enum):
     CURSOR_RIGHT = 65363
     BACKSPACE = 65288
     DELETE = 65535
+    HOME = 65360
+    END = 65367
 
 
 class Console:
@@ -57,6 +59,12 @@ class Console:
             return True
         if event.keyval == Keys.CURSOR_LEFT.value:
             return self.check_left()
+        if event.keyval == Keys.HOME.value:
+            self.home_key()
+            return True
+        if event.keyval == Keys.END.value:
+            self.end_key()
+            return True
         return False
 
     def show_history(self, direction):
@@ -90,6 +98,16 @@ class Console:
             return True
         return False
 
+    def home_key(self):
+        # move to the start of the line
+        start = self.buffer.get_iter_at_mark(self.buffer.get_mark('line-start'))
+        self.buffer.place_cursor(start)
+
+    def end_key(self):
+        # move to the end of the line
+        end = self.buffer.get_end_iter()
+        self.buffer.place_cursor(end)
+
     def process(self, command):
         # process the command and return the response
         self.history.append(command)
@@ -101,7 +119,6 @@ class Console:
     def handle_input(self):
         # return has been pressed, so execute the statement
         # grab the current line the cursor is on
-        # print it
         line_start_pos = self.buffer.get_iter_at_mark(self.buffer.get_mark('line-start'))
         end_line_pos = self.buffer.get_end_iter()
         # grab the text between the iters

@@ -93,8 +93,3 @@ class PreferencesDialog:
 
 
 config = Config()
-preferences_dialog = PreferencesDialog()
-
-
-def show_preferences():
-    preferences_dialog.show()
