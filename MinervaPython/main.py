@@ -13,6 +13,7 @@ from minerva.searchbar import SearchBar
 from minerva.preferences import PreferencesDialog
 from minerva.logs import logger, handler
 from minerva.preferences import config
+from minerva.about import AboutDialog
 from minerva.helpers import messagebox
 
 
@@ -77,6 +78,7 @@ class MinervaWindow(Gtk.Window):
         add_window_actions(self)
         self.add(box)
         self.preferences = PreferencesDialog()
+        self.about = AboutDialog()
         logger.info('Finished setup')
 
     def resolver(self, message):
@@ -156,20 +158,10 @@ class MinervaWindow(Gtk.Window):
         messagebox('This is the help')
 
     def show_about(self):
-        dlg = Gtk.AboutDialog()
-        dlg.set_program_name('Minerva')
-        dlg.set_version(VERSION)
-        dlg.set_copyright(None)
-        dlg.set_license(None)
-        dlg.set_website('https://github.com/maximinus/Minerva')
-        image = Gtk.Image()
-        image.set_from_file('./gfx/logo.png')
-        dlg.set_logo(image.get_pixbuf())
-        dlg.run()
-        dlg.destroy()
+        self.about.show()
 
     def show_preferences(self):
-        self.preferences_dialog.show()
+        self.preferences.show()
 
     def switch_page(self, _notebook, _page, page_num):
         self.buffers.current_page = page_num
