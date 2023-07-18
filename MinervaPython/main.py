@@ -26,7 +26,6 @@ VERSION = '0.02'
 # When last buffer is removed, keep the notebook size
 # Show errors in example code
 # open a REPL with SBCL and use the console
-# BUG: log file not being written to
 
 
 def action_router(caller, action, data=None):
