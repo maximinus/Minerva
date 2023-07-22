@@ -1,4 +1,5 @@
 import socket
+import time
 
 #from minerva.preferences import config
 #from minerva.logs import logger
@@ -13,21 +14,36 @@ PORT = 4005
 
 PACKAGE = 'COMMON-LISP-USER'
 THREAD = 'T'
-SWANK_INIT = """
-(SWANK:SWANK-REQUIRE 
-    '(SWANK-IO-PACKAGE::SWANK-TRACE-DIALOG SWANK-IO-PACKAGE::SWANK-PACKAGE-FU
-      SWANK-IO-PACKAGE::SWANK-PRESENTATIONS SWANK-IO-PACKAGE::SWANK-FUZZY
-      SWANK-IO-PACKAGE::SWANK-FANCY-INSPECTOR SWANK-IO-PACKAGE::SWANK-C-P-C
-      SWANK-IO-PACKAGE::SWANK-ARGLISTS SWANK-IO-PACKAGE::SWANK-REPL))
-"""
-SWANK_PRESENTATION = '(SWANK:INIT-PRESENTATIONS)'
-SWANK_CODE = '(SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM "utf-8-unix")'
+
+SWANK_REQUIRES = ['swank-indentation',
+                  'swank-trace-dialog',
+                  'swank-package-fu',
+                  'swank-presentations',
+                  'swank-macrostep',
+                  'swank-fuzzy',
+                  'swank-fancy-inspector',
+                  'swank-c-p-c',
+                  'swank-arglists',
+                  'swank-repl']
+
+# numbers 1+2 reply perfectly
+SWANK1 = '(swank:connection-info)'
+SWANK2 = f'''(swank:swank-require '({" ".join(SWANK_REQUIRES)}))'''
+SWANK3 = '(swank:init-presentations)'
+SWANK4 = '(swank-repl:create-repl nil :coding-system "utf-8-unix")'
+SWANK5 = '''(swank:autodoc '("+" "" swank::%cursor-marker%) :print-right-margin 80)'''
+SWANK6 = '''(swank:autodoc '("+" "1" swank::%cursor-marker%) :print-right-margin 80)'''
+SWANK7 = '''(swank:autodoc '("+" "1" "" swank::%cursor-marker%) :print-right-margin 80)'''
+SWANK8 = '''(swank:autodoc '("+" "1" "2" swank::%cursor-marker%) :print-right-margin 80)'''
 
 
-def requote(s):
+def requote(s, line_end=False):
     t = s.replace('\\', '\\\\')
     t = t.replace('"', '\\"')
-    return '"' + t + '"'
+    if line_end:
+        return f'"{t}' + r'\n"'
+    else:
+        return f'"{t}"'
 
 
 class SwankClient:
@@ -35,10 +51,24 @@ class SwankClient:
         #self.lisp_path = config.lisp_binary
         self.counter = 1
         self.sock = self.create_connection()
+        if self.sock is None:
+            return
+        self.swank_init()
+
+    def swank_init(self):
         # send init command
-        self.swank_rex(SWANK_INIT)
-        self.swank_rex(SWANK_PRESENTATION)
-        self.swank_rex(SWANK_CODE)
+        self.swank_rex(SWANK1)
+        self.swank_rex(SWANK2)
+        self.swank_rex(SWANK3)
+        self.swank_rex(SWANK4)
+        #time.sleep(1)
+        #self.swank_rex(SWANK5)
+        #time.sleep(1)
+        #self.swank_rex(SWANK6)
+        #time.sleep(1)
+        #self.swank_rex(SWANK7)
+        #time.sleep(1)
+        #self.swank_rex(SWANK8)
 
     def create_connection(self):
         try:
@@ -59,13 +89,20 @@ class SwankClient:
 
     def swank_recv(self):
         try:
-            return self.sock.recv(4096)
+            # grab the length and chunk it in
+            length_data = self.sock.recv(6)
+            length = int(length_data, 16)
+            all_data = []
+            while length > 0:
+                all_data.append(self.sock.recv(4096))
+                length -= 4096
+            return all_data
         except socket.error as ex:
             print('* Could not receive: {ex}')
 
     def swank_rex(self, cmd, package=PACKAGE, thread=THREAD):
         # Send an :emacs-rex command to SWANK
-        form = f'(:EMACS-REX {cmd} "{package}" {thread} {self.counter})'
+        form = f'(:emacs-rex {cmd} "{package}" {thread} {self.counter})'
         self.counter += 1
         self.swank_send(form)
         data = self.swank_recv()
@@ -73,14 +110,11 @@ class SwankClient:
         return data
 
     def eval(self, exp):
-        print(f'Evaluating {exp}')
-        cmd = f'(SWANK-REPL:LISTENER-EVAL {requote(exp)})'
-        return self.swank_rex(cmd, thread=':REPL-THREAD')
+        cmd = f'(swank-repl:listener-eval {requote(exp, line_end=True)})'
+        return self.swank_rex(cmd, thread=':repl-thread')
 
 
 if __name__ == '__main__':
     client = SwankClient()
-    client.eval('(+ 2 3)')
-    # result
-    # ("SB-C")) ("do-nested-cleanups" 1 ("SB-C")) ("with-ir1-namespace" 0 ("SB-C")) ("do-inheritable-constraints" 1 ("SB-C")) ("processing-decls" 1 ("SB-C")) ("do-uses" 1 ("SB-C")) ("when-vop-existsp" 1 ("SB-C")) ("defpattern" 3 ("SB-X86-64-ASM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-ASSEM" "SB-C")) ("assemble" 1 ("SB-X86-64-ASM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-ASSEM" "SB-C")) ("without-scheduling" 1 ("SB-X86-64-ASM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-ASSEM" "SB-C")) ("define-instruction-macro" 2 ("SB-X86-64-ASM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-ASSEM" "SB-C")) ("with-modified-segment-index-and-posn" 1 ("SB-ASSEM")) ("acase" 1 ("QL-HTTP")) ("match" 1 ("SWANK" "SWANK/MATCH")) ("with-minimax-value" 1 ("SB-LOOP")) ("with-sum-count" 1 ("SB-LOOP")) ("with-loop-list-collection-head" 1 ("SB-LOOP")) ("with-read-buffer" 1 ("SB-IMPL")) ("when-extended-sequence-type" 1 ("SB-IMPL")) ("with-symbol" 1 ("SB-IMPL")) ("with-active-processes-lock" 1 ("SB-IMPL")) ("output-wrapper" 1 ("SB-IMPL")) ("input-wrapper/variable-width" 1 ("SB-IMPL")) ("handling-end-of-the-world" 0 ("SB-IMPL")) ("with-package-names" 1 ("SB-IMPL")) ("with-native-pathname" 1 ("SB-IMPL")) ("matchify-list" 1 ("SB-IMPL")) ("with-args" 1 ("SB-IMPL")) ("with-descriptor-handlers" 0 ("SB-IMPL")) ("with-stepping-enabled" 0 ("SB-IMPL")) ("with-push-char" 1 ("SB-IMPL")) ("with-host" 1 ("SB-IMPL")) ("output-wrapper/variable-width" 1 ("SB-IMPL")) ("with-member-test" 1 ("SB-IMPL")) ("with-native-directory-iterator" 1 ("SB-IMPL")) ("with-environment" 1 ("SB-IMPL")) ("with-scheduler-lock" 1 ("SB-IMPL")) ("with-package-graph" 1 ("SB-IMPL")) ("with-one-string" 1 ("SB-IMPL")) ("with-weak-hash-table-entry" 0 ("SB-IMPL")) ("with-stepping-disabled" 0 ("SB-IMPL")) ("do-vector-data" 1 ("SB-IMPL")) ("find-package-restarts" 1 ("SB-IMPL")) ("do-packages" 1 ("SB-IMPL")) ("with-packed-info-iterator" 1 ("SB-IMPL")) ("with-finalizer-store" 1 ("SB-IMPL")) ("describe-block" 1 ("SB-IMPL")) ("with-pathname" 1 ("SB-IMPL")) ("map-into-lambda" 2 ("SB-IMPL")) ("with-case-info" 1 ("SB-IMPL")) ("input-wrapper" 1 ("SB-IMPL")) ("with-fd-setsize" 1 ("SB-UNIX")) ("with-program-output" 1 ("UIOP/RUN-PROGRAM")) ("with-program-input" 1 ("UIOP/RUN-PROGRAM")) ("with-program-error-output" 1 ("UIOP/RUN-PROGRAM")) ("define-alien-callable" 3 ("SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-POSIX" "SB-BSD-SOCKETS-INTERNAL" "SB-KERNEL" "SB-THREAD" "SB-APROF" "SB-INT" "COMMON-LISP-USER" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("with-alien" 1 ("SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-POSIX" "SB-BSD-SOCKETS-INTERNAL" "SB-KERNEL" "SB-THREAD" "SB-APROF" "SB-INT" "COMMON-LISP-USER" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("define-alien-callback" 3 ("SB-ALIEN")) ("alien-lambda" 2 ("SB-ALIEN")) ("with-auxiliary-alien-types" 1 ("SB-ALIEN")) ("walker-environment-bind" 1 ("SB-WALKER")) ("with-augmented-environment" 1 ("SB-WALKER")) ("with-new-definition-in-environment" 1 ("SB-WALKER")) ("program-destructuring-bind" 2 ("SB-EVAL")) ("with-temporary-file" 1 ("QUICKLISP-CLIENT" "QL-DIST" "QL-UTIL" "QL-CONFIG")) ("without-prompting" 0 ("QUICKLISP-CLIENT" "QL-DIST" "QL-UTIL" "QL-CONFIG")) ("in-interruption" 1 ("SB-X86-64-ASM" "SB-DISASSEM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-LOCKLESS" "SB-KERNEL" "SB-THREAD" "SB-DEBUG" "SB-DI" "SB-APROF" "SB-INT" "SB-SYS" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("with-code-pages-pinned" 1 ("SB-X86-64-ASM" "SB-DISASSEM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-LOCKLESS" "SB-KERNEL" "SB-THREAD" "SB-DEBUG" "SB-DI" "SB-APROF" "SB-INT" "SB-SYS" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("with-deadline" 1 ("SB-X86-64-ASM" "SB-DISASSEM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-LOCKLESS" "SB-KERNEL" "SB-THREAD" "SB-DEBUG" "SB-DI" "SB-APROF" "SB-INT" "SB-SYS" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("with-local-interrupts" 0 ("SB-X86-64-ASM" "SB-DISASSEM" "SB-VM" "SB-REGALLOC" "SB-FASL" "SB-BIGNUM" "SB-LOCKLESS" "SB-KERNEL" "SB-THREAD" "SB-DEBUG" "SB-DI" "SB-APROF" "SB-INT" "SB-SYS" "SB-ALIEN" "SB-UNIX" "SB-IMPL" "SB-C" "SB-EXT")) ("with-in'
-
+    time.sleep(1)
+    client.eval('(+ 1 2)')
