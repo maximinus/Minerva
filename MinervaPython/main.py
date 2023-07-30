@@ -15,6 +15,7 @@ from minerva.logs import logger, handler
 from minerva.preferences import config
 from minerva.about import AboutDialog
 from minerva.helpers import messagebox
+from minerva.swank import SwankClient
 
 
 VERSION = '0.02'
@@ -43,6 +44,7 @@ class MinervaWindow(Gtk.Window):
         logger.info('Starting Minerva GUI')
         message_queue.set_resolver(self.resolver)
         self.buffers = Buffers()
+        self.lisp_repl = SwankClient(None)
 
         self.set_default_size(800, 600)
 
@@ -89,6 +91,8 @@ class MinervaWindow(Gtk.Window):
             self.buffers.message(message)
         elif message.address == Target.CONSOLE:
             self.console.message(message)
+        elif message.address == Target.SWANK:
+            self.lisp_repl.message(message)
         else:
             logger.error(f'No target for message to {message.action}')
 

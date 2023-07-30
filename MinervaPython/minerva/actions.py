@@ -30,6 +30,7 @@ class Target(Enum):
     WINDOW = 1
     CONSOLE = 2
     BUFFERS = 3
+    SWANK = 4
 
 
 class Message:

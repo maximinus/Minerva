@@ -5,6 +5,7 @@ from gi.repository import Gtk, Gdk, Pango
 
 from enum import Enum
 from minerva.logs import logger
+from minerva.swank import SwankClient
 
 
 class Keys(Enum):
@@ -113,7 +114,7 @@ class Console:
         self.history.append(command)
         # point tht index at this most recent + 1
         self.history_index = len(self.history)
-        response = 'Error: Could not find SBCL binary'
+        response = self.lisp_repl.eval(command)
         return response
 
     def handle_input(self):
