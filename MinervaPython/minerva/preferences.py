@@ -1,6 +1,7 @@
-import json
 import os
 import gi
+import json
+import pathlib
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -11,7 +12,8 @@ from minerva.actions import message_queue, Message, Target
 
 
 PREFERENCES_FILE = Path('./glade/preferences.glade')
-DEFAULT_CONFIG_FILE = Path('./config/minerva.config')
+CONFIG_DIR = pathlib.Path(__file__).parent.parent.resolve()
+DEFAULT_CONFIG_FILE = CONFIG_DIR / '.' / 'config' / 'minerva.config'
 
 
 class Config:
@@ -33,7 +35,7 @@ class Config:
             self.repl_font = data['repl_font']
             self.lisp_binary = data['lisp_binary']
             logger.info(f'Loaded config file at {DEFAULT_CONFIG_FILE}')
-        except (ValueError, OSError):
+        except (ValueError, OSError, FileNotFoundError):
             # could not load the file
             logger.warning(f'Failed to load config file at {DEFAULT_CONFIG_FILE}')
             self.valid = False
