@@ -19,6 +19,7 @@ from minerva.swank import SwankClient
 
 
 VERSION = '0.02'
+ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
 # Allow REPL to be hidden
@@ -44,7 +45,7 @@ class MinervaWindow(Gtk.Window):
         logger.info('Starting Minerva GUI')
         message_queue.set_resolver(self.resolver)
         self.buffers = Buffers()
-        self.lisp_repl = SwankClient(None)
+        self.lisp_repl = SwankClient(ROOT_DIRECTORY)
 
         self.set_default_size(800, 600)
 
