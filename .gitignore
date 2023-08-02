@@ -1,5 +1,7 @@
 venv/
 gfx/
 HyperSpec/
+html/
+
 .idea/
 __pycache__/
