@@ -1,4 +1,4 @@
-# Minerva v0.1
+# Minerva Lisp IDE
 
 
 Minerva is an open source IDE for Common Lisp. The goals of the project are:
