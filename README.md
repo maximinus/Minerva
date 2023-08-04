@@ -15,7 +15,7 @@ In this writer's view, this is a serious impediment for people trying to learn L
 This is not to say that the Minerva method is superior in any particular way; it is just built to be different from the Emacs style approach.
 
 
-##Current Tech Stack
+## Current Tech Stack
 
 
 All versions up to 1.0 will use Python and GTK 3.
