@@ -5,7 +5,7 @@ from gi.repository import Gtk, Gdk, Pango
 
 from enum import Enum
 from minerva.logs import logger
-from minerva.swank import SwankClient
+from minerva.actions import Message, message_queue, Target
 
 
 class Keys(Enum):
@@ -114,8 +114,7 @@ class Console:
         self.history.append(command)
         # point tht index at this most recent + 1
         self.history_index = len(self.history)
-        response = self.lisp_repl.eval(command)
-        return response
+        message_queue.message(Message(Target.SWANK, 'repl-cmd', command))
 
     def handle_input(self):
         # return has been pressed, so execute the statement
@@ -124,7 +123,9 @@ class Console:
         end_line_pos = self.buffer.get_end_iter()
         # grab the text between the iters
         line_text = self.buffer.get_slice(line_start_pos, end_line_pos, False)
-        response = self.process(line_text)
+        self.process(line_text)
+        # TODO: Rest of this needs to be done when the results of the REPL come in
+        response = 'This is TODO'
         # insert new text to the end of the buffer, move the cursor and set the line start again
         new_text = f'\n* {response}\n* '
         self.buffer.insert(end_line_pos, new_text)

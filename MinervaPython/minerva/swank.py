@@ -1,4 +1,3 @@
-import time
 import socket
 import threading
 
@@ -125,18 +124,20 @@ def get_message(sock, timeout=0):
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
         return SwankMessage(joined_data)
     except socket.error as ex:
-        print(f'Error: {ex}')
+        # not always an error, since we poll most of the time anyway
         return
 
 
-def get_all_messages(sock):
+def get_all_messages(sock, event):
+    # this is the thread routine that gets all messages forever
     while True:
         # loop forever and raise messages
-        data = get_message(sock)
-        if data is None:
-            message_queue.message(Message(Target.SWANK, 'lost-connection', None))
-        else:
+        data = get_message(sock, 2)
+        if data is not None:
             message_queue.message(Message(Target.SWANK, 'message', data))
+        if event.is_set():
+            # end this event and exit
+            break
 
 
 def wait_for_reply(sock, reply_count, timeout):
@@ -165,15 +166,23 @@ class SwankClient:
             logger.error('Could not connect to Lisp instance')
             return
         self.swank_init()
-        self.listener_thread = self.start_listener()
+        self.listener_thread = None
+        self.thread_event = None
+        self.start_listener()
 
     def start_listener(self):
         # create a new thread and obtain messages from it
         if self.connected is False:
             return
-        listener_thread = threading.Thread(target=get_message, args=(self.sock,))
-        listener_thread.start()
-        return listener_thread
+        self.thread_event = threading.Event()
+        self.listener_thread = threading.Thread(target=get_all_messages, args=(self.sock, self.thread_event))
+        self.listener_thread.start()
+
+    def stop_listener(self):
+        logger.info('Stoppinng Swank client')
+        if self.listener_thread is not None:
+            self.thread_event.set()
+        self.swank_server.stop()
 
     def swank_init(self):
         # send init command
@@ -218,28 +227,27 @@ class SwankClient:
         wait_for_reply(self.sock, self.counter - 1, timeout)
 
     def eval(self, exp):
-        print(f'Got: {exp}')
         if not self.connected:
             logger.info('Not evaluating: Lisp instance not connected')
             return
         try:
+            logger.info(f'Evaluating {exp}')
             cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
             self.swank_rex(cmd, thread=':repl-thread')
-            return ''
         except EnvironmentError:
-            # We are no longer connected
-            return ''
+            pass
 
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
-        print(swank_message)
-        if swank_message.message_type == SwankType.RETURN:
+        message_type = swank_message.data.message_type
+        print(f'Got swank reply: {message_type}')
+        if message_type == SwankType.RETURN:
             pass
-        elif swank_message.message_type == SwankType.WRITE_STRING:
+        elif message_type == SwankType.WRITE_STRING:
             pass
-        elif swank_message.message_type == SwankType.PRES_START:
+        elif message_type == SwankType.PRES_START:
             pass
-        elif swank_message.message_type == SwankType.PRES_END:
+        elif message_type == SwankType.PRES_END:
             pass
         elif swank_message.message_type == SwankType.PING:
             self.return_ping(swank_message)
@@ -253,6 +261,8 @@ class SwankClient:
         # got something back from swank, act on it
         if message.action == 'message':
             self.handle_message(message)
+        elif message.action == 'repl-cmd':
+            self.eval(message.data)
         elif message.action == 'lost-connection':
             # error and restart lisp binary?
             logger.error('Lost Lisp binary connection')
@@ -260,5 +270,6 @@ class SwankClient:
 
 if __name__ == '__main__':
     client = SwankClient(None)
-    time.sleep(1)
-    print(client.eval('(+ 1 2)'))
+    client.stop_listener()
+    #time.sleep(1)
+    #print(client.eval('(+ 1 2)'))
