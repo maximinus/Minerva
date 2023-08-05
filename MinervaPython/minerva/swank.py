@@ -127,7 +127,7 @@ def get_message(sock, timeout=0):
                 length -= 4096
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
         return SwankMessage(joined_data)
-    except socket.error as ex:
+    except socket.error:
         # not always an error, since we poll most of the time anyway
         return
 
@@ -136,12 +136,20 @@ def get_all_messages(sock, event):
     # this is the thread routine that gets all messages forever
     while True:
         # loop forever and raise messages
-        data = get_message(sock, 2)
+        data = get_message(sock, timeout=2)
         if data is not None:
+            print('Sending message', flush=True)
             message_queue.message(Message(Target.SWANK, 'message', data))
         if event.is_set():
             # end this event and exit
             break
+
+
+class FutureMessage:
+    def __init__(self, cmd, return_event, thread):
+        self.cmd = cmd
+        self.return_event = return_event
+        self.thread = thread
 
 
 class SwankClient:
@@ -151,23 +159,30 @@ class SwankClient:
         self.message_queue = []
         self.received_queue = []
         self.connected = False
-        self.swank_server = LispRuntime(root_path, binary_path)
         self.binary_path = binary_path
+        self.swank_server = LispRuntime(root_path, binary_path)
         self.swank_server.start()
         self.counter = 1
         self.sock = self.create_connection()
         if self.sock is None:
             logger.error('Could not connect to Lisp instance')
             return
-        self.swank_init()
         self.listener_thread = None
         self.thread_event = None
         self.start_listener()
+        self.connected = True
+        # everything is ready
+        self.swank_init()
+
+    def swank_init(self):
+        # send init command
+        self.send_swank_message(SWANK1)
+        self.send_swank_message(SWANK2)
+        self.send_swank_message(SWANK3)
+        self.send_swank_message(SWANK4, Message(Target.SWANK, 'init-complete', None))
 
     def start_listener(self):
         # create a new thread and obtain messages from it
-        if self.connected is False:
-            return
         self.thread_event = threading.Event()
         self.listener_thread = threading.Thread(target=get_all_messages, args=(self.sock, self.thread_event))
         self.listener_thread.start()
@@ -178,16 +193,6 @@ class SwankClient:
             self.thread_event.set()
         self.swank_server.stop()
 
-    def swank_init(self):
-        # send init command
-        try:
-            self.send_swank_message(SWANK1)
-            self.send_swank_message(SWANK2)
-            self.send_swank_message(SWANK3)
-            self.send_swank_message(SWANK4, Message(Target.SWANK, 'init-complete', None))
-        except ConnectionError:
-            return
-
     def create_connection(self):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -195,7 +200,7 @@ class SwankClient:
             sock.setblocking(True)
             return sock
         except socket.error as ex:
-            print(f'* Socket error: {ex}')
+            logger.error(f'Socket error connecting to Swank: {ex}')
 
     def swank_send(self, text):
         l = "%06x" % len(str(text))
@@ -203,63 +208,70 @@ class SwankClient:
         try:
             self.sock.send(t.encode('utf-8'))
         except socket.error:
-            print('* Socket error when sending: {ex}')
+            logger.error('* Socket error when sending: {ex}')
             raise EnvironmentError
 
-    def swank_rex(self, cmd, package=PACKAGE, thread=THREAD):
+    def swank_rex(self, cmd, counter, package=PACKAGE, thread=THREAD):
         # Send an :emacs-rex command to SWANK
-        form = f'(:emacs-rex {cmd} "{package}" {thread} {self.counter})'
-        logger.debug(f'Swank send: {form}')
-        self.counter += 1
+        form = f'(:emacs-rex {cmd} "{package}" {thread} {counter})'
+        print(f'Sending message #{counter}')
         self.swank_send(form)
 
     def send_swank_message(self, cmd, return_event=None, thread=THREAD):
         # send the given swank command
-        # It will be placed into a queue. When the return data is finished
+        # It will be placed into a queue. When the return data is finished,
         # all the messages will be put into a list on the return_event object data
         # and then the message sent
         if not self.connected:
             logger.info('Not sending message: Lisp instance not connected')
             return
-        self.message_queue.append([self.counter, return_event])
+        # TODO: send more data
+        self.message_queue.append(FutureMessage(cmd, return_event, thread))
         if len(self.message_queue) == 1:
             # send the message right away
-            self.swank_rex(cmd, thread)
+            self.swank_rex(cmd, self.counter, thread)
+        else:
+            print(f'Queuing message #{self.counter}')
+        self.counter += 1
 
     def eval(self, exp):
         # helper function for simple evaluations
         cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
         self.send_swank_message(cmd, Message(Target.CONSOLE, 'eval-return', []), thread=':repl-thread')
 
-    def end_next_message(self, swank_message):
+    def send_next_message(self, swank_message):
         # we finally have a "return" message, so we can close off a message
         # if nothing is awaiting, then ignore
-        return_value = swank_message.last
+        return_value = swank_message.data.last
         while len(self.message_queue) > 0:
             oldest_message = self.message_queue.pop(0)
             if str(oldest_message[0]) != return_value:
                 continue
             # we are looking at the right message
-            return_message = oldest_message[1]
+            return_message = oldest_message.return_event
             if return_message is None:
                 # nothing to do except tidy up
                 self.received_queue = []
-                return
+                break
             oldest_message.data = self.received_queue
             self.received_queue = []
             message_queue.message(return_message)
-            return
-        logger.info('Got return message with nothing waiting')
+            break
+        # send next message to swank if it exists
+        if self.message_queue > 0:
+            next = self.message_queue.pop(0)
+            self.send_swank_message(next.cmd, next.return_event, next.thread)
 
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
         message_type = swank_message.data.message_type
         print(f'Got swank reply: {message_type}')
         if message_type == SwankType.RETURN:
-            self.end_next_message()
-        elif swank_message.message_type == SwankType.PING:
+            self.send_next_message(swank_message)
+        elif message_type == SwankType.PING:
             self.return_ping(swank_message)
         else:
+            # save the message for later
             self.received_queue.append(swank_message)
 
     def return_ping(self, message):
@@ -267,7 +279,7 @@ class SwankClient:
         self.swank_send(response)
 
     def message(self, message):
-        # got something back from swank, act on it
+        print(f'Got message {message.action}')
         if message.action == 'message':
             self.handle_message(message)
         elif message.action == 'repl-cmd':
@@ -276,11 +288,17 @@ class SwankClient:
             # error and restart lisp binary?
             logger.error('Lost Lisp binary connection')
         elif message.action == 'init-complete':
-            self.connected = True
+            logger.info('Swank setup complete')
         else:
             logger.error(f'No such message action {message.action} for Swank')
 
 
 if __name__ == '__main__':
-    client = SwankClient(None)
-    client.stop_listener()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((HOST, PORT))
+    sock.setblocking(True)
+    ev = threading.Event()
+    th = threading.Thread(target=get_all_messages, args=(sock, ev))
+    th.start()
+    while True:
+        pass
