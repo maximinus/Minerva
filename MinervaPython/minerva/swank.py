@@ -80,6 +80,10 @@ class SwankMessage:
         self.ast = loads(text_message)
         self.message_type = str(self.ast[0])
 
+    @property
+    def last(self):
+        return str(self.ast[-1])
+
     def __repr__(self):
         return str(self.message_type)
 
@@ -140,22 +144,12 @@ def get_all_messages(sock, event):
             break
 
 
-def wait_for_reply(sock, reply_count, timeout):
-    # pump messages until we have a :return with 4
-    # this should be pretty fast: we will only wait 3 seconds
-    start_time = datetime.now()
-    while (datetime.now() - start_time).seconds < timeout:
-        message = get_message(sock, timeout=timeout)
-        if message is None:
-            raise ConnectionError
-        if message.message_type == SwankType.RETURN:
-            if message.ast[-1] == reply_count:
-                return
-    raise ConnectionError
-
-
 class SwankClient:
     def __init__(self, root_path, binary_path=None):
+        # messages are sent one at a time, and we wait for the transaction
+        # to finish before we send the next message
+        self.message_queue = []
+        self.received_queue = []
         self.connected = False
         self.swank_server = LispRuntime(root_path, binary_path)
         self.binary_path = binary_path
@@ -187,11 +181,10 @@ class SwankClient:
     def swank_init(self):
         # send init command
         try:
-            self.swank_rex_and_wait(SWANK1, 5)
-            self.swank_rex_and_wait(SWANK2, 5)
-            self.swank_rex_and_wait(SWANK3, 5)
-            self.swank_rex_and_wait(SWANK4, 5)
-            self.connected = True
+            self.send_swank_message(SWANK1)
+            self.send_swank_message(SWANK2)
+            self.send_swank_message(SWANK3)
+            self.send_swank_message(SWANK4, Message(Target.SWANK, 'init-complete', None))
         except ConnectionError:
             return
 
@@ -205,7 +198,6 @@ class SwankClient:
             print(f'* Socket error: {ex}')
 
     def swank_send(self, text):
-        print(f'Sending: {text}')
         l = "%06x" % len(str(text))
         t = l + text
         try:
@@ -221,43 +213,60 @@ class SwankClient:
         self.counter += 1
         self.swank_send(form)
 
-    def swank_rex_and_wait(self, cmd, timeout=2):
-        # used in init: send data and wait for reply
-        self.swank_rex(cmd)
-        wait_for_reply(self.sock, self.counter - 1, timeout)
+    def send_swank_message(self, cmd, return_event=None, thread=THREAD):
+        # send the given swank command
+        # It will be placed into a queue. When the return data is finished
+        # all the messages will be put into a list on the return_event object data
+        # and then the message sent
+        if not self.connected:
+            logger.info('Not sending message: Lisp instance not connected')
+            return
+        self.message_queue.append([self.counter, return_event])
+        if len(self.message_queue) == 1:
+            # send the message right away
+            self.swank_rex(cmd, thread)
 
     def eval(self, exp):
-        if not self.connected:
-            logger.info('Not evaluating: Lisp instance not connected')
+        # helper function for simple evaluations
+        cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
+        self.send_swank_message(cmd, Message(Target.CONSOLE, 'eval-return', []), thread=':repl-thread')
+
+    def end_next_message(self, swank_message):
+        # we finally have a "return" message, so we can close off a message
+        # if nothing is awaiting, then ignore
+        return_value = swank_message.last
+        while len(self.message_queue) > 0:
+            oldest_message = self.message_queue.pop(0)
+            if str(oldest_message[0]) != return_value:
+                continue
+            # we are looking at the right message
+            return_message = oldest_message[1]
+            if return_message is None:
+                # nothing to do except tidy up
+                self.received_queue = []
+                return
+            oldest_message.data = self.received_queue
+            self.received_queue = []
+            message_queue.message(return_message)
             return
-        try:
-            logger.info(f'Evaluating {exp}')
-            cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
-            self.swank_rex(cmd, thread=':repl-thread')
-        except EnvironmentError:
-            pass
+        logger.info('Got return message with nothing waiting')
 
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
         message_type = swank_message.data.message_type
         print(f'Got swank reply: {message_type}')
         if message_type == SwankType.RETURN:
-            pass
-        elif message_type == SwankType.WRITE_STRING:
-            pass
-        elif message_type == SwankType.PRES_START:
-            pass
-        elif message_type == SwankType.PRES_END:
-            pass
+            self.end_next_message()
         elif swank_message.message_type == SwankType.PING:
             self.return_ping(swank_message)
+        else:
+            self.received_queue.append(swank_message)
 
     def return_ping(self, message):
         response = f'(:EMACS-PONG {message.ast[1]} {message.ast[2]}'
         self.swank_send(response)
 
     def message(self, message):
-        print(f'Got message {message.data}')
         # got something back from swank, act on it
         if message.action == 'message':
             self.handle_message(message)
@@ -266,10 +275,12 @@ class SwankClient:
         elif message.action == 'lost-connection':
             # error and restart lisp binary?
             logger.error('Lost Lisp binary connection')
+        elif message.action == 'init-complete':
+            self.connected = True
+        else:
+            logger.error(f'No such message action {message.action} for Swank')
 
 
 if __name__ == '__main__':
     client = SwankClient(None)
     client.stop_listener()
-    #time.sleep(1)
-    #print(client.eval('(+ 1 2)'))
