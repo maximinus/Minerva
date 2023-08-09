@@ -16,6 +16,7 @@ from minerva.actions import message_queue, Message, Target
 HOST = '127.0.0.1'
 PORT = 4005
 SWANK_SCRIPT = 'start-swank.lisp'
+RECV_CHUNK_SIZE = 4096
 
 PACKAGE = 'COMMON-LISP-USER'
 THREAD = 'T'
@@ -119,18 +120,15 @@ def get_message(sock, timeout=0):
         if len(length_data) == 0:
             # nothing was returned, swank server is likely dead
             return
-        print(f'Len data: {length_data}')
         length = int(length_data, 16)
         all_data = []
         while length > 0:
-            if length < 4096:
-                all_data.append(sock.recv(length))
-                length = 0
-            else:
-                all_data.append(sock.recv(4096))
-                length -= 4096
+            bytes_to_get = min(length, RECV_CHUNK_SIZE)
+            # sometimes it doesn't send the full buffer
+            chunk_data = sock.recv(bytes_to_get)
+            all_data.append(chunk_data)
+            length -= len(chunk_data)
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
-        print(f'Got: {joined_data}')
         return SwankMessage(joined_data)
     except socket.error:
         # not always an error, since we poll most of the time anyway
@@ -217,7 +215,6 @@ class SwankClient:
     def swank_rex(self, cmd, counter, package=PACKAGE, thread=THREAD):
         # Send an :emacs-rex command to SWANK
         form = f'(:emacs-rex {cmd} "{package}" {thread} {counter})'
-        print(f'Sending message #{counter}')
         self.swank_send(form)
 
     def send_swank_message(self, cmd, return_event=None, thread=THREAD):
@@ -264,8 +261,6 @@ class SwankClient:
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
         message_type = swank_message.data.message_type
-        print(f'Got swank reply: {message_type}')
-        print(swank_message.data.raw)
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)
         elif message_type == SwankType.PING:
@@ -279,7 +274,6 @@ class SwankClient:
         self.swank_send(response)
 
     def message(self, message):
-        print(f'Got resolver message {message.action}')
         if message.action == 'message':
             self.handle_message(message)
         elif message.action == 'repl-cmd':
