@@ -20,6 +20,16 @@ class Keys(Enum):
     END = 65367
 
 
+def build_write_string(messages):
+    # given a repl reply, build up the text to reply
+    reply_string = []
+    for i in messages:
+        # the ast list first entry must match "write string"
+        if str(i.data.ast[0]) == ':write-string':
+            reply_string.append(str(i.data.ast[1:-1]))
+    return ''.join(reply_string)
+
+
 class Console:
     def __init__(self, font):
         self.widget = Gtk.ScrolledWindow()
@@ -124,10 +134,13 @@ class Console:
         # grab the text between the iters
         line_text = self.buffer.get_slice(line_start_pos, end_line_pos, False)
         self.process(line_text)
-        # TODO: Rest of this needs to be done when the results of the REPL come in
-        response = 'This is TODO'
+        # TODO: Disallow edits until message comes in
+
+    def eval_results(self, message):
+        display_string = build_write_string(message.data)
+        end_line_pos = self.buffer.get_end_iter()
         # insert new text to the end of the buffer, move the cursor and set the line start again
-        new_text = f'\n* {response}\n* '
+        new_text = f'\n* {display_string}\n* '
         self.buffer.insert(end_line_pos, new_text)
         new_end = self.buffer.get_end_iter()
         self.buffer.place_cursor(new_end)
@@ -170,5 +183,7 @@ class Console:
             self.text_view.override_font(message.data)
         elif message.action == 'update_binary':
             pass
+        elif message.action == 'eval-return':
+            self.eval_results(message)
         else:
             logger.error(f'Console cannot understand action {message.action}')

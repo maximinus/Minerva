@@ -249,7 +249,7 @@ class SwankClient:
                 # nothing to do except tidy up
                 self.received_queue = []
                 break
-            oldest_message.data = self.received_queue
+            return_message.data = self.received_queue
             self.received_queue = []
             message_queue.message(return_message)
             break
