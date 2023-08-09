@@ -43,9 +43,10 @@ class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
         logger.info('Starting Minerva GUI')
-        message_queue.set_resolver(self.resolver)
         self.buffers = Buffers()
         self.lisp_repl = SwankClient(ROOT_DIRECTORY)
+        message_queue.set_resolver(self.resolver)
+        self.lisp_repl.swank_init()
 
         self.set_default_size(800, 600)
 

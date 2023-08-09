@@ -4,7 +4,6 @@ import threading
 from enum import Enum
 from pathlib import Path
 from sexpdata import loads
-from datetime import datetime
 
 from minerva.logs import logger
 from minerva.actions import message_queue, Message, Target
@@ -79,6 +78,7 @@ class SwankMessage:
         # the important point is that it starts (:some_message ...
         self.ast = loads(text_message)
         self.message_type = str(self.ast[0])
+        self.raw = text_message
 
     @property
     def last(self):
@@ -116,6 +116,10 @@ def get_message(sock, timeout=0):
         else:
             sock.settimeout(None)
         length_data = sock.recv(6)
+        if len(length_data) == 0:
+            # nothing was returned, swank server is likely dead
+            return
+        print(f'Len data: {length_data}')
         length = int(length_data, 16)
         all_data = []
         while length > 0:
@@ -126,6 +130,7 @@ def get_message(sock, timeout=0):
                 all_data.append(sock.recv(4096))
                 length -= 4096
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
+        print(f'Got: {joined_data}')
         return SwankMessage(joined_data)
     except socket.error:
         # not always an error, since we poll most of the time anyway
@@ -138,7 +143,6 @@ def get_all_messages(sock, event):
         # loop forever and raise messages
         data = get_message(sock, timeout=2)
         if data is not None:
-            print('Sending message', flush=True)
             message_queue.message(Message(Target.SWANK, 'message', data))
         if event.is_set():
             # end this event and exit
@@ -146,10 +150,11 @@ def get_all_messages(sock, event):
 
 
 class FutureMessage:
-    def __init__(self, cmd, return_event, thread):
+    def __init__(self, cmd, return_event, thread, counter):
         self.cmd = cmd
         self.return_event = return_event
         self.thread = thread
+        self.counter = counter
 
 
 class SwankClient:
@@ -171,8 +176,6 @@ class SwankClient:
         self.thread_event = None
         self.start_listener()
         self.connected = True
-        # everything is ready
-        self.swank_init()
 
     def swank_init(self):
         # send init command
@@ -225,14 +228,10 @@ class SwankClient:
         if not self.connected:
             logger.info('Not sending message: Lisp instance not connected')
             return
-        # TODO: send more data
-        self.message_queue.append(FutureMessage(cmd, return_event, thread))
-        if len(self.message_queue) == 1:
-            # send the message right away
-            self.swank_rex(cmd, self.counter, thread)
-        else:
-            print(f'Queuing message #{self.counter}')
+        self.message_queue.append(FutureMessage(cmd, return_event, thread, self.counter))
         self.counter += 1
+        if len(self.message_queue) == 1:
+            self.swank_rex(cmd, self.counter - 1, thread)
 
     def eval(self, exp):
         # helper function for simple evaluations
@@ -245,7 +244,7 @@ class SwankClient:
         return_value = swank_message.data.last
         while len(self.message_queue) > 0:
             oldest_message = self.message_queue.pop(0)
-            if str(oldest_message[0]) != return_value:
+            if str(oldest_message.counter) != return_value:
                 continue
             # we are looking at the right message
             return_message = oldest_message.return_event
@@ -258,14 +257,15 @@ class SwankClient:
             message_queue.message(return_message)
             break
         # send next message to swank if it exists
-        if self.message_queue > 0:
-            next = self.message_queue.pop(0)
-            self.send_swank_message(next.cmd, next.return_event, next.thread)
+        if len(self.message_queue) > 0:
+            next = self.message_queue[0]
+            self.swank_rex(next.cmd, next.counter, next.thread)
 
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
         message_type = swank_message.data.message_type
         print(f'Got swank reply: {message_type}')
+        print(swank_message.data.raw)
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)
         elif message_type == SwankType.PING:
@@ -279,7 +279,7 @@ class SwankClient:
         self.swank_send(response)
 
     def message(self, message):
-        print(f'Got message {message.action}')
+        print(f'Got resolver message {message.action}')
         if message.action == 'message':
             self.handle_message(message)
         elif message.action == 'repl-cmd':
@@ -294,11 +294,10 @@ class SwankClient:
 
 
 if __name__ == '__main__':
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((HOST, PORT))
-    sock.setblocking(True)
-    ev = threading.Event()
-    th = threading.Thread(target=get_all_messages, args=(sock, ev))
-    th.start()
+    client = SwankClient(None)
+    message_queue.set_resolver(client.message)
+    client.swank_init()
+    # this will be sent after the init is complete
+    client.eval('(+ 1 2)')
     while True:
         pass
