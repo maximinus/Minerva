@@ -1,5 +1,7 @@
 import socket
 import threading
+import subprocess
+import time
 
 from enum import Enum
 from pathlib import Path
@@ -43,6 +45,7 @@ class LispRuntime:
         # controls the lisp binary that runs swank
         self.lisp_binary = binary_path
         self.swank_file = self.get_swank_file(root_path)
+        logger.info(f'Swank startup file found at {self.swank_file}')
         self.process = None
 
     @property
@@ -54,10 +57,19 @@ class LispRuntime:
             logger.info('Assuming Lisp server already started')
             return
         logger.info(f'Starting Lisp server at {self.lisp_binary}')
-        #self.process = subprocess.run()
+        self.process = subprocess.Popen([self.lisp_binary, '--load', str(self.swank_file)],
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def stop(self):
-        pass
+        if self.process is None:
+            # already stopped
+            return
+        self.process.terminate()
+        try:
+            self.process.communicate(timeout=0.2)
+        except subprocess.TimeoutExpired:
+            logger.error('Process timed out on close - killing')
+            self.process.kill()
 
     def get_swank_file(self, root_dir):
         if root_dir is None:

@@ -44,7 +44,7 @@ class MinervaWindow(Gtk.Window):
         super().__init__(title="Minerva Lisp IDE")
         logger.info('Starting Minerva GUI')
         self.buffers = Buffers()
-        self.lisp_repl = SwankClient(ROOT_DIRECTORY)
+        self.lisp_repl = SwankClient(ROOT_DIRECTORY, config.lisp_binary)
         message_queue.set_resolver(self.resolver)
         self.lisp_repl.swank_init()
 
@@ -151,6 +151,8 @@ class MinervaWindow(Gtk.Window):
 
     def quit_minerva(self):
         handler.close()
+        # send close message to swank
+        self.lisp_repl.stop_listener()
         Gtk.main_quit()
 
     def run_code(self):
@@ -183,8 +185,12 @@ class MinervaWindow(Gtk.Window):
             logger.error(f'Window cannot understand action {message.action}')
 
 
+def exit_app(app):
+    app.quit_minerva()
+
+
 if __name__ == '__main__':
     app = MinervaWindow()
-    app.connect("destroy", Gtk.main_quit)
+    app.connect('destroy', exit_app)
     app.show_all()
     Gtk.main()

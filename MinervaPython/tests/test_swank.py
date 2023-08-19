@@ -1,6 +1,8 @@
+import os.path
 from unittest import TestCase
+from pathlib import Path
 
-from minerva.swank import SwankMessage
+from minerva.swank import SwankMessage, LispRuntime
 
 
 class TestMessage(TestCase):
@@ -18,3 +20,27 @@ class TestMessage(TestCase):
         sent = '(:return (:ok ("(+ &rest ===> numbers <===)" t)) 8)'
         message = SwankMessage(sent)
         self.assertEqual(message.ast[2], 8)
+
+
+def get_swank_dir():
+    # return based on this file in ./tests
+    filepath = Path(__file__).parent.parent
+    return filepath
+
+
+class TestLispBinary(TestCase):
+    swank_path = get_swank_dir()
+    lisp_path = '/usr/bin/sbcl'
+
+    def test_swank_file_exists(self):
+        bin = LispRuntime(self.swank_path, self.lisp_path)
+        self.assertFalse(len(str(bin.swank_file)) == 0)
+
+    def test_not_running_at_start(self):
+        bin = LispRuntime(self.swank_path, self.lisp_path)
+        self.assertFalse(bin.running)
+
+    def test_cannot_run_without_binary_path(self):
+        bin = LispRuntime(self.swank_path, None)
+        bin.start()
+        self.assertFalse(bin.running)
