@@ -26,8 +26,9 @@ def build_write_string(messages):
     for i in messages:
         # the ast list first entry must match "write string"
         if str(i.data.ast[0]) == ':write-string':
-            reply_string.append(str(i.data.ast[1:-1]))
-    return ''.join(reply_string)
+            reply_string.append(''.join([str(x) for x in i.data.ast[1:-1]]))
+    # split the string up into lines
+    return ''.join(reply_string).splitlines()
 
 
 class Console:
@@ -137,11 +138,14 @@ class Console:
         # TODO: Disallow edits until message comes in
 
     def eval_results(self, message):
-        display_string = build_write_string(message.data)
-        end_line_pos = self.buffer.get_end_iter()
-        # insert new text to the end of the buffer, move the cursor and set the line start again
-        new_text = f'\n* {display_string}\n* '
-        self.buffer.insert(end_line_pos, new_text)
+        display_strings = build_write_string(message.data)
+        # insert all new lines
+        for line in display_strings:
+            end_line_pos = self.buffer.get_end_iter()
+            # insert new text to the end of the buffer, move the cursor and set the line start again
+            new_text = f'\n> {line}\n* '
+            self.buffer.insert(end_line_pos, new_text)
+        # reset marks etc...
         new_end = self.buffer.get_end_iter()
         self.buffer.place_cursor(new_end)
         # remove the mark
