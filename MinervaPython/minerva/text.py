@@ -24,14 +24,40 @@ def get_name_label(html_text, color=None):
     return label
 
 
+class TextOverlay(Gtk.Dialog):
+    # an overlay to put over the text showing predictive text
+    def __init__(self, parent):
+        super().__init__()
+        self.set_visible(True)
+        self.set_decorated(False)
+        self.set_transient_for(parent)
+        self.lines = self.get_content_area()
+        self.lines.set_orientation(orientation=Gtk.Orientation.VERTICAL)
+        self.lines.margin = 2
+        self.lines.set_halign(Gtk.Align.START)
+        self.lines.set_valign(Gtk.Align.START)
+        # add the example lines
+        self.add_single_line('defclass name (super) (slot) options')
+        self.add_single_line('defmacro name (args ...) form')
+        self.add_single_line('defun name (args ...)')
+
+    def add_single_line(self, text):
+        new_label = Gtk.Label()
+        new_label.set_markup(f'<span font_desc="Mono Normal 10">{text}</span>')
+        new_label.set_halign(Gtk.Align.START)
+        new_label.set_valign(Gtk.Align.START)
+        self.lines.pack_start(new_label, False, False, 0)
+
+
 class TextBuffer:
     def __init__(self, text_view, filename=None):
         self.text_view = text_view
         self.filename = filename
         self.saved = False
-        # this means we have been loaded, so therefore are also currently saved
+        # this means we have been loaded, so also currently saved
         if filename is not None:
             self.saved = True
+
 
     def get_label(self):
         # this is actually a box

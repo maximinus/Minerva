@@ -1,13 +1,13 @@
 import socket
 import threading
 import subprocess
-import time
 
 from enum import Enum
 from pathlib import Path
 from sexpdata import loads
 
 from minerva.logs import logger
+from minerva.preferences import config
 from minerva.actions import message_queue, Message, Target
 
 # Python client for swank server
@@ -174,16 +174,18 @@ class SwankClient:
         self.message_queue = []
         self.received_queue = []
         self.connected = False
+        self.listener_thread = None
+        self.thread_event = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
+        if not config.start_repl:
+            return
         self.swank_server.start()
         self.counter = 1
         self.sock = self.create_connection()
         if self.sock is None:
             logger.error('Could not connect to Lisp instance')
             return
-        self.listener_thread = None
-        self.thread_event = None
         self.start_listener()
         self.connected = True
 

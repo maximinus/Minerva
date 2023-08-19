@@ -6,7 +6,7 @@ from pathlib import Path
 
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
-from minerva.text import TextBuffer, create_text_view, Buffers
+from minerva.text import TextBuffer, TextOverlay, create_text_view, Buffers
 from minerva.actions import get_action, add_window_actions, message_queue, Target
 from minerva.console import Console
 from minerva.searchbar import SearchBar
@@ -18,7 +18,7 @@ from minerva.helpers import messagebox
 from minerva.swank import SwankClient
 
 
-VERSION = '0.02'
+VERSION = '0.03'
 ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
@@ -27,7 +27,7 @@ ROOT_DIRECTORY = Path().resolve()
 # Add HTML view on help menu
 # When last buffer is removed, keep the notebook size
 # Show errors in example code
-# open a REPL with SBCL and use the console
+# Show overlay under code when typing
 
 
 def action_router(caller, action, data=None):
@@ -60,6 +60,9 @@ class MinervaWindow(Gtk.Window):
 
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
+        self.code_hint_overlay = TextOverlay(self)
+        self.code_hint_overlay.show_all()
+
         page_data = create_text_view(config.editor_font)
         self.buffers.add_buffer(TextBuffer(page_data[1]))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())

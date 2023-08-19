@@ -22,6 +22,7 @@ class Config:
         self.editor_font = None
         self.repl_font = None
         self.lisp_binary = None
+        self.start_repl = True
         self.load_config_file()
 
     def load_config_file(self):
@@ -34,6 +35,7 @@ class Config:
             self.editor_font = data['editor_font']
             self.repl_font = data['repl_font']
             self.lisp_binary = data['lisp_binary']
+            self.start_repl = data.get('start_repl', True)
             logger.info(f'Loaded config file at {DEFAULT_CONFIG_FILE}')
         except (ValueError, OSError, FileNotFoundError):
             # could not load the file
