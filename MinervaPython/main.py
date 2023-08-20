@@ -71,7 +71,7 @@ class MinervaWindow(Gtk.Window):
         self.code_hint_overlay = TextOverlay(self)
 
         page_data = create_text_view(config.editor_font)
-        self.buffers.add_buffer(TextBuffer(page_data[1]))
+        self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         # add callback for change of text view
         self.notebook.connect('switch_page', self.switch_page)
@@ -96,7 +96,6 @@ class MinervaWindow(Gtk.Window):
 
     def display(self):
         self.show_all()
-        self.code_hint_overlay.show_all()
 
     def resolver(self, message):
         # pass messages on to the correct area
@@ -115,7 +114,7 @@ class MinervaWindow(Gtk.Window):
     def new_file(self):
         # add an empty notebook
         page_data = create_text_view(config.editor_font)
-        self.buffers.add_buffer(TextBuffer(page_data[1]))
+        self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         self.notebook.show_all()
         self.notebook.set_current_page(-1)
@@ -153,7 +152,7 @@ class MinervaWindow(Gtk.Window):
             with open(filename) as f:
                 text = ''.join(f.readlines())
             page_data = create_text_view(config.editor_font, text=text)
-            self.buffers.add_buffer(TextBuffer(page_data[1], filename))
+            self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay, filename))
             self.status.push(self.status_id, f'Loaded {filename}')
             self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
             # switch to the one. Must display before switching

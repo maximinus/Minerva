@@ -28,7 +28,7 @@ class TextOverlay(Gtk.Window):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):
         super().__init__(Gtk.WindowType.POPUP)
-        self.set_visible(True)
+        self.set_visible(False)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
         self.set_transient_for(parent)
@@ -64,14 +64,26 @@ class TextOverlay(Gtk.Window):
 
 
 class TextBuffer:
-    def __init__(self, text_view, filename=None):
+    def __init__(self, text_view, code_hint, filename=None):
         self.text_view = text_view
+        self.code_hint = code_hint
         self.filename = filename
         self.saved = False
         # this means we have been loaded, so also currently saved
         if filename is not None:
             self.saved = True
+        # we need callbacks when we gain and lose keyboard focus
+        self.text_view.connect('focus-in-event', self.gained_focus)
+        self.text_view.connect('focus-out-event', self.lost_focus)
 
+    def gained_focus(self, _event, _data):
+        print('Show')
+        self.code_hint.show_all()
+
+    def lost_focus(self, _event, _data):
+        # always hide the codehint window
+        print('Hide')
+        self.code_hint.hide()
 
     def get_label(self):
         # this is actually a box
