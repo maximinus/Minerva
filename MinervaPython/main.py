@@ -1,7 +1,7 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, Gio
 from pathlib import Path
 
 from minerva.menu import get_menu_from_config
@@ -28,6 +28,8 @@ ROOT_DIRECTORY = Path().resolve()
 # When last buffer is removed, keep the notebook size
 # Show errors in example code
 # Show overlay under code when typing
+# handle REPL errors
+# handle REPL disconnects / problems
 
 
 def action_router(caller, action, data=None):
@@ -37,6 +39,12 @@ def action_router(caller, action, data=None):
             function(kwargs=data)
         else:
             function()
+
+
+def load_css_provider():
+    p = Gtk.CssProvider()
+    p.load_from_file(Gio.file_new_for_path('./data/widgets.css'))
+    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
 class MinervaWindow(Gtk.Window):
@@ -61,7 +69,6 @@ class MinervaWindow(Gtk.Window):
         # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
         self.code_hint_overlay = TextOverlay(self)
-        self.code_hint_overlay.show_all()
 
         page_data = create_text_view(config.editor_font)
         self.buffers.add_buffer(TextBuffer(page_data[1]))
@@ -86,6 +93,10 @@ class MinervaWindow(Gtk.Window):
         self.preferences = PreferencesDialog()
         self.about = AboutDialog()
         logger.info('Finished setup')
+
+    def display(self):
+        self.show_all()
+        self.code_hint_overlay.show_all()
 
     def resolver(self, message):
         # pass messages on to the correct area
@@ -193,7 +204,8 @@ def exit_app(app):
 
 
 if __name__ == '__main__':
+    load_css_provider()
     app = MinervaWindow()
     app.connect('destroy', exit_app)
-    app.show_all()
+    app.display()
     Gtk.main()

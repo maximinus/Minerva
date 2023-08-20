@@ -1,0 +1,8 @@
+.autocomplete_selected {
+    background-image: none;
+    background-color: rgb(128, 128, 255);
+}
+
+.autocomplete_not_selected {
+    background-image: none;
+}

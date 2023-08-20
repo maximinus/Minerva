@@ -24,28 +24,42 @@ def get_name_label(html_text, color=None):
     return label
 
 
-class TextOverlay(Gtk.Dialog):
+class TextOverlay(Gtk.Window):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):
-        super().__init__()
+        super().__init__(Gtk.WindowType.POPUP)
         self.set_visible(True)
         self.set_decorated(False)
+        self.set_skip_taskbar_hint(True)
         self.set_transient_for(parent)
-        self.lines = self.get_content_area()
+        self.set_resizable(False)
+        self.set_halign(Gtk.Align.START)
+        self.set_valign(Gtk.Align.START)
+        geo_hints = Gdk.Geometry()
+        geo_hints.min_width = 0
+        geo_hints.min_height = 0
+        self.set_geometry_hints(None, geo_hints, Gdk.WindowHints.MIN_SIZE)
+        self.lines = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lines.set_orientation(orientation=Gtk.Orientation.VERTICAL)
         self.lines.margin = 2
         self.lines.set_halign(Gtk.Align.START)
         self.lines.set_valign(Gtk.Align.START)
         # add the example lines
         self.add_single_line('defclass name (super) (slot) options')
-        self.add_single_line('defmacro name (args ...) form')
+        self.add_single_line('defmacro name (args ...) form', selected=True)
         self.add_single_line('defun name (args ...)')
+        self.add(self.lines)
 
-    def add_single_line(self, text):
+    def add_single_line(self, text, selected=False):
         new_label = Gtk.Label()
         new_label.set_markup(f'<span font_desc="Mono Normal 10">{text}</span>')
-        new_label.set_halign(Gtk.Align.START)
+        new_label.set_halign(Gtk.Align.FILL)
         new_label.set_valign(Gtk.Align.START)
+        new_label.set_xalign(0.0)
+        if selected:
+            new_label.get_style_context().add_class('autocomplete_selected')
+        else:
+            new_label.get_style_context().add_class('autocomplete_not_selected')
         self.lines.pack_start(new_label, False, False, 0)
 
 
