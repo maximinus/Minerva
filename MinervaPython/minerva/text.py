@@ -41,12 +41,12 @@ class TextOverlay(Gtk.Window):
         self.set_geometry_hints(None, geo_hints, Gdk.WindowHints.MIN_SIZE)
         self.lines = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lines.set_orientation(orientation=Gtk.Orientation.VERTICAL)
-        self.lines.margin = 2
         self.lines.set_halign(Gtk.Align.START)
         self.lines.set_valign(Gtk.Align.START)
+        self.lines.get_style_context().add_class('code_hint_box')
         # add the example lines
-        self.add_single_line('defclass name (super) (slot) options')
-        self.add_single_line('defmacro name (args ...) form', selected=True)
+        self.add_single_line('defclass name (super) (slot) options', selected=True)
+        self.add_single_line('defmacro name (args ...) form')
         self.add_single_line('defun name (args ...)')
         self.add(self.lines)
 
@@ -77,13 +77,28 @@ class TextBuffer:
         self.text_view.connect('focus-out-event', self.lost_focus)
 
     def gained_focus(self, _event, _data):
-        print('Show')
+        window_pos = self.get_window_position()
+        self.code_hint.move(window_pos[0], window_pos[1])
         self.code_hint.show_all()
+        parent = self.text_view.get_toplevel()
+        print(f'Main window: {parent.get_position()}')
+        print(f'Code window: {self.code_hint.get_position()}')
 
     def lost_focus(self, _event, _data):
         # always hide the codehint window
-        print('Hide')
         self.code_hint.hide()
+
+    def get_window_position(self):
+        # return the position the code hint window should be in
+        root = self.text_view.get_toplevel()
+        win_pos = root.get_position()
+        widget_pos = self.text_view.translate_coordinates(root, 0, 0)
+        print(widget_pos)
+        # [0] is for the strong cursor
+        cursor = self.text_view.get_cursor_locations(None)[0]
+        pos = self.text_view.buffer_to_window_coords(Gtk.TextWindowType.TEXT, cursor.x, cursor.y)
+        # add window position + cursor position
+        return [win_pos[0] + widget_pos[0] + pos[0], win_pos[1] + widget_pos[1] + pos[1] + 50]
 
     def get_label(self):
         # this is actually a box
