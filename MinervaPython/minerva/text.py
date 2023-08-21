@@ -77,7 +77,6 @@ class TextBuffer:
         # we need callbacks when we gain and lose keyboard focus
         self.text_view.connect('focus-in-event', self.gained_focus)
         self.text_view.connect('focus-out-event', self.lost_focus)
-        # TODO: Connect to cursor-moved event in the buffer, not the textview
         self.text_view.get_buffer().connect('notify::cursor-position', self.cursor_moved)
 
     def gained_focus(self, _event, _data):
