@@ -77,8 +77,22 @@ class TextBuffer:
         # we need callbacks when we gain and lose keyboard focus
         self.text_view.connect('focus-in-event', self.gained_focus)
         self.text_view.connect('focus-out-event', self.lost_focus)
+        # TODO: Connect to cursor-moved event in the buffer, not the textview
+        self.text_view.get_buffer().connect('notify::cursor-position', self.cursor_moved)
 
     def gained_focus(self, _event, _data):
+        self.set_code_hint_window()
+
+    def lost_focus(self, _event, _data):
+        # always hide the codehint window
+        self.code_hint.hide()
+
+    def cursor_moved(self, _buffer, _params):
+        # ideally we want to let the event handle itself and THEN update the window
+        self.set_code_hint_window()
+
+    def set_code_hint_window(self):
+        # update window decoration offset if not computed
         if self.window_decoration_height == 0:
             gdk_window = self.text_view.get_window(Gtk.TextWindowType.WIDGET)
             s1 = gdk_window.get_frame_extents().height
@@ -87,10 +101,6 @@ class TextBuffer:
         window_pos = self.get_window_position()
         self.code_hint.move(window_pos[0], window_pos[1])
         self.code_hint.show_all()
-
-    def lost_focus(self, _event, _data):
-        # always hide the codehint window
-        self.code_hint.hide()
 
     def get_window_position(self):
         # return the position the code hint window should be in
