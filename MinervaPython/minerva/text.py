@@ -98,10 +98,12 @@ class TextBuffer:
         win_pos = root.get_position()
         widget_pos = self.text_view.translate_coordinates(root, 0, 0)
         # [0] is for the strong cursor
+        foo = self.text_view.get_cursor_locations(None)
         cursor = self.text_view.get_cursor_locations(None)[0]
+        # we always want the window to be over the line below what we are typing
         pos = self.text_view.buffer_to_window_coords(Gtk.TextWindowType.TEXT, cursor.x, cursor.y)
-        # add window position + cursor position
-        height = win_pos[1] + widget_pos[1] + pos[1] + self.window_decoration_height
+        # add window position + cursor position + cursor height
+        height = win_pos[1] + widget_pos[1] + pos[1] + self.window_decoration_height + cursor.height
         return [win_pos[0] + widget_pos[0] + pos[0], height]
 
     def get_label(self):
