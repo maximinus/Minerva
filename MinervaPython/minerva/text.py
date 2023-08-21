@@ -64,6 +64,8 @@ class TextOverlay(Gtk.Window):
 
 
 class TextBuffer:
+    window_decoration_height = 0
+
     def __init__(self, text_view, code_hint, filename=None):
         self.text_view = text_view
         self.code_hint = code_hint
@@ -77,12 +79,14 @@ class TextBuffer:
         self.text_view.connect('focus-out-event', self.lost_focus)
 
     def gained_focus(self, _event, _data):
+        if self.window_decoration_height == 0:
+            gdk_window = self.text_view.get_window(Gtk.TextWindowType.WIDGET)
+            s1 = gdk_window.get_frame_extents().height
+            s2 = self.text_view.get_toplevel().get_allocation().height
+            self.window_decoration_height = s1 - s2
         window_pos = self.get_window_position()
         self.code_hint.move(window_pos[0], window_pos[1])
         self.code_hint.show_all()
-        parent = self.text_view.get_toplevel()
-        print(f'Main window: {parent.get_position()}')
-        print(f'Code window: {self.code_hint.get_position()}')
 
     def lost_focus(self, _event, _data):
         # always hide the codehint window
@@ -93,12 +97,12 @@ class TextBuffer:
         root = self.text_view.get_toplevel()
         win_pos = root.get_position()
         widget_pos = self.text_view.translate_coordinates(root, 0, 0)
-        print(widget_pos)
         # [0] is for the strong cursor
         cursor = self.text_view.get_cursor_locations(None)[0]
         pos = self.text_view.buffer_to_window_coords(Gtk.TextWindowType.TEXT, cursor.x, cursor.y)
         # add window position + cursor position
-        return [win_pos[0] + widget_pos[0] + pos[0], win_pos[1] + widget_pos[1] + pos[1] + 50]
+        height = win_pos[1] + widget_pos[1] + pos[1] + self.window_decoration_height
+        return [win_pos[0] + widget_pos[0] + pos[0], height]
 
     def get_label(self):
         # this is actually a box

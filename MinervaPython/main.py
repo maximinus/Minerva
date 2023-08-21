@@ -56,6 +56,7 @@ class MinervaWindow(Gtk.Window):
         message_queue.set_resolver(self.resolver)
         self.lisp_repl.swank_init()
 
+        # Note this size does NOT include window decorations
         self.set_default_size(800, 600)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
