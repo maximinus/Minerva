@@ -80,7 +80,12 @@ class MinervaWindow(Gtk.Window):
         self.console = Console(config.get('repl_font'))
         panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         panel.pack1(self.notebook, True, True)
-        panel.pack2(self.console.widget, True, True)
+
+        # The console needs to be in a notebook as well
+        self.bottom_notebook = Gtk.Notebook()
+        self.bottom_notebook.append_page(self.console.widget, Gtk.Label(label='Lisp REPL'))
+
+        panel.pack2(self.bottom_notebook, True, True)
         box.pack_start(panel, True, True, 0)
 
         # This status bar actually needs to hold more than just messages

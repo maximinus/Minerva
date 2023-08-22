@@ -46,7 +46,7 @@ class Console:
 
     def setup_text_view(self, font):
         self.text_view.override_font(Pango.FontDescription(font))
-        self.buffer.set_text('* SBCL 2.1.11\n* ')
+        self.buffer.set_text('* SBCL 2.1.11\n> ')
         end_pos = self.buffer.get_end_iter()
         self.buffer.place_cursor(end_pos)
         # put a mark here for the start of the line
