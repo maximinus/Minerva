@@ -47,6 +47,18 @@ def load_css_provider():
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
+def get_action_widget():
+    image = Gtk.Image()
+    image.set_from_file(f'./gfx/icons/minimize.png')
+    image.get_style_context().add_class('minimize_button')
+    minimize = Gtk.EventBox()
+    minimize.add(image)
+    # action widgets are hidden by default it seems, and we must show both!
+    minimize.show()
+    image.show()
+    return minimize
+
+
 class MinervaWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="Minerva Lisp IDE")
@@ -84,6 +96,8 @@ class MinervaWindow(Gtk.Window):
         # The console needs to be in a notebook as well
         self.bottom_notebook = Gtk.Notebook()
         self.bottom_notebook.append_page(self.console.widget, Gtk.Label(label='Lisp REPL'))
+        minimize = get_action_widget()
+        self.bottom_notebook.set_action_widget(minimize, Gtk.PackType.END)
 
         panel.pack2(self.bottom_notebook, True, True)
         box.pack_start(panel, True, True, 0)
