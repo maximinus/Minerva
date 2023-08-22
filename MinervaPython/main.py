@@ -23,6 +23,7 @@ ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
 # Allow REPL to be hidden
+#   This will mean we have to switch to a stackswitcher + stack
 # Improve the statusbar to show text position
 # Add HTML view on help menu
 # When last buffer is removed, keep the notebook size
@@ -87,20 +88,27 @@ class MinervaWindow(Gtk.Window):
         page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
+
         # add callback for change of text view
         self.notebook.connect('switch_page', self.switch_page)
-        self.console = Console(config.get('repl_font'))
-        panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-        panel.pack1(self.notebook, True, True)
 
+        self.panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        self.panel.pack1(self.notebook, True, True)
+
+        self.console = Console(config.get('repl_font'))
         # The console needs to be in a notebook as well
         self.bottom_notebook = Gtk.Notebook()
-        self.bottom_notebook.append_page(self.console.widget, Gtk.Label(label='Lisp REPL'))
+        # all widgets need to be a container, so we use a simple Gtk.Bin
+        container_bin = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        container_bin.pack_start(self.console.widget, True, True, 0)
+        self.bottom_notebook.append_page(container_bin, Gtk.Label(label='Lisp REPL'))
         minimize = get_action_widget()
+        # add the events now
+        minimize.connect('button_press_event', self.minimize_clicked)
         self.bottom_notebook.set_action_widget(minimize, Gtk.PackType.END)
-
-        panel.pack2(self.bottom_notebook, True, True)
-        box.pack_start(panel, True, True, 0)
+        self.bottom_notebook.set_size_request(0, 200)
+        self.panel.pack2(self.bottom_notebook, False, True)
+        box.pack_start(self.panel, True, True, 0)
 
         # This status bar actually needs to hold more than just messages
         # Add the cursor position on the RHS somehow
@@ -211,6 +219,17 @@ class MinervaWindow(Gtk.Window):
         # remove the notebook on this index
         # no need to worry about the data by this point
         self.notebook.remove_page(index)
+
+    def minimize_clicked(self, widget, event):
+        # remove all pages
+        for i in range(self.bottom_notebook.get_n_pages()):
+            print(f'Hiding: {self.bottom_notebook.get_nth_page(i)}')
+            # these are all boxes. We need to hide the content of the box
+            box = self.bottom_notebook.get_nth_page(i)
+            for child_widget in box.get_children():
+                child_widget.hide()
+        # set size and freeze the pane
+        self.bottom_notebook.set_size_request(0, 28)
 
     def message(self, message):
         if message.action == 'close_notebook':
