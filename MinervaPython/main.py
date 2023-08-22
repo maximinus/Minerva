@@ -52,12 +52,13 @@ class MinervaWindow(Gtk.Window):
         super().__init__(title="Minerva Lisp IDE")
         logger.info('Starting Minerva GUI')
         self.buffers = Buffers()
-        self.lisp_repl = SwankClient(ROOT_DIRECTORY, config.lisp_binary)
+        self.lisp_repl = SwankClient(ROOT_DIRECTORY, config.get('lisp_binary'))
         message_queue.set_resolver(self.resolver)
         self.lisp_repl.swank_init()
 
         # Note this size does NOT include window decorations
-        self.set_default_size(800, 600)
+        win_size = config.get('window_size')
+        self.set_default_size(win_size[0], win_size[1])
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.accel_group = Gtk.AccelGroup()
@@ -71,12 +72,12 @@ class MinervaWindow(Gtk.Window):
         self.notebook = Gtk.Notebook()
         self.code_hint_overlay = TextOverlay(self)
 
-        page_data = create_text_view(config.editor_font)
+        page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         # add callback for change of text view
         self.notebook.connect('switch_page', self.switch_page)
-        self.console = Console(config.repl_font)
+        self.console = Console(config.get('repl_font'))
         panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         panel.pack1(self.notebook, True, True)
         panel.pack2(self.console.widget, True, True)
@@ -85,7 +86,7 @@ class MinervaWindow(Gtk.Window):
         # This status bar actually needs to hold more than just messages
         # Add the cursor position on the RHS somehow
         self.status = Gtk.Statusbar()
-        self.status_id = self.status.get_context_id("Statusbar")
+        self.status_id = self.status.get_context_id('Statusbar')
         self.status.push(self.status_id, f'Minerva v{VERSION}')
         box.pack_start(self.status, False, False, 0)
 
@@ -114,7 +115,7 @@ class MinervaWindow(Gtk.Window):
 
     def new_file(self):
         # add an empty notebook
-        page_data = create_text_view(config.editor_font)
+        page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
         self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         self.notebook.show_all()
@@ -152,7 +153,7 @@ class MinervaWindow(Gtk.Window):
             # load the file and add to the textview
             with open(filename) as f:
                 text = ''.join(f.readlines())
-            page_data = create_text_view(config.editor_font, text=text)
+            page_data = create_text_view(config.get('editor_font'), text=text)
             self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay, filename))
             self.status.push(self.status_id, f'Loaded {filename}')
             self.notebook.append_page(page_data[0], self.buffers.get_index(-1).get_label())

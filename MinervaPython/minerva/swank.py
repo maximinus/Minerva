@@ -178,7 +178,7 @@ class SwankClient:
         self.thread_event = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
-        if not config.start_repl:
+        if not config.get('start_repl'):
             logger.info('Config says to not start Lisp instance')
             return
         self.swank_server.start()

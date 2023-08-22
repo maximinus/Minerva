@@ -19,11 +19,14 @@ DEFAULT_CONFIG_FILE = CONFIG_DIR / '.' / 'config' / 'minerva.config'
 class Config:
     def __init__(self):
         self.valid = True
-        self.editor_font = None
-        self.repl_font = None
-        self.lisp_binary = None
-        self.start_repl = True
+        self.data = {}
         self.load_config_file()
+
+    def get(self, key):
+        if key in self.data:
+            return self.data[key]
+        else:
+            return ''
 
     def load_config_file(self):
         # load the file, or create if it does not exist
@@ -31,11 +34,7 @@ class Config:
             self.create_default_config()
         try:
             with open(DEFAULT_CONFIG_FILE, 'r') as read_file:
-                data = json.load(read_file)
-            self.editor_font = data['editor_font']
-            self.repl_font = data['repl_font']
-            self.lisp_binary = data['lisp_binary']
-            self.start_repl = data.get('start_repl', True)
+                self.data = json.load(read_file)
             logger.info(f'Loaded config file at {DEFAULT_CONFIG_FILE}')
         except (ValueError, OSError, FileNotFoundError):
             # could not load the file
@@ -43,18 +42,16 @@ class Config:
             self.valid = False
 
     def create_default_config(self):
-        self.editor_font = None
-        self.repl_font = None
-        self.lisp_binary = '/usr/bin/sbcl'
+        self.data = {'editor_font': 'Inconsolata 12',
+                     'repl_font': 'Inconsolata 12',
+                     'lisp_binary': '/usr/bin/sbcl',
+                     'start_repl': True}
         self.update()
 
     def update(self):
-        data = {'editor_font': self.editor_font,
-                'repl_font': self.repl_font,
-                'lisp_binary': self.lisp_binary}
         # save the config fie as values have changed
         with open(DEFAULT_CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            json.dump(self.data, f, ensure_ascii=False, indent=4)
         logger.info('Updated config file')
 
 
