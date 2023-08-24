@@ -98,15 +98,15 @@ class MinervaWindow(Gtk.Window):
         self.console = Console(config.get('repl_font'))
         # The console needs to be in a notebook as well
         self.bottom_notebook = Gtk.Notebook()
-        # all widgets need to be a container, so we use a simple Gtk.Bin
-        container_bin = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        container_bin.pack_start(self.console.widget, True, True, 0)
-        self.bottom_notebook.append_page(container_bin, Gtk.Label(label='Lisp REPL'))
+        self.bottom_notebook.append_page(self.console.widget, Gtk.Label(label='Lisp REPL'))
         minimize = get_action_widget()
         # add the events now
         minimize.connect('button_press_event', self.minimize_clicked)
+        # old size of panel before being minimized, or -1 if not minimized
+        self.minimized = -1
+
         self.bottom_notebook.set_action_widget(minimize, Gtk.PackType.END)
-        self.bottom_notebook.set_size_request(0, 200)
+        self.bottom_notebook.set_size_request(-1, 200)
         self.panel.pack2(self.bottom_notebook, False, True)
         box.pack_start(self.panel, True, True, 0)
 
@@ -221,15 +221,17 @@ class MinervaWindow(Gtk.Window):
         self.notebook.remove_page(index)
 
     def minimize_clicked(self, widget, event):
-        # remove all pages
-        for i in range(self.bottom_notebook.get_n_pages()):
-            print(f'Hiding: {self.bottom_notebook.get_nth_page(i)}')
-            # these are all boxes. We need to hide the content of the box
-            box = self.bottom_notebook.get_nth_page(i)
-            for child_widget in box.get_children():
-                child_widget.hide()
-        # set size and freeze the pane
-        self.bottom_notebook.set_size_request(0, 28)
+        if self.minimized < 0:
+            self.minimized = self.panel.get_position()
+            pane_size = self.panel.get_allocated_height()
+            # notebook header size is size of notebook - size of thing inside
+            notebook_size = self.bottom_notebook.get_allocated_height()
+            header_size = notebook_size - self.bottom_notebook.get_nth_page(0).get_allocated_height()
+            self.panel.set_position(pane_size - header_size)
+        else:
+            # reset to the old size
+            self.panel.set_position(self.minimized)
+            self.minimized = -1
 
     def message(self, message):
         if message.action == 'close_notebook':
