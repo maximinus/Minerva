@@ -22,15 +22,17 @@ VERSION = '0.03'
 ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
-# Allow REPL to be hidden
-#   This will mean we have to switch to a stackswitcher + stack
-# Improve the statusbar to show text position
+# show file and lisp trees on left-hand side
+# show project select / start on right hand side
+# remember projects and their details in a special folder
+# Improve the statusbar to show text position and notices
 # Add HTML view on help menu
 # When last buffer is removed, keep the notebook size
 # Show errors in example code
-# Show overlay under code when typing
 # handle REPL errors
 # handle REPL disconnects / problems
+# show code autocomplete on lisp
+# handle indentation automatically
 
 
 def action_router(caller, action, data=None):
