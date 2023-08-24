@@ -93,6 +93,11 @@ class MinervaWindow(Gtk.Window):
         self.notebook.connect('switch_page', self.switch_page)
 
         self.panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+
+        # the top of the panel is another panel which is horizontal
+        # left is a notebook with 2 trees
+        self.tree_panel =
+
         self.panel.pack1(self.notebook, True, True)
 
         self.console = Console(config.get('repl_font'))
