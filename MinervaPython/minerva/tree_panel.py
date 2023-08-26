@@ -3,7 +3,7 @@ import os
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, GdkPixbuf
 
 from pathlib import Path
 
@@ -20,25 +20,13 @@ class MinvTree(Gtk.Notebook):
         self.file_store = Gtk.ListStore(str, str, int)
         self.get_files()
 
-        renderer_1 = Gtk.CellRendererText()
-        column_1 = Gtk.TreeViewColumn('File Name', renderer_1, text=0)
-        # Calling set_sort_column_id makes the treeViewColumn sortable
-        # by clicking on its header. The column is sorted by
-        # the ListStore column index passed to it
-        # (in this case 0 - the first ListStore column)
-        column_1.set_sort_column_id(0)
-        self.file_tree.append_column(column_1)
+        renderer0 = Gtk.CellRendererPixbuf()
+        column0 = Gtk.TreeViewColumn('', renderer0)
+        renderer1 = Gtk.CellRendererText()
+        column1 = Gtk.TreeViewColumn('File Name', renderer1, text=0)
 
-        # xalign=1 right-aligns the file sizes in the second column
-        renderer_2 = Gtk.CellRendererText(xalign=1)
-        # text=1 pulls the data from the second ListStore column
-        # which contains filesizes in bytes formatted as strings
-        # with thousand separators
-        column_2 = Gtk.TreeViewColumn('Size in bytes', renderer_2, text=1)
-        # Mak the Treeview column sortable by the third ListStore column
-        # which contains the actual file sizes
-        column_2.set_sort_column_id(2)
-        self.file_tree.append_column(column_2)
+        self.file_tree.append_column(column0)
+        self.file_tree.append_column(column1)
 
         # Use ScrolledWindow to make the TreeView scrollable
         # Otherwise the TreeView would expand to show all items
@@ -68,34 +56,48 @@ class DirectoryTree:
                 self.files.append(fullpath.name)
 
 
+def get_file_icons():
+    root = Path(__file__).parent.parent / 'gfx' / 'file_icons'
+    return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in ['folder', 'lisp', 'text']]
+
+
 class FileTree(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
-        self.store = Gtk.TreeStore(str)
-        self.treeview = Gtk.TreeView(model=self.store)
-        renderer_1 = Gtk.CellRendererText()
-        column_1 = Gtk.TreeViewColumn('Filename', renderer_1, text=0)
-        self.treeview.append_column(column_1)
+        # design the columns and add them
+        column = Gtk.TreeViewColumn('Filename')
+        cell_text = Gtk.CellRendererText()
+        cell_image = Gtk.CellRendererPixbuf()
+
+        column.pack_start(cell_image, False)
+        column.pack_start(cell_text, False)
+        column.add_attribute(cell_image, 'pixbuf', 0)
+        column.add_attribute(cell_text, 'text', 1)
+
+        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str)
+        self.treeview = Gtk.TreeView(self.store)
+        self.treeview.append_column(column)
+
         # do the calculation at the end
-        get_tree_view(self.store, None, None)
+        get_tree_view(self.store, None, None, get_file_icons())
 
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
 
 
-def get_tree_view(store, row, new_dir):
+def get_tree_view(store, row, new_dir, images):
     if new_dir is None:
         new_dir = DirectoryTree(Path(__file__).parent.parent)
     for next_dir in new_dir.directories:
         if row is None:
-            new_row = store.append(None, [next_dir.dir_path])
+            new_row = store.append(None, [images[0], next_dir.dir_path])
         else:
-            new_row = store.append(row, [next_dir.dir_path])
-        get_tree_view(store, new_row, next_dir)
+            new_row = store.append(row, [images[0], next_dir.dir_path])
+        get_tree_view(store, new_row, next_dir, images)
 
     for file in new_dir.files:
-        store.append(row, [file])
+        store.append(row, [images[1], file])
 
 
 if __name__ == '__main__':
