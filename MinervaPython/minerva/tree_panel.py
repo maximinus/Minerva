@@ -8,38 +8,6 @@ from gi.repository import Gtk, GdkPixbuf
 from pathlib import Path
 
 
-class MinvTree(Gtk.Notebook):
-    def __init__(self):
-        super().__init__()
-        self.set_tab_pos(Gtk.PositionType.LEFT)
-        self.set_scrollable(False)
-        self.set_tab_reordable(False)
-        # to this panel we add 2 trees
-        self.lisp_tree = Gtk.TreeView()
-        self.file_tree = Gtk.TreeView()
-        self.file_store = Gtk.ListStore(str, str, int)
-        self.get_files()
-
-        renderer0 = Gtk.CellRendererPixbuf()
-        column0 = Gtk.TreeViewColumn('', renderer0)
-        renderer1 = Gtk.CellRendererText()
-        column1 = Gtk.TreeViewColumn('File Name', renderer1, text=0)
-
-        self.file_tree.append_column(column0)
-        self.file_tree.append_column(column1)
-
-        # Use ScrolledWindow to make the TreeView scrollable
-        # Otherwise the TreeView would expand to show all items
-        # Only allow vertical scrollbar
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_window.add(self.file_tree)
-        scrolled_window.set_min_content_height(200)
-
-        self.add(scrolled_window)
-        self.show_all()
-
-
 class DirectoryTree:
     def __init__(self, directory):
         self.dir_path = directory.name
@@ -61,9 +29,55 @@ def get_file_icons():
     return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in ['folder', 'lisp', 'text']]
 
 
+def get_tree_view(store, row, new_dir, images):
+    if new_dir is None:
+        new_dir = DirectoryTree(Path(__file__).parent.parent)
+    for next_dir in new_dir.directories:
+        sort_value = f'D_{next_dir.dir_path}'
+        if row is None:
+            new_row = store.append(None, [images[0], next_dir.dir_path, sort_value])
+        else:
+            new_row = store.append(row, [images[0], next_dir.dir_path, sort_value])
+        get_tree_view(store, new_row, next_dir, images)
+
+    for file in new_dir.files:
+        sort_value = f'F_{file}'
+        if file.endswith('lisp'):
+            store.append(row, [images[1], file, sort_value])
+        else:
+            store.append(row, [images[2], file, sort_value])
+
+
+def file_sort(model, row1, row2, _user_data):
+    # we look at the 3rd column of each row
+    # directories start with D_ and files F_; directories come first
+    value1 = model.get_value(row1, 2)
+    value2 = model.get_value(row2, 2)
+
+    print(value1, value2)
+
+    if value1.startswith('D_'):
+        if value2.startswith('F_'):
+            return -1
+        # both directories
+        if value1 < value2:
+            return -1
+        return 1
+    # value1 is a file
+    if value2.startswith('D_'):
+        return 1
+    # both files
+    if value1 < value2:
+        return -1
+    return 1
+
+
 class FileTree(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
+        # last column is used for sorting
+        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str)
+        self.store.set_sort_func(2, file_sort, None)
         # design the columns and add them
         column = Gtk.TreeViewColumn('Filename')
         cell_text = Gtk.CellRendererText()
@@ -73,9 +87,9 @@ class FileTree(Gtk.ScrolledWindow):
         column.pack_start(cell_text, False)
         column.add_attribute(cell_image, 'pixbuf', 0)
         column.add_attribute(cell_text, 'text', 1)
+        column.set_sort_column_id(2)
 
-        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str)
-        self.treeview = Gtk.TreeView(self.store)
+        self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
 
         # do the calculation at the end
@@ -84,20 +98,6 @@ class FileTree(Gtk.ScrolledWindow):
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
-
-
-def get_tree_view(store, row, new_dir, images):
-    if new_dir is None:
-        new_dir = DirectoryTree(Path(__file__).parent.parent)
-    for next_dir in new_dir.directories:
-        if row is None:
-            new_row = store.append(None, [images[0], next_dir.dir_path])
-        else:
-            new_row = store.append(row, [images[0], next_dir.dir_path])
-        get_tree_view(store, new_row, next_dir, images)
-
-    for file in new_dir.files:
-        store.append(row, [images[1], file])
 
 
 if __name__ == '__main__':
