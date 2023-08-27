@@ -30,6 +30,11 @@ def get_file_icons():
     return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in ['folder', 'lisp', 'text']]
 
 
+def get_lisp_icons():
+    root = Path(__file__).parent.parent / 'gfx' / 'lisp_icons'
+    return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in ['folder', 'lisp', 'text']]
+
+
 def get_tree_view(store, row, new_dir, images):
     # directory paths are full paths
     if new_dir is None:
@@ -74,7 +79,6 @@ class FileTreeContext(Gtk.Menu):
 class FileTree(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
-        # last column is used for sorting
         # icon, displayed name, sort name, full filepath
         # only the first 2 are displayed
         self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
@@ -104,7 +108,8 @@ class FileTree(Gtk.ScrolledWindow):
         self.add(self.treeview)
 
     def row_double_click(self, path, column, _data):
-        print('Clicked!')
+        # TODO: Open this if it is a file
+        print('Open menu')
 
     def button_press(self, widget, event):
         # run the models default button handler
@@ -125,7 +130,39 @@ class FileTree(Gtk.ScrolledWindow):
         return True
 
     def context_selected(self, widget, data):
+        # TODO: Based on the data, perform action on this widget
         print(f'Selected!: {data}')
+
+
+
+class Lisptree(Gtk.ScrolledWindow):
+    def __init__(self):
+        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
+
+        # design the columns and add them
+        column = Gtk.TreeViewColumn('Namespace')
+        cell_text = Gtk.CellRendererText()
+        cell_image = Gtk.CellRendererPixbuf()
+
+        column.pack_start(cell_image, False)
+        column.pack_start(cell_text, False)
+        column.add_attribute(cell_image, 'pixbuf', 0)
+        column.add_attribute(cell_text, 'text', 1)
+
+        self.treeview = Gtk.TreeView(model=self.store)
+        self.treeview.append_column(column)
+
+        self.treeview.set_activate_on_single_click(False)
+        self.treeview.connect('row-activated', self.row_double_click)
+        self.treeview.connect('button-press-event', self.button_press)
+
+        # do the calculation at the end
+        get_tree_view(self.store, None, None, get_file_icons())
+
+        # set up scrolled window
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.add(self.treeview)
+
 
 
 if __name__ == '__main__':
