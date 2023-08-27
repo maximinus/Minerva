@@ -194,11 +194,22 @@ class LispTree(Gtk.ScrolledWindow):
         return True
 
 
+def get_sidepanel_label(text):
+    label = Gtk.Label(label=text)
+    label.set_angle(90)
+    label.set_hexpand(False)
+    label.set_vexpand(False)
+    return label
+
+
 class SidePanel(Gtk.Notebook):
     def __init__(self):
         # put the filebrowser and lisp namespaces in the same widget
         super().__init__()
-
+        # we want the label to be quite narrow
+        self.append_page(LispTree(), get_sidepanel_label('Namespaces'))
+        self.append_page(FileTree(), get_sidepanel_label('Project Dir'))
+        self.set_tab_pos(Gtk.PositionType.LEFT)
 
 
 if __name__ == '__main__':
@@ -206,7 +217,7 @@ if __name__ == '__main__':
     app = Gtk.Window(title='Treeview Test')
     app.set_default_size(256, 512)
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-    box.pack_start(LispTree(), True, True, 0)
+    box.pack_start(SidePanel(), True, True, 0)
     app.add(box)
     app.show_all()
     Gtk.main()
