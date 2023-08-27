@@ -10,7 +10,8 @@ from pathlib import Path
 
 class DirectoryTree:
     def __init__(self, directory):
-        self.dir_path = directory.name
+        # saves full paths all the time
+        self.dir_path = directory
         self.directories = []
         self.files = []
         self.get_directory(directory)
@@ -21,7 +22,7 @@ class DirectoryTree:
             if os.path.isdir(fullpath):
                 self.directories.append(DirectoryTree(fullpath))
             else:
-                self.files.append(fullpath.name)
+                self.files.append(fullpath)
 
 
 def get_file_icons():
@@ -30,22 +31,23 @@ def get_file_icons():
 
 
 def get_tree_view(store, row, new_dir, images):
+    # directory paths are full paths
     if new_dir is None:
         new_dir = DirectoryTree(Path(__file__).parent.parent)
     for next_dir in new_dir.directories:
-        sort_value = f'd_{next_dir.dir_path.lower()}'
+        sort_value = f'd_{next_dir.dir_path.name.lower()}'
         if row is None:
-            new_row = store.append(None, [images[0], next_dir.dir_path, sort_value])
+            new_row = store.append(None, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
         else:
-            new_row = store.append(row, [images[0], next_dir.dir_path, sort_value])
+            new_row = store.append(row, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
         get_tree_view(store, new_row, next_dir, images)
 
     for file in new_dir.files:
-        sort_value = f'f_{file.lower()}'
-        if file.endswith('lisp'):
-            store.append(row, [images[1], file, sort_value])
+        sort_value = f'f_{file.name.lower()}'
+        if file.name.endswith('lisp'):
+            store.append(row, [images[1], file.name, sort_value, str(file)])
         else:
-            store.append(row, [images[2], file, sort_value])
+            store.append(row, [images[2], file.name, sort_value, str(file)])
 
 
 def file_sort(model, row1, row2, _user_data):
@@ -59,12 +61,12 @@ def file_sort(model, row1, row2, _user_data):
 
 
 class FileTreeContext(Gtk.Menu):
-    def __init__(self, filename, options, callback):
+    def __init__(self, filepath, options, callback):
         super().__init__()
-        self.filename = filename
+        self.filepath = filepath
         for index, option in enumerate(options):
             menu_item = Gtk.MenuItem.new_with_label(option)
-            menu_item.connect('activate', callback, [index, self.filename])
+            menu_item.connect('activate', callback, [index, self.filepath])
             self.append(menu_item)
         self.show_all()
 
@@ -73,7 +75,9 @@ class FileTree(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
         # last column is used for sorting
-        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str)
+        # icon, displayed name, sort name, full filepath
+        # only the first 2 are displayed
+        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
 
         # design the columns and add them
         column = Gtk.TreeViewColumn('Filename')
@@ -84,9 +88,6 @@ class FileTree(Gtk.ScrolledWindow):
         column.pack_start(cell_text, False)
         column.add_attribute(cell_image, 'pixbuf', 0)
         column.add_attribute(cell_text, 'text', 1)
-
-        #self.store.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        #self.store.set_sort_func(0, file_sort, None)
 
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
@@ -116,9 +117,10 @@ class FileTree(Gtk.ScrolledWindow):
                 # it's a folder, so ignore
                 return True
             filename = self.store[iter][1]
+            filepath = self.store[iter][3]
             # show the pop-up menu
             options = [f'Open {filename}', f'Rename {filename}', f'Delete {filename}']
-            context_menu = FileTreeContext(filename, options, self.context_selected)
+            context_menu = FileTreeContext(filepath, options, self.context_selected)
             context_menu.popup_at_pointer()
         return True
 
