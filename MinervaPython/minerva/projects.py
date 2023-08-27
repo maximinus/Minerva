@@ -1,4 +1,5 @@
 import json
+import os.path
 from pathlib import Path
 from datetime import datetime
 
@@ -19,21 +20,33 @@ class ProjectDetails:
         self.working_folder = directory
         self.project_name = name
         self.last_update = datetime.now()
-        self.image = None
+        self.image = ''
 
     def get_json(self):
-        pass
+        data = {'name': self.project_name,
+                'updated': self.last_update.isoformat(),
+                'image': self.image,
+                'folder': str(self.working_folder)}
+        return json.dumps(data)
 
     @staticmethod
-    def load_from_json(self, filename):
+    def from_json(self, data):
         try:
-            with open(filename) as f:
-                data = json.load(f)
             project = ProjectDetails(None, data['name'])
             project.last_update = data['updated']
             project.image = data['image']
             project.working_folder = Path(data['folder'])
-        except Exception as ex:
+        except KeyError as ex:
             logger.error(f'Could not load project:m {ex}')
-            raise ProjectLoadException
+            raise ProjectLoadException(f'Missing data: {ex}')
         return project
+
+    @staticmethod
+    def load_json(self, filename):
+        if not os.path.isfile(filename):
+            raise ProjectLoadException(f'No such file {str(filename)}')
+        try:
+            with open(filename) as f:
+                return json.load(f)
+        except Exception as ex:
+            raise ProjectLoadException(f'Could not load project :{ex}')
