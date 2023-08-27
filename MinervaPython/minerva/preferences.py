@@ -1,18 +1,17 @@
 import os
 import gi
 import json
-import pathlib
+from pathlib import Path
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
-from pathlib import Path
 
 from minerva.logs import logger
 from minerva.actions import message_queue, Message, Target
 
 
 PREFERENCES_FILE = Path('./glade/preferences.glade')
-CONFIG_DIR = pathlib.Path(__file__).parent.parent.resolve()
+CONFIG_DIR = Path(__file__).parent.parent.resolve()
 DEFAULT_CONFIG_FILE = CONFIG_DIR / '.' / 'config' / 'minerva.config'
 
 

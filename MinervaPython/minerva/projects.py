@@ -3,12 +3,40 @@ import os.path
 from pathlib import Path
 from datetime import datetime
 
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
 from minerva.logs import logger
 
 # store details about projects
 # this is stored in a file inside the given directory with the name project.json
 # this contains: path to last image, last updated, project name
 # later should include quicklisp setup eventually
+
+
+PROJECTS_DIALOG = Path('./glade/projects.glade')
+PROJECTS_WIDGET = Path('./glade/single_project.glade')
+PROJECTS_LIST = Path('/home/sparky/.config/minerva/projects.json')
+
+
+class ProjectWindow:
+    def __init__(self):
+        # closed by the window itself
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(str(PROJECTS_DIALOG))
+        self.builder.connect_signals(self)
+        self.dialog = self.builder.get_object('preferences')
+        self.build_project_list()
+        self.dialog.show_all()
+
+    def build_project_list(self):
+        # grab all the projects
+        if not os.path.isfile(PROJECTS_LIST):
+            logger.info('No projects folder found')
+            self.add_empty_list()
+
+    def add_empty_list(self):
+        pass
 
 
 class ProjectLoadException(Exception):
