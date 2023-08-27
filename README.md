@@ -1,6 +1,6 @@
 # Minerva Lisp IDE
 
-![image](https://github.com/maximinus/Minerva/assets/435023/b10472b1-ef09-4b18-86e6-496966018b99)
+![minerva2](https://github.com/maximinus/Minerva/assets/435023/d705bee7-0663-4a47-aae1-39b4e0fbea26)
 
 Minerva is an open source IDE for Common Lisp. The goals of the project are:
 
