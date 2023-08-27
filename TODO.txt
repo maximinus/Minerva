@@ -1,25 +1,30 @@
 Future versions
 ---------------
 
+Version 0.1
+
+    * User selects a project to work from; projects are stored locally
+    * User can rename, open, create and delete files from file tab
+
+Version 0.2
+
+    * Search and replace functions exist
+    * The text in the editor formats automatically when enter is pressed
+    * The text in the editor is color-coded
+
+Version 0.3
+
+    * The REPL which can handle exceptions
+    * User can compile expressions from the text editor to the image in the REPL
+    * The namespace widget shows (to a simple degree) the items in the namespace
+    * Simple code completion works
 
 Version 0.5
 
-This will be considered complete when the following works:
-
-    * User selects a project to work from; projects are stored locally
-    * Search and replace functions exist
-    * There exists a REPL which can handle exceptions
-    * User can compile expressions from the text editor to the image in the REPL
-    * Simple code completion works
-    * User can rename, open, create and delete files from file tab
-    * The namespace widget shows (to a simple degree) the items in the namespace
-    * The text in the editor formats automatically when enter is pressed
-    * The text in the editor is color-coded
-    * The code can be run. and the output is then shown in the "Run" tab below
+    * The code can be run, and the output is then shown in the "Run" tab below
     * The Lisp Hyperspec is avaliable to view
     * It is possible to go through the first couple of chapters of "Practical Common Lisp" with Minerva
     * Documentation is written
-
 
 Version 0.6
 
@@ -28,5 +33,5 @@ Version 0.6
 
 Version 1.0
 
-    * The IDe is re-written in Lisp
+    * The IDE is re-written in Lisp
 
