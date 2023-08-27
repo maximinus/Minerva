@@ -32,7 +32,7 @@ def get_file_icons():
 
 def get_lisp_icons():
     root = Path(__file__).parent.parent / 'gfx' / 'lisp_icons'
-    images = ['constants', 'function', 'lambda', 'variable']
+    images = ['constants', 'function', 'lambda', 'module', 'variable']
     return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in images]
 
 
@@ -108,7 +108,7 @@ class FileTree(Gtk.ScrolledWindow):
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
 
-    def row_double_click(self, path, column, _data):
+    def row_double_click(self, _path, _column, _data):
         # TODO: Open this if it is a file
         print('Open menu')
 
@@ -135,29 +135,22 @@ class FileTree(Gtk.ScrolledWindow):
         print(f'Selected!: {data}')
 
 
-def get_tree_view(store, images):
+def get_lisp_view(store, images):
     # for the moment this is all fake
-    root ->
+    new_row = store.append(None, [images[3], 'Root'])
+    store.append(new_row, [images[2], 'get_primitive'])
+    store.append(new_row, [images[1], 'main'])
+    store.append(new_row, [images[1], 'draw'])
+    store.append(new_row, [images[4], 'screen'])
+    store.append(new_row, [images[0], 'HEIGHT'])
+    new_row = store.append(None, [images[3], 'json'])
+    store.append(new_row, [images[1], 'load'])
+    store.append(new_row, [images[1], 'save'])
 
 
-    for next_dir in new_dir.directories:
-        sort_value = f'd_{next_dir.dir_path.name.lower()}'
-        if row is None:
-            new_row = store.append(None, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
-        else:
-            new_row = store.append(row, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
-        get_tree_view(store, new_row, next_dir, images)
-
-    for file in new_dir.files:
-        sort_value = f'f_{file.name.lower()}'
-        if file.name.endswith('lisp'):
-            store.append(row, [images[1], file.name, sort_value, str(file)])
-        else:
-            store.append(row, [images[2], file.name, sort_value, str(file)])
-
-
-class Lisptree(Gtk.ScrolledWindow):
+class LispTree(Gtk.ScrolledWindow):
     def __init__(self):
+        super().__init__()
         self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str)
 
         # design the columns and add them
@@ -178,11 +171,33 @@ class Lisptree(Gtk.ScrolledWindow):
         self.treeview.connect('button-press-event', self.button_press)
 
         # do the calculation at the end
-        get_lisp_view(self.store, None, None, get_lisp_icons())
+        get_lisp_view(self.store, get_lisp_icons())
+        # start fully expanded
+        self.treeview.expand_all()
+
+        self.treeview.connect('row-activated', self.row_double_click)
+        self.treeview.connect('button-press-event', self.button_press)
 
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
+
+    def row_double_click(self, _path, _column, _data):
+        print('Lisp view double-clicked')
+
+    def button_press(self, widget, event):
+        widget.do_button_press_event(widget, event)
+        # was it a right click?
+        if event.button == 3:
+            iter = self.treeview.get_selection().get_selected()[1]
+            print(f'Right-clicked: {iter}')
+        return True
+
+
+class SidePanel(Gtk.Notebook):
+    def __init__(self):
+        # put the filebrowser and lisp namespaces in the same widget
+        super().__init__()
 
 
 
@@ -191,7 +206,7 @@ if __name__ == '__main__':
     app = Gtk.Window(title='Treeview Test')
     app.set_default_size(256, 512)
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-    box.pack_start(FileTree(), True, True, 0)
+    box.pack_start(LispTree(), True, True, 0)
     app.add(box)
     app.show_all()
     Gtk.main()
