@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkWindow">
+    <property name="can-focus">False</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="default-width">512</property>
+    <property name="default-height">256</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">8</property>
+                <property name="margin-bottom">8</property>
+                <property name="pixbuf">../gfx/logo_head.png</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="valign">center</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="margin-start">12</property>
+                    <property name="label" translatable="yes">Minerva Lisp IDE</property>
+                    <attributes>
+                      <attribute name="scale" value="2"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="margin-start">12</property>
+                    <property name="label" translatable="yes">v0.03, 27th August 2023</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkScrolledWindow" id="project_display">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="shadow-type">in</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">8</property>
+                <property name="margin-end">8</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">8</property>
+                <property name="baseline-position">top</property>
+                <child>
+                  <object class="GtkButton" id="open_button">
+                    <property name="label" translatable="yes">Open</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="new_button">
+                    <property name="label" translatable="yes">New</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="import_button">
+                    <property name="label" translatable="yes">Import</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="vexpand">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="exit_button">
+                    <property name="label" translatable="yes">Exit</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <property name="valign">end</property>
+                    <property name="vexpand">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="halign">start</property>
+            <property name="margin-start">2</property>
+            <property name="margin-top">2</property>
+            <property name="margin-bottom">2</property>
+            <property name="label" translatable="yes">(C) Copyright Chris Handy 2023. Released under GPL3 licence.</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
