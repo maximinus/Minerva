@@ -32,7 +32,8 @@ def get_file_icons():
 
 def get_lisp_icons():
     root = Path(__file__).parent.parent / 'gfx' / 'lisp_icons'
-    return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in ['folder', 'lisp', 'text']]
+    images = ['constants', 'function', 'lambda', 'variable']
+    return [GdkPixbuf.Pixbuf.new_from_file(str(root / f'{x}.png')) for x in images]
 
 
 def get_tree_view(store, row, new_dir, images):
@@ -134,15 +135,35 @@ class FileTree(Gtk.ScrolledWindow):
         print(f'Selected!: {data}')
 
 
+def get_tree_view(store, images):
+    # for the moment this is all fake
+    root ->
+
+
+    for next_dir in new_dir.directories:
+        sort_value = f'd_{next_dir.dir_path.name.lower()}'
+        if row is None:
+            new_row = store.append(None, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
+        else:
+            new_row = store.append(row, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
+        get_tree_view(store, new_row, next_dir, images)
+
+    for file in new_dir.files:
+        sort_value = f'f_{file.name.lower()}'
+        if file.name.endswith('lisp'):
+            store.append(row, [images[1], file.name, sort_value, str(file)])
+        else:
+            store.append(row, [images[2], file.name, sort_value, str(file)])
+
 
 class Lisptree(Gtk.ScrolledWindow):
     def __init__(self):
-        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
+        self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str)
 
         # design the columns and add them
         column = Gtk.TreeViewColumn('Namespace')
-        cell_text = Gtk.CellRendererText()
         cell_image = Gtk.CellRendererPixbuf()
+        cell_text = Gtk.CellRendererText()
 
         column.pack_start(cell_image, False)
         column.pack_start(cell_text, False)
@@ -157,7 +178,7 @@ class Lisptree(Gtk.ScrolledWindow):
         self.treeview.connect('button-press-event', self.button_press)
 
         # do the calculation at the end
-        get_tree_view(self.store, None, None, get_file_icons())
+        get_lisp_view(self.store, None, None, get_lisp_icons())
 
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
