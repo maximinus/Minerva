@@ -33,7 +33,7 @@ def get_tree_view(store, row, new_dir, images):
     if new_dir is None:
         new_dir = DirectoryTree(Path(__file__).parent.parent)
     for next_dir in new_dir.directories:
-        sort_value = f'D_{next_dir.dir_path}'
+        sort_value = f'd_{next_dir.dir_path.lower()}'
         if row is None:
             new_row = store.append(None, [images[0], next_dir.dir_path, sort_value])
         else:
@@ -41,7 +41,7 @@ def get_tree_view(store, row, new_dir, images):
         get_tree_view(store, new_row, next_dir, images)
 
     for file in new_dir.files:
-        sort_value = f'F_{file}'
+        sort_value = f'f_{file.lower()}'
         if file.endswith('lisp'):
             store.append(row, [images[1], file, sort_value])
         else:
@@ -51,22 +51,8 @@ def get_tree_view(store, row, new_dir, images):
 def file_sort(model, row1, row2, _user_data):
     # we look at the 3rd column of each row
     # directories start with D_ and files F_; directories come first
-    value1 = model.get_value(row1, 2)
-    value2 = model.get_value(row2, 2)
-
-    print(value1, value2)
-
-    if value1.startswith('D_'):
-        if value2.startswith('F_'):
-            return -1
-        # both directories
-        if value1 < value2:
-            return -1
-        return 1
-    # value1 is a file
-    if value2.startswith('D_'):
-        return 1
-    # both files
+    value1 = model.get_value(row1, 2).lower()
+    value2 = model.get_value(row2, 2).lower()
     if value1 < value2:
         return -1
     return 1
@@ -77,7 +63,7 @@ class FileTree(Gtk.ScrolledWindow):
         super().__init__()
         # last column is used for sorting
         self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str)
-        self.store.set_sort_func(2, file_sort, None)
+
         # design the columns and add them
         column = Gtk.TreeViewColumn('Filename')
         cell_text = Gtk.CellRendererText()
@@ -87,7 +73,9 @@ class FileTree(Gtk.ScrolledWindow):
         column.pack_start(cell_text, False)
         column.add_attribute(cell_image, 'pixbuf', 0)
         column.add_attribute(cell_text, 'text', 1)
-        column.set_sort_column_id(2)
+
+        self.store.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        self.store.set_sort_func(0, file_sort, None)
 
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
