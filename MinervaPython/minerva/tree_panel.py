@@ -58,6 +58,17 @@ def file_sort(model, row1, row2, _user_data):
     return 1
 
 
+class FileTreeContext(Gtk.Menu):
+    def __init__(self, filename, options, callback):
+        super().__init__()
+        self.filename = filename
+        for index, option in enumerate(options):
+            menu_item = Gtk.MenuItem.new_with_label(option)
+            menu_item.connect('activate', callback, [index, self.filename])
+            self.append(menu_item)
+        self.show_all()
+
+
 class FileTree(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
@@ -74,11 +85,15 @@ class FileTree(Gtk.ScrolledWindow):
         column.add_attribute(cell_image, 'pixbuf', 0)
         column.add_attribute(cell_text, 'text', 1)
 
-        self.store.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        self.store.set_sort_func(0, file_sort, None)
+        #self.store.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        #self.store.set_sort_func(0, file_sort, None)
 
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
+
+        self.treeview.set_activate_on_single_click(False)
+        self.treeview.connect('row-activated', self.row_double_click)
+        self.treeview.connect('button-press-event', self.button_press)
 
         # do the calculation at the end
         get_tree_view(self.store, None, None, get_file_icons())
@@ -86,6 +101,29 @@ class FileTree(Gtk.ScrolledWindow):
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
+
+    def row_double_click(self, path, column, _data):
+        print('Clicked!')
+
+    def button_press(self, widget, event):
+        # run the models default button handler
+        # connect after does not seem to work for some reason
+        widget.do_button_press_event(widget, event)
+        # was it a right click?
+        if event.button == 3:
+            iter = self.treeview.get_selection().get_selected()[1]
+            if(self.store[iter][2].startswith('d_')):
+                # it's a folder, so ignore
+                return True
+            filename = self.store[iter][1]
+            # show the pop-up menu
+            options = [f'Open {filename}', f'Rename {filename}', f'Delete {filename}']
+            context_menu = FileTreeContext(filename, options, self.context_selected)
+            context_menu.popup_at_pointer()
+        return True
+
+    def context_selected(self, widget, data):
+        print(f'Selected!: {data}')
 
 
 if __name__ == '__main__':
