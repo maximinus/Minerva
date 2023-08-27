@@ -8,6 +8,7 @@ from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, TextOverlay, create_text_view, Buffers
 from minerva.actions import get_action, add_window_actions, message_queue, Target
+from minerva.tree_panel import SidePanel
 from minerva.console import Console
 from minerva.searchbar import SearchBar
 from minerva.preferences import PreferencesDialog
@@ -18,11 +19,10 @@ from minerva.helpers import messagebox
 from minerva.swank import SwankClient
 
 
-VERSION = '0.03'
+VERSION = '0.04'
 ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
-# show file and lisp trees on left-hand side
 # show project select / start on right hand side
 # remember projects and their details in a special folder
 # Improve the statusbar to show text position and notices
@@ -83,7 +83,6 @@ class MinervaWindow(Gtk.Window):
         self.search = SearchBar(get_toolbar_from_config(action_router))
         box.pack_start(self.search.box, False, False, 0)
 
-        # console and notebook need to be in a pane
         self.notebook = Gtk.Notebook()
         self.code_hint_overlay = TextOverlay(self)
 
@@ -98,9 +97,15 @@ class MinervaWindow(Gtk.Window):
 
         # the top of the panel is another panel which is horizontal
         # left is a notebook with 2 trees
-        self.tree_panel =
+        self.tree_panel = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.side_panel = SidePanel()
+        # TODO: Would be to good to fix this hack
+        self.side_panel.get_style_context().add_class('sidebar_fix')
+        self.tree_panel.pack1(SidePanel(), True, True)
+        self.tree_panel.pack2(self.notebook, True, True)
+        self.tree_panel.set_position(256)
 
-        self.panel.pack1(self.notebook, True, True)
+        self.panel.pack1(self.tree_panel, True, True)
 
         self.console = Console(config.get('repl_font'))
         # The console needs to be in a notebook as well
