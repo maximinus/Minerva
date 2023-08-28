@@ -9,6 +9,7 @@ from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, TextOverlay, create_text_view, Buffers
 from minerva.actions import get_action, add_window_actions, message_queue, Target
 from minerva.tree_panel import SidePanel
+from minerva.projects import ProjectWindow
 from minerva.console import Console
 from minerva.searchbar import SearchBar
 from minerva.preferences import PreferencesDialog
@@ -19,11 +20,11 @@ from minerva.helpers import messagebox
 from minerva.swank import SwankClient
 
 
-VERSION = '0.04'
+VERSION = '0.05'
 ROOT_DIRECTORY = Path().resolve()
 
 # TODO:
-# show project select / start on right hand side
+# show project select / start on startup
 # remember projects and their details in a special folder
 # Improve the statusbar to show text position and notices
 # Add HTML view on help menu
@@ -134,6 +135,8 @@ class MinervaWindow(Gtk.Window):
         self.preferences = PreferencesDialog()
         self.about = AboutDialog()
         logger.info('Finished setup')
+        # show the project window
+        self.startup = ProjectWindow()
 
     def display(self):
         self.show_all()

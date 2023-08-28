@@ -1,7 +1,7 @@
 Current short term goals
 ------------------------
 
-Fix the 2 pixel difference on the main panel
+Add projects page on startup
 
 
 Future versions
