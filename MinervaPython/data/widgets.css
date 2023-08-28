@@ -33,3 +33,7 @@ notebook tab {
   padding-left: 2px;
   padding-right: 2px;
 }
+
+notebook header.top {
+    padding: 0px 0px 0px 0px;
+}
