@@ -101,7 +101,7 @@ class MinervaWindow(Gtk.Window):
         self.side_panel = SidePanel()
         # TODO: Would be to good to fix this hack
         self.side_panel.get_style_context().add_class('sidebar_fix')
-        self.tree_panel.pack1(SidePanel(), True, True)
+        self.tree_panel.pack1(self.side_panel, True, True)
         self.tree_panel.pack2(self.notebook, True, True)
         self.tree_panel.set_position(256)
 

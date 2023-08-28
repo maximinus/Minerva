@@ -1,3 +1,9 @@
+Current short term goals
+------------------------
+
+Fix the 2 pixel difference on the main panel
+
+
 Future versions
 ---------------
 

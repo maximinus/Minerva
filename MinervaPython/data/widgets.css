@@ -26,3 +26,10 @@
 .sidebar_fix {
     padding-top: 2px;
 }
+
+notebook tab {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
