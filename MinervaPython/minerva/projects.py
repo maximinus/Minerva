@@ -19,6 +19,7 @@ from minerva.actions import Message, Target, message_queue
 
 PROJECTS_DIALOG = Path('./glade/projects.glade')
 PROJECTS_WIDGET = Path('./glade/single_project.glade')
+NEW_PROJECTS_DIALOG = Path('./glade/new_project.glade')
 PROJECTS_LIST = Path('/home/sparky/.config/minerva/projects.json')
 PROJECT_FILE_NAME = 'project.json'
 
@@ -113,6 +114,33 @@ def import_project(project_window):
     return filename
 
 
+class NewProjectWindow:
+    def __init__(self):
+        self.new_project_builder = Gtk.Builder.new_from_file(str(NEW_PROJECTS_DIALOG))
+        self.new_project_builder.connect_signals(self)
+        self.dialog = self.new_project_builder.get_object('new_project_dialog')
+        self.name_widget = self.new_project_builder.get_object('name_widget')
+        self.dir_widget = self.new_project_builder.get_object('dir_widget')
+        self.create_button = self.new_project_builder.get_object('create_button')
+
+    def run(self):
+        self.dialog.show()
+        self.dialog.run()
+
+    def name_changed(self):
+        print(f'Project name: {self.name_widget.get_filename()}')
+
+    def dir_chosen(self, _data):
+        print(f'Chose {self.dir_widget.get_filename()}')
+
+    def close_clicked(self, _data):
+        # close the widget
+        self.dialog.destroy()
+
+    def create_clicked(self, _data):
+        self.dialog.destroy()
+
+
 class ProjectWindow:
     def __init__(self):
         self.window_builder = Gtk.Builder.new_from_file(str(PROJECTS_DIALOG))
@@ -163,7 +191,8 @@ class ProjectWindow:
         print('Open')
 
     def new_clicked(self, __data):
-        print('New')
+        new_project_dialog = NewProjectWindow()
+        new_project_dialog.run()
 
     def import_clicked(self, _data):
         # get the new project
