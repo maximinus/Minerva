@@ -44,7 +44,7 @@ class ProjectDetails:
     def from_json(data):
         try:
             project = ProjectDetails(None, data['name'])
-            project.last_update = data['updated']
+            project.last_update = datetime.fromisoformat(data['updated'])
             project.image = data['image']
             project.working_folder = Path(data['folder'])
         except KeyError as ex:
@@ -95,7 +95,6 @@ def get_all_projects():
 
 class ProjectWindow:
     def __init__(self):
-        # closed by the window itself
         self.window_builder = Gtk.Builder.new_from_file(str(PROJECTS_DIALOG))
         self.window_builder.connect_signals(self)
         self.dialog = self.window_builder.get_object('projects_window')
@@ -114,20 +113,32 @@ class ProjectWindow:
         name = widget_builder.get_object('project_name')
         folder = widget_builder.get_object('project_folder')
         updated = widget_builder.get_object('project_date')
-        #name.set_text('No projects found')
-        #folder.set_text('')
-        #updated.set_text('Select from options on the right')
-        #new_dialog = self.widget_builder.get_object('project_widget')
-        #self.project_list.insert(new_dialog, -1)
+        name.set_text('No projects found')
+        folder.set_text('')
+        updated.set_text('Select from options on the right')
+        new_dialog = self.widget_builder.get_object('project_list')
+        self.project_list.insert(new_dialog, -1)
 
     def add_project(self, project):
         widget_builder = Gtk.Builder.new_from_file(str(PROJECTS_WIDGET))
         project_dialog = widget_builder.get_object('project_widget')
-        name = project_dialog.get_template_child(Gtk.Label, 'project_name')
-        folder = project_dialog.get_template_child(Gtk.Label, 'project_folder')
-        updated = project_dialog.get_template_child(Gtk.Label, 'project_date')
+        name = widget_builder.get_object('project_name')
+        folder = widget_builder.get_object('project_folder')
+        updated = widget_builder.get_object('project_date')
         name.set_text(project.project_name)
         folder.set_text(str(project.working_folder))
         updated.set_text(project.last_update.strftime('%a, %-d %b %Y'))
-        new_dialog = self.dialog.get_template_child(Gtk.ListBox, 'project_list')
-        project_dialog.insert(new_dialog, -1)
+        box_list = self.window_builder.get_object('project_list')
+        box_list.insert(project_dialog, -1)
+
+    def open_clicked(self, _widget, _data):
+        print('Open')
+
+    def new_clicked(self, _widget, _data):
+        print('New')
+
+    def import_clicked(self, _widget, _data):
+        print('Import')
+
+    def exit_clicked(self, _widget, _data):
+        print('Exit')
