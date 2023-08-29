@@ -251,6 +251,8 @@ class MinervaWindow(Gtk.Window):
     def message(self, message):
         if message.action == 'close_notebook':
             self.close_notebook(message.data)
+        elif message.action == 'quit-minerva':
+            self.quit_minerva()
         else:
             logger.error(f'Window cannot understand action {message.action}')
 

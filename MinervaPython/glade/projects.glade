@@ -138,7 +138,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
-                    <signal name="activate" handler="open_clicked" swapped="no"/>
+                    <signal name="clicked" handler="open_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -152,7 +152,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
-                    <signal name="activate" handler="new_clicked" swapped="no"/>
+                    <signal name="clicked" handler="new_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -167,7 +167,7 @@
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                     <property name="vexpand">False</property>
-                    <signal name="activate" handler="import_clicked" swapped="no"/>
+                    <signal name="clicked" handler="import_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -183,7 +183,7 @@
                     <property name="receives-default">True</property>
                     <property name="valign">end</property>
                     <property name="vexpand">True</property>
-                    <signal name="activate" handler="exit_clicked" swapped="no"/>
+                    <signal name="clicked" handler="exit_clicked" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">False</property>

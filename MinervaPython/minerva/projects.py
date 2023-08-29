@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
+from minerva.actions import Message, Target, message_queue
 
 # store details about projects
 # this is stored in a file inside the given directory with the name project.json
@@ -93,11 +94,31 @@ def get_all_projects():
     return final_projects
 
 
+def import_project(project_window):
+    dialog = Gtk.FileChooserDialog(title='Select Minerva project',
+                                   parent=project_window, action=Gtk.FileChooserAction.SELECT_FOLDER)
+    dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
+
+    filter_project = Gtk.FileFilter()
+    filter_project.set_name('Minerva project files')
+    filter_project.add_pattern("project.json")
+    dialog.add_filter(filter_project)
+
+    response = dialog.run()
+    if response == Gtk.ResponseType.OK:
+        filename = dialog.get_filename()
+    else:
+        filename = ''
+    dialog.destroy()
+    return filename
+
+
 class ProjectWindow:
     def __init__(self):
         self.window_builder = Gtk.Builder.new_from_file(str(PROJECTS_DIALOG))
         self.window_builder.connect_signals(self)
         self.dialog = self.window_builder.get_object('projects_window')
+        self.open_button = self.window_builder.get_object('open_window')
         self.build_project_list()
         self.dialog.show_all()
 
@@ -118,6 +139,8 @@ class ProjectWindow:
         updated.set_text('Select from options on the right')
         new_dialog = self.widget_builder.get_object('project_list')
         self.project_list.insert(new_dialog, -1)
+        # turn off "open" button
+        self.open_button.set_sensitive(False)
 
     def add_project(self, project):
         widget_builder = Gtk.Builder.new_from_file(str(PROJECTS_WIDGET))
@@ -129,16 +152,31 @@ class ProjectWindow:
         folder.set_text(str(project.working_folder))
         updated.set_text(project.last_update.strftime('%a, %-d %b %Y'))
         box_list = self.window_builder.get_object('project_list')
+        # if the box list is empty, set this one as "active"
         box_list.insert(project_dialog, -1)
+        children = box_list.get_children()
+        if len(children) == 1:
+            # i.e. just the one we added
+            box_list.select_row(children[0])
 
-    def open_clicked(self, _widget, _data):
+    def open_clicked(self, _data):
         print('Open')
 
-    def new_clicked(self, _widget, _data):
+    def new_clicked(self, __data):
         print('New')
 
-    def import_clicked(self, _widget, _data):
-        print('Import')
+    def import_clicked(self, _data):
+        # get the new project
+        filepath = import_project(self.dialog)
+        if filepath == '':
+            # nothing to do - cancelled
+            return
+        # import this project
+        # if that worked, add it to the list of projects
+        # load the project
+        # close the window
 
-    def exit_clicked(self, _widget, _data):
-        print('Exit')
+    def exit_clicked(self, _data):
+        # check with a messagebox
+        # and then quit
+        message_queue.message(Message(Target.WINDOW, 'quit-minerva'))
