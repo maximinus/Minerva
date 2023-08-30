@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
+from minerva.helpers import messagebox
 from minerva.actions import Message, Target, message_queue
 
 # store details about projects
@@ -122,22 +123,56 @@ class NewProjectWindow:
         self.name_widget = self.new_project_builder.get_object('name_widget')
         self.dir_widget = self.new_project_builder.get_object('dir_widget')
         self.create_button = self.new_project_builder.get_object('create_button')
+        self.message_area = self.new_project_builder.get_object('message_area')
+        self.create_button.set_sensitive(False)
 
     def run(self):
         self.dialog.show()
         self.dialog.run()
 
-    def name_changed(self):
-        print(f'Project name: {self.name_widget.get_filename()}')
+    def check_folder_valid(self):
+        # return an error message or the empty string
+        folder = self.dir_widget.get_filename()
+        if folder is None:
+            return 'Select an empty directory'
+        if not os.path.exists(folder):
+            return 'Folder selection does not exist'
+        if not os.path.isdir(folder):
+            return 'Selection is not a directory'
+        return ''
+
+    def name_changed(self, _widget):
+        if len(self.name_widget.get_text()) == 0:
+            self.message_area.set_text('Please enter a project name')
+            self.create_button.set_sensitive(False)
+            return
+        # check folder
+        message = self.check_folder_valid()
+        if len(message) == 0:
+            self.message_area.set_text('Press create to finish')
+            self.create_button.set_sensitive(True)
+        else:
+            self.message_area.set_text(message)
+            self.create_button.set_sensitive(False)
 
     def dir_chosen(self, _data):
-        print(f'Chose {self.dir_widget.get_filename()}')
+        message = self.check_folder_valid()
+        if len(message) > 0:
+            self.message_area.set_text(message)
+            self.create_button.set_sensitive(False)
+            return
+        if len(self.name_widget.get_text()) > 0:
+            self.message_area.set_text('Press create to finish')
+            self.create_button.set_sensitive(True)
+        else:
+            self.message_area.set_text('Please enter a project name')
+            self.create_button.set_sensitive(False)
 
     def close_clicked(self, _data):
-        # close the widget
         self.dialog.destroy()
 
     def create_clicked(self, _data):
+        print(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
         self.dialog.destroy()
 
 
