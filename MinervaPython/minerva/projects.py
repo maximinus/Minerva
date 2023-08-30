@@ -25,6 +25,17 @@ PROJECTS_LIST = Path('/home/sparky/.config/minerva/projects.json')
 PROJECT_FILE_NAME = 'project.json'
 
 
+# TODO for projects:
+# Hide main window at start and only show when this window is closed
+# Close window when new project made
+# Actually make the project and store the details
+# Check dir is empty on new project creation
+# Load a project on double-click of existing project
+# Add "no current projects" warning
+# Load project when importing
+# Ask when clicking close window button
+
+
 class ProjectLoadException(Exception):
     pass
 
