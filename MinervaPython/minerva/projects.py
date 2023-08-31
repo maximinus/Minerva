@@ -126,6 +126,12 @@ def import_project(project_window):
     return filename
 
 
+class NewProjectDetails:
+    def __init__(self, name, directory):
+        self.name = name
+        self.directory = directory
+
+
 class NewProjectWindow:
     def __init__(self):
         self.new_project_builder = Gtk.Builder.new_from_file(str(NEW_PROJECTS_DIALOG))
@@ -136,6 +142,7 @@ class NewProjectWindow:
         self.create_button = self.new_project_builder.get_object('create_button')
         self.message_area = self.new_project_builder.get_object('message_area')
         self.create_button.set_sensitive(False)
+        self.new_project = None
 
     def run(self):
         self.dialog.show()
@@ -184,6 +191,7 @@ class NewProjectWindow:
 
     def create_clicked(self, _data):
         print(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
+        self.new_project = NewProjectDetails(self.name_widget.get_text(), self.dir_widget.get_filename())
         self.dialog.destroy()
 
 
@@ -239,6 +247,10 @@ class ProjectWindow:
     def new_clicked(self, __data):
         new_project_dialog = NewProjectWindow()
         new_project_dialog.run()
+        if new_project_dialog.new_project is not None:
+            # can close this window and display the main one
+            self.dialog.destroy()
+            message_queue.message(Message(Target.WINDOW, 'init-project', new_project_dialog.new_project))
 
     def import_clicked(self, _data):
         # get the new project

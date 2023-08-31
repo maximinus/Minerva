@@ -253,9 +253,20 @@ class MinervaWindow(Gtk.Window):
             self.close_notebook(message.data)
         elif message.action == 'quit-minerva':
             self.quit_minerva()
+        elif message.action == 'display':
+            self.display()
+        elif message.action == 'init-project':
+            self.load_new_project(message.data)
         else:
             logger.error(f'Window cannot understand action {message.action}')
 
+    def load_new_project(self, new_project):
+        name = new_project.name
+        directory = new_project.directory
+        print(f'Loading {name} from {directory}')
+        title = f'{self.get_title()} - {name}'
+        self.set_title(title)
+        self.display()
 
 def exit_app(app):
     app.quit_minerva()
@@ -265,5 +276,4 @@ if __name__ == '__main__':
     load_css_provider()
     app = MinervaWindow()
     app.connect('destroy', exit_app)
-    app.display()
     Gtk.main()
