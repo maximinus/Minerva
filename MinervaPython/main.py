@@ -256,12 +256,12 @@ class MinervaWindow(Gtk.Window):
         elif message.action == 'display':
             self.display()
         elif message.action == 'init-project':
-            self.load_new_project(message.data)
+            self.load_project(message.data)
         else:
             logger.error(f'Window cannot understand action {message.action}')
 
-    def load_new_project(self, new_project):
-        name = new_project.name
+    def load_project(self, new_project):
+        name = new_project.project_name
         directory = new_project.directory
         print(f'Loading {name} from {directory}')
         title = f'{self.get_title()} - {name}'

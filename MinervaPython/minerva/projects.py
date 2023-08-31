@@ -1,7 +1,7 @@
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 import json
 import os.path
@@ -38,7 +38,7 @@ class ProjectLoadException(Exception):
 
 class ProjectDetails:
     def __init__(self, directory, name):
-        self.working_folder = directory
+        self.directory = directory
         self.project_name = name
         self.last_update = datetime.now()
         self.image = ''
@@ -47,7 +47,7 @@ class ProjectDetails:
         data = {'name': self.project_name,
                 'updated': self.last_update.isoformat(),
                 'image': self.image,
-                'folder': str(self.working_folder)}
+                'folder': str(self.directory)}
         return json.dumps(data)
 
     @staticmethod
@@ -56,7 +56,7 @@ class ProjectDetails:
             project = ProjectDetails(None, data['name'])
             project.last_update = datetime.fromisoformat(data['updated'])
             project.image = data['image']
-            project.working_folder = Path(data['folder'])
+            project.directory = Path(data['folder'])
         except KeyError as ex:
             logger.error(f'Could not load project:m {ex}')
             raise ProjectLoadException(f'Missing data: {ex}')
@@ -122,12 +122,6 @@ def import_project(project_window):
     return filename
 
 
-class NewProjectDetails:
-    def __init__(self, name, directory):
-        self.name = name
-        self.directory = directory
-
-
 class NewProjectWindow:
     def __init__(self):
         self.new_project_builder = Gtk.Builder.new_from_file(str(NEW_PROJECTS_DIALOG))
@@ -189,7 +183,7 @@ class NewProjectWindow:
 
     def create_clicked(self, _data):
         print(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
-        self.new_project = NewProjectDetails(self.name_widget.get_text(), self.dir_widget.get_filename())
+        self.new_project = ProjectDetails(self.dir_widget.get_filename(), self.name_widget.get_text())
         self.dialog.destroy()
 
 
@@ -199,6 +193,12 @@ class ProjectWindow:
         self.window_builder.connect_signals(self)
         self.dialog = self.window_builder.get_object('projects_window')
         self.open_button = self.window_builder.get_object('open_window')
+        self.box_list = self.window_builder.get_object('project_list')
+        self.box_list.set_activate_on_single_click(False)
+        self.box_list.connect('row-activated', self.row_activated)
+        # match projects to the list
+        self.projects = []
+
         self.build_project_list()
         self.dialog.show_all()
 
@@ -217,8 +217,8 @@ class ProjectWindow:
         name.set_text('No projects found')
         folder.set_text('')
         updated.set_text('Select from options on the right')
-        new_dialog = self.widget_builder.get_object('project_list')
-        self.project_list.insert(new_dialog, -1)
+        new_dialog = widget_builder.get_object('project_list')
+        new_dialog.insert(new_dialog, -1)
         # turn off "open" button
         self.open_button.set_sensitive(False)
 
@@ -229,15 +229,21 @@ class ProjectWindow:
         folder = widget_builder.get_object('project_folder')
         updated = widget_builder.get_object('project_date')
         name.set_text(project.project_name)
-        folder.set_text(str(project.working_folder))
+        folder.set_text(str(project.directory))
         updated.set_text(project.last_update.strftime('%a, %-d %b %Y'))
-        box_list = self.window_builder.get_object('project_list')
-        box_list.insert(project_dialog, -1)
+        self.box_list.insert(project_dialog, -1)
+        self.projects.append(project)
         # if the box list only has 1 item, set it as "active"
-        children = box_list.get_children()
+        children = self.box_list.get_children()
         if len(children) == 1:
             # i.e. just the one we added
-            box_list.select_row(children[0])
+            self.box_list.select_row(children[0])
+
+    def row_activated(self, _widget, _data):
+        # get the current selection
+        row = self.box_list.get_selected_row()
+        project = self.projects[row.get_index()]
+        self.close_dialog(project)
 
     def open_clicked(self, _data):
         print('Open')
@@ -246,9 +252,12 @@ class ProjectWindow:
         new_project_dialog = NewProjectWindow()
         new_project_dialog.run()
         if new_project_dialog.new_project is not None:
-            # can close this window and display the main one
-            self.dialog.destroy()
-            message_queue.message(Message(Target.WINDOW, 'init-project', new_project_dialog.new_project))
+            self.close_dialog(new_project_dialog.new_project)
+
+    def close_dialog(self, project):
+        # can close this window and display the main one
+        self.dialog.destroy()
+        message_queue.message(Message(Target.WINDOW, 'init-project', project))
 
     def import_clicked(self, _data):
         # get the new project
