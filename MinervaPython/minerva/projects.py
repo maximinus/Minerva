@@ -9,7 +9,6 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
-from minerva.helpers import messagebox
 from minerva.actions import Message, Target, message_queue
 
 # store details about projects
@@ -26,10 +25,7 @@ PROJECT_FILE_NAME = 'project.json'
 
 
 # TODO for projects:
-# Hide main window at start and only show when this window is closed
-# Close window when new project made
 # Actually make the project and store the details
-# Check dir is empty on new project creation
 # Load a project on double-click of existing project
 # Add "no current projects" warning
 # Load project when importing
@@ -157,6 +153,8 @@ class NewProjectWindow:
             return 'Folder selection does not exist'
         if not os.path.isdir(folder):
             return 'Selection is not a directory'
+        if len(os.listdir()) != 0:
+            return 'Directory is not empty'
         return ''
 
     def name_changed(self, _widget):
@@ -234,8 +232,8 @@ class ProjectWindow:
         folder.set_text(str(project.working_folder))
         updated.set_text(project.last_update.strftime('%a, %-d %b %Y'))
         box_list = self.window_builder.get_object('project_list')
-        # if the box list is empty, set this one as "active"
         box_list.insert(project_dialog, -1)
+        # if the box list only has 1 item, set it as "active"
         children = box_list.get_children()
         if len(children) == 1:
             # i.e. just the one we added
