@@ -268,6 +268,7 @@ class MinervaWindow(Gtk.Window):
         self.set_title(title)
         self.display()
 
+
 def exit_app(app):
     app.quit_minerva()
 

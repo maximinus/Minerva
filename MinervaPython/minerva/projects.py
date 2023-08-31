@@ -26,7 +26,6 @@ PROJECT_FILE_NAME = 'project.json'
 
 # TODO for projects:
 # Actually make the project and store the details
-# Load a project on double-click of existing project
 # Add "no current projects" warning
 # Load project when importing
 # Ask when clicking close window button
@@ -34,6 +33,11 @@ PROJECT_FILE_NAME = 'project.json'
 
 class ProjectLoadException(Exception):
     pass
+
+
+class ProjectListManager:
+    def __init__(self):
+        pass
 
 
 class ProjectDetails:
@@ -266,6 +270,7 @@ class ProjectWindow:
             # nothing to do - cancelled
             return
         # import this project
+        # this means: load the config file and
         # if that worked, add it to the list of projects
         # load the project
         # close the window
