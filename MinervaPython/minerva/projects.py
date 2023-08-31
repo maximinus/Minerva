@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
+from minerva.helpers import messagebox, messagebox_yes_no
 from minerva.actions import Message, Target, message_queue
 
 # store details about projects
@@ -33,11 +34,6 @@ PROJECT_FILE_NAME = 'project.json'
 
 class ProjectLoadException(Exception):
     pass
-
-
-class ProjectListManager:
-    def __init__(self):
-        pass
 
 
 class ProjectDetails:
@@ -109,7 +105,7 @@ def get_all_projects():
 
 def import_project(project_window):
     dialog = Gtk.FileChooserDialog(title='Select Minerva project',
-                                   parent=project_window, action=Gtk.FileChooserAction.SELECT_FOLDER)
+                                   parent=project_window, action=Gtk.FileChooserAction.OPEN)
     dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
 
     filter_project = Gtk.FileFilter()
@@ -202,7 +198,6 @@ class ProjectWindow:
         self.box_list.connect('row-activated', self.row_activated)
         # match projects to the list
         self.projects = []
-
         self.build_project_list()
         self.dialog.show_all()
 
@@ -270,10 +265,16 @@ class ProjectWindow:
             # nothing to do - cancelled
             return
         # import this project
-        # this means: load the config file and
-        # if that worked, add it to the list of projects
-        # load the project
-        # close the window
+        # this means adding it to the list of projects
+        try:
+            imported_project = ProjectDetails.load_json(filepath)
+        except ProjectLoadException:
+            messagebox(self.dialog, 'Bad json: Could not load file', icon=Gtk.MessageType.ERROR)
+            return
+        if messagebox_yes_no(self.dialog, 'Load project now?') is True:
+            self.close_dialog(imported_project)
+        # no, just add the project
+        self.add_project(imported_project)
 
     def exit_clicked(self, _data):
         # check with a messagebox
