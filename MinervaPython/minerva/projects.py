@@ -26,9 +26,8 @@ PROJECT_FILE_NAME = 'project.json'
 
 
 # TODO for projects:
-# Actually make the project and store the details
 # Add "no current projects" warning
-# Load project when importing
+# projects are sorted by date
 # Ask when clicking close window button
 
 
@@ -74,20 +73,25 @@ class ProjectDetails:
             raise ProjectLoadException(f'Could not load project :{ex}')
 
 
-def get_all_projects():
+def get_current_projects():
     if not os.path.isfile(PROJECTS_LIST):
         logger.info('No projects folder found')
         return []
     try:
         with open(PROJECTS_LIST) as f:
-            projects_list = json.load(f)
+            plist = json.load(f)
     except (json.JSONDecodeError, OSError) as ex:
         logger.error(f'Could not read projects list at {PROJECTS_LIST}: {ex}')
         return []
     # projects must be a list of strings
-    if type(projects_list) is not list:
+    if type(plist) is not list:
         logger.error(f'{PROJECTS_LIST} badly formatted: expected a list')
         return []
+    return plist
+
+
+def get_all_projects():
+    projects_list = get_current_projects()
     # finally, each project must exist as a dir and the dir must contain a project.json file
     final_projects = []
     for project in projects_list:
@@ -101,6 +105,17 @@ def get_all_projects():
         except ProjectLoadException:
             continue
     return final_projects
+
+
+def add_new_project(new_project):
+    projects_list = get_current_projects()
+    projects_list.append(f'{str(new_project.directory)}')
+    # overwrite the current list
+    try:
+        with open(PROJECTS_LIST, 'w') as f:
+            json.dump(projects_list, f, ensure_ascii=False, indent=4)
+    except OSError as ex:
+        logger.error(f'Could not add project {new_project.project_name} to {PROJECT_FILE_NAME}: ex')
 
 
 def import_project(project_window):
@@ -251,6 +266,7 @@ class ProjectWindow:
         new_project_dialog = NewProjectWindow()
         new_project_dialog.run()
         if new_project_dialog.new_project is not None:
+            add_new_project(new_project_dialog.new_project)
             self.close_dialog(new_project_dialog.new_project)
 
     def close_dialog(self, project):
@@ -271,6 +287,7 @@ class ProjectWindow:
         except ProjectLoadException:
             messagebox(self.dialog, 'Bad json: Could not load file', icon=Gtk.MessageType.ERROR)
             return
+        add_new_project(imported_project)
         if messagebox_yes_no(self.dialog, 'Load project now?') is True:
             self.close_dialog(imported_project)
         # no, just add the project
