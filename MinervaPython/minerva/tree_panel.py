@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import gi
 
@@ -8,40 +9,6 @@ from gi.repository import Gtk, GdkPixbuf
 from pathlib import Path
 
 from minerva.logs import logger
-
-
-# code to create / delete files etc..
-
-def rename_file(filepath):
-    pass
-
-
-def rename_directory(filepath):
-    pass
-
-
-def delete_file(filepath):
-    # if it doesn't exist, we don't need to do anything
-    if os.path.exists(filepath):
-        logger.error(f'Asked to delete an non-existant file: {filepath}')
-        return True
-    try:
-        os.remove(filepath)
-        return True
-    except OSError:
-        return False
-
-
-def delete_directory(filepath):
-    pass
-
-
-def create_file(filepath):
-    pass
-
-
-def create_directory(filepath):
-    pass
 
 
 class DirectoryTree:
