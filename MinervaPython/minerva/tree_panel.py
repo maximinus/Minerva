@@ -104,9 +104,6 @@ class FileTree(Gtk.ScrolledWindow):
         self.treeview.connect('row-activated', self.row_double_click)
         self.treeview.connect('button-press-event', self.button_press)
 
-        # do the calculation at the end
-        get_tree_view(self.store, None, None, get_file_icons())
-
         # set up scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
@@ -136,6 +133,11 @@ class FileTree(Gtk.ScrolledWindow):
     def context_selected(self, widget, data):
         # TODO: Based on the data, perform action on this widget
         print(f'Selected!: {data}')
+
+    def scan_directory(self, directory):
+        logger.info(f'Scanning directory {directory}')
+        directory_tree = DirectoryTree(Path(directory).parent)
+        get_tree_view(self.store, None, directory_tree, get_file_icons())
 
 
 def get_lisp_view(store, images):
@@ -210,9 +212,17 @@ class SidePanel(Gtk.Notebook):
         # put the filebrowser and lisp namespaces in the same widget
         super().__init__()
         # we want the label to be quite narrow
-        self.append_page(LispTree(), get_sidepanel_label('Namespaces'))
+        self.file_tree = FileTree()
+        self.lisp_tree = LispTree()
         self.append_page(FileTree(), get_sidepanel_label('Project Dir'))
+        self.append_page(LispTree(), get_sidepanel_label('Namespaces'))
         self.set_tab_pos(Gtk.PositionType.LEFT)
+
+    def message(self, message):
+        if message.action == 'scan-directory':
+            self.file_tree.scan_directory(message.data)
+        else:
+            logger.error(f'Sidepanel cannot understand action {message.action}')
 
 
 if __name__ == '__main__':

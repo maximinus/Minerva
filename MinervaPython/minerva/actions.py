@@ -31,6 +31,7 @@ class Target(Enum):
     CONSOLE = 2
     BUFFERS = 3
     SWANK = 4
+    TREES = 5
 
 
 class Message:

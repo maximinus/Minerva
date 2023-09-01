@@ -7,7 +7,7 @@ from pathlib import Path
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
 from minerva.text import TextBuffer, TextOverlay, create_text_view, Buffers
-from minerva.actions import get_action, add_window_actions, message_queue, Target
+from minerva.actions import get_action, add_window_actions, message_queue, Target, Message
 from minerva.tree_panel import SidePanel
 from minerva.projects import ProjectWindow
 from minerva.console import Console
@@ -100,7 +100,7 @@ class MinervaWindow(Gtk.Window):
         # left is a notebook with 2 trees
         self.tree_panel = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.side_panel = SidePanel()
-        # TODO: Would be to good to fix this hack
+
         self.side_panel.get_style_context().add_class('sidebar_fix')
         self.tree_panel.pack1(self.side_panel, True, True)
         self.tree_panel.pack2(self.notebook, True, True)
@@ -152,6 +152,8 @@ class MinervaWindow(Gtk.Window):
             self.console.message(message)
         elif message.address == Target.SWANK:
             self.lisp_repl.message(message)
+        elif message.address == Target.TREES:
+            self.side_panel.message(message)
         else:
             logger.error(f'No target for message to {message.action}')
 
@@ -263,8 +265,9 @@ class MinervaWindow(Gtk.Window):
     def load_project(self, new_project):
         name = new_project.project_name
         directory = new_project.directory
-        print(f'Loading {name} from {directory}')
+        logger.info(f'Loading {name} from {directory}')
         title = f'{self.get_title()} - {name}'
+        message_queue.message(Message(Target.TREES, 'scan-directory', directory))
         self.set_title(title)
         self.display()
 

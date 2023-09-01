@@ -9,8 +9,8 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
-from minerva.helpers import messagebox, messagebox_yes_no
 from minerva.actions import Message, Target, message_queue
+from minerva.helpers.messagebox import messagebox, messagebox_yes_no
 
 # store details about projects
 # this is stored in a file inside the given directory with the name project.json
@@ -195,7 +195,7 @@ class NewProjectWindow:
         self.dialog.destroy()
 
     def create_clicked(self, _data):
-        print(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
+        logger.info(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
         self.new_project = ProjectDetails(self.dir_widget.get_filename(), self.name_widget.get_text())
         if add_new_project(self.new_project) is False:
             messagebox(self.dialog, f'Error writing project file to {self.new_project.directory}', Gtk.MessageType.ERROR)

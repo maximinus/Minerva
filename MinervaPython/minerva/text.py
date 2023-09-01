@@ -6,7 +6,7 @@ from gi.repository import Gtk, Pango, Gdk
 from pathlib import Path
 from minerva.logs import logger
 from minerva.actions import message_queue, Target, Message
-from minerva.helpers import messagebox_yes_no
+from minerva.helpers.messagebox import messagebox_yes_no
 
 COLOR_RED = '#FF8888'
 COLOR_BLUE = '#8888FF'
