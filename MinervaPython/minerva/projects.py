@@ -25,12 +25,6 @@ PROJECTS_LIST = Path('/home/sparky/.config/minerva/projects.json')
 PROJECT_FILE_NAME = 'project.json'
 
 
-# TODO for projects:
-# Add "no current projects" warning
-# projects are sorted by date
-# Ask when clicking close window button
-
-
 class ProjectLoadException(Exception):
     pass
 
@@ -209,10 +203,11 @@ class ProjectWindow:
         self.window_builder = Gtk.Builder.new_from_file(str(PROJECTS_DIALOG))
         self.window_builder.connect_signals(self)
         self.dialog = self.window_builder.get_object('projects_window')
-        self.open_button = self.window_builder.get_object('open_window')
+        self.open_button = self.window_builder.get_object('open_button')
         self.box_list = self.window_builder.get_object('project_list')
         self.box_list.set_activate_on_single_click(False)
         self.box_list.connect('row-activated', self.row_activated)
+        self.box_list.connect('row-selected', self.row_selected)
         # match projects to the list
         self.projects = []
         self.build_project_list()
@@ -226,15 +221,6 @@ class ProjectWindow:
             self.add_project(i)
 
     def add_empty_list(self):
-        widget_builder = Gtk.Builder.new_from_file(str(PROJECTS_WIDGET))
-        name = widget_builder.get_object('project_name')
-        folder = widget_builder.get_object('project_folder')
-        updated = widget_builder.get_object('project_date')
-        name.set_text('No projects found')
-        folder.set_text('')
-        updated.set_text('Select from options on the right')
-        new_dialog = widget_builder.get_object('project_list')
-        new_dialog.insert(new_dialog, -1)
         # turn off "open" button
         self.open_button.set_sensitive(False)
 
@@ -255,6 +241,12 @@ class ProjectWindow:
             # i.e. just the one we added
             self.box_list.select_row(children[0])
 
+    def row_selected(self, row, _data):
+        if row is None:
+            self.open_button.set_sensitive(False)
+        else:
+            self.open_button.set_sensitive(True)
+
     def row_activated(self, _widget, _data):
         # get the current selection
         row = self.box_list.get_selected_row()
@@ -262,7 +254,9 @@ class ProjectWindow:
         self.close_dialog(project)
 
     def open_clicked(self, _data):
-        print('Open')
+        row = self.box_list.get_selected_row()
+        project = self.projects[row.get_index()]
+        self.close_dialog(project)
 
     def new_clicked(self, __data):
         new_project_dialog = NewProjectWindow()
