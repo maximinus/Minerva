@@ -110,8 +110,10 @@ def add_new_project(new_project):
     try:
         with open(PROJECTS_LIST, 'w') as f:
             json.dump(projects_list, f, ensure_ascii=False, indent=4)
+        return True
     except OSError as ex:
         logger.error(f'Could not add project {new_project.project_name} to {PROJECT_FILE_NAME}: ex')
+    return False
 
 
 def import_project(project_window):
@@ -195,7 +197,9 @@ class NewProjectWindow:
     def create_clicked(self, _data):
         print(f'Creating project {self.name_widget.get_text()} at {self.dir_widget.get_filename()}')
         self.new_project = ProjectDetails(self.dir_widget.get_filename(), self.name_widget.get_text())
-        self.dialog.destroy()
+        if add_new_project(self.new_project) is False:
+            messagebox(self.dialog, f'Error writing project file to {self.new_project.directory}', Gtk.MessageType.ERROR)
+            self.new_project = None
 
 
 class ProjectWindow:
@@ -262,7 +266,6 @@ class ProjectWindow:
         new_project_dialog = NewProjectWindow()
         new_project_dialog.run()
         if new_project_dialog.new_project is not None:
-            add_new_project(new_project_dialog.new_project)
             self.close_dialog(new_project_dialog.new_project)
 
     def close_dialog(self, project):
