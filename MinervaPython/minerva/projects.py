@@ -104,6 +104,8 @@ def get_all_projects():
             final_projects.append(project_settings)
         except ProjectLoadException:
             continue
+    # sort by date (index 0  is latest)
+    final_projects.sort(key=lambda x: x.last_update, reverse=True)
     return final_projects
 
 
