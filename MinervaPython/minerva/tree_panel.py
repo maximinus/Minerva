@@ -10,6 +10,9 @@ from pathlib import Path
 from minerva.logs import logger
 
 
+FILE_EDIT_DIALOG = Path('./glade/file_rename.glade')
+
+
 class DirectoryTree:
     def __init__(self, directory):
         # saves full paths all the time
@@ -69,6 +72,29 @@ def file_sort(model, row1, row2, _user_data):
     return 1
 
 
+def get_file_edit(old_name=None, file=True):
+    builder = Gtk.Builder.new_from_file(str(FILE_EDIT_DIALOG))
+    dialog = builder.get_object('file_dialog')
+    label = builder.get_object('label_widget')
+    entry = builder.get_object('label_entry')
+
+    # if no old name, assume creation
+    if old_name is None:
+        if file is True:
+            text = f'Enter name of new file'
+        else:
+            text = f'Enter name of new directory'
+    else:
+        if file is True:
+            text = f'Rename file {old_name} to:'
+        else:
+            text = f'Rename directory {old_name} to:'
+    label.set_text(text)
+    # run the dialog and get the return
+    response = dialog.run()
+    print(response)
+
+
 class FileTreeContext(Gtk.Menu):
     def __init__(self, filepath, options, callback):
         super().__init__()
@@ -121,21 +147,49 @@ class FileTree(Gtk.ScrolledWindow):
             iter = self.treeview.get_selection().get_selected()[1]
             if iter is None:
                 # nothing to select
-                return
-            if self.store[iter][2].startswith('d_'):
-                # it's a folder, so ignore
-                return True
+                return False
             filename = self.store[iter][1]
             filepath = self.store[iter][3]
-            # show the pop-up menu
-            options = [f'Open {filename}', f'Rename {filename}', f'Delete {filename}']
-            context_menu = FileTreeContext(filepath, options, self.context_selected)
-            context_menu.popup_at_pointer()
+            if self.store[iter][2].startswith('d_'):
+                # it's a folder
+                options = ['New File', 'New Directory', f'Rename {filename}', f'Delete {filename}']
+                context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
+                context_menu.popup_at_pointer()
+            else:
+                options = [f'Open {filename}', f'Rename {filename}', f'Delete {filename}']
+                context_menu = FileTreeContext(filepath, options, self.context_file_selected)
+                context_menu.popup_at_pointer()
+        # show the pop-up menu
         return True
 
-    def context_selected(self, widget, data):
-        # TODO: Based on the data, perform action on this widget
-        print(f'Selected!: {data}')
+    def context_dir_selected(self, _widget, data):
+        # Based on the data, perform action on this widget
+        action = data[0]
+        if action == 0:
+            # new file
+            get_file_edit(old_name=None, file=True)
+        elif action == 1:
+            # new directory
+            get_file_edit(old_name=None, file=False)
+        elif action == 2:
+            # rename directory
+            get_file_edit(old_name=data[1], file=False)
+        elif action == 3:
+            # delete directory
+            print('Sure?')
+
+    def context_file_selected(self, _widget, data):
+        # Based on the data, perform action on this widget
+        action = data[0]
+        if action == 0:
+            # open file
+            pass
+        elif action == 1:
+            # rename file
+            get_file_edit(old_name=data[1], file=True)
+        elif action == 2:
+            # delete filename
+            pass
 
     def scan_directory(self, directory):
         self.store.clear()
