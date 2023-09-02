@@ -21,11 +21,12 @@
             <property name="can-focus">False</property>
             <property name="layout-style">end</property>
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="yes">Cancel</property>
+              <object class="GtkButton" id="button1">
+                <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-stock">True</property>
                 <property name="always-show-image">True</property>
               </object>
               <packing>
@@ -35,11 +36,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="yes">OK</property>
+              <object class="GtkButton" id="button2">
+                <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-stock">True</property>
                 <property name="always-show-image">True</property>
               </object>
               <packing>
@@ -87,5 +89,9 @@
         </child>
       </object>
     </child>
+    <action-widgets>
+      <action-widget response="-6">button1</action-widget>
+      <action-widget response="-5">button2</action-widget>
+    </action-widgets>
   </object>
 </interface>

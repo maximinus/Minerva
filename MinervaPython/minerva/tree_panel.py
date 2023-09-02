@@ -76,7 +76,7 @@ def get_file_edit(old_name=None, file=True):
     builder = Gtk.Builder.new_from_file(str(FILE_EDIT_DIALOG))
     dialog = builder.get_object('file_dialog')
     label = builder.get_object('label_widget')
-    entry = builder.get_object('label_entry')
+    entry = builder.get_object('entry_widget')
 
     # if no old name, assume creation
     if old_name is None:
@@ -92,7 +92,13 @@ def get_file_edit(old_name=None, file=True):
     label.set_text(text)
     # run the dialog and get the return
     response = dialog.run()
-    print(response)
+    if response == Gtk.ResponseType.OK:
+        filename = entry.get_text()
+    else:
+        filename = ''
+    dialog.destroy()
+    print(filename)
+    return filename
 
 
 class FileTreeContext(Gtk.Menu):
