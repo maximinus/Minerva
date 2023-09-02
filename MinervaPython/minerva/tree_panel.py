@@ -1,5 +1,4 @@
 import os
-import shutil
 
 import gi
 
@@ -100,11 +99,13 @@ class FileTree(Gtk.ScrolledWindow):
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
 
+        #get_tree_view(self.store, None, None, get_file_icons())
+
         self.treeview.set_activate_on_single_click(False)
         self.treeview.connect('row-activated', self.row_double_click)
         self.treeview.connect('button-press-event', self.button_press)
 
-        # set up scrolled window
+        # setup scrolled window
         self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.add(self.treeview)
 
@@ -119,7 +120,10 @@ class FileTree(Gtk.ScrolledWindow):
         # was it a right click?
         if event.button == 3:
             iter = self.treeview.get_selection().get_selected()[1]
-            if(self.store[iter][2].startswith('d_')):
+            if iter is None:
+                # nothing to select
+                return
+            if self.store[iter][2].startswith('d_'):
                 # it's a folder, so ignore
                 return True
             filename = self.store[iter][1]
@@ -135,9 +139,9 @@ class FileTree(Gtk.ScrolledWindow):
         print(f'Selected!: {data}')
 
     def scan_directory(self, directory):
-        logger.info(f'Scanning directory {directory}')
-        directory_tree = DirectoryTree(Path(directory).parent)
+        directory_tree = DirectoryTree(Path(directory))
         get_tree_view(self.store, None, directory_tree, get_file_icons())
+        self.treeview.show_all()
 
 
 def get_lisp_view(store, images):
