@@ -270,8 +270,8 @@ class ProjectWindow:
 
     def close_dialog(self, project):
         # can close this window and display the main one
-        self.dialog.destroy()
         message_queue.message(Message(Target.WINDOW, 'init-project', project))
+        self.dialog.destroy()
 
     def import_clicked(self, _data):
         # get the new project

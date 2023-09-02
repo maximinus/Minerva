@@ -86,6 +86,8 @@ class FileTree(Gtk.ScrolledWindow):
         # only the first 2 are displayed
         self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
 
+        print('Filetree!')
+
         # design the columns and add them
         column = Gtk.TreeViewColumn('Filename')
         cell_text = Gtk.CellRendererText()
@@ -99,7 +101,7 @@ class FileTree(Gtk.ScrolledWindow):
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
 
-        #get_tree_view(self.store, None, None, get_file_icons())
+        get_tree_view(self.store, None, None, get_file_icons())
 
         self.treeview.set_activate_on_single_click(False)
         self.treeview.connect('row-activated', self.row_double_click)
@@ -139,9 +141,15 @@ class FileTree(Gtk.ScrolledWindow):
         print(f'Selected!: {data}')
 
     def scan_directory(self, directory):
+        # TODO: force an update somehow!!
+        # The store DOES get updated
+        # Replacing the whole store does nothing
+        # Redrawing or resize do not work
+        # If called from a button press this works
+        print(f'Scan: {directory}')
+        self.store.clear()
         directory_tree = DirectoryTree(Path(directory))
         get_tree_view(self.store, None, directory_tree, get_file_icons())
-        self.treeview.show_all()
 
 
 def get_lisp_view(store, images):
@@ -218,8 +226,8 @@ class SidePanel(Gtk.Notebook):
         # we want the label to be quite narrow
         self.file_tree = FileTree()
         self.lisp_tree = LispTree()
-        self.append_page(FileTree(), get_sidepanel_label('Project Dir'))
-        self.append_page(LispTree(), get_sidepanel_label('Namespaces'))
+        self.append_page(self.file_tree, get_sidepanel_label('Project Dir'))
+        self.append_page(self.lisp_tree, get_sidepanel_label('Namespaces'))
         self.set_tab_pos(Gtk.PositionType.LEFT)
 
     def message(self, message):

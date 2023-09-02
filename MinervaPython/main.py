@@ -98,6 +98,7 @@ class MinervaWindow(Gtk.Window):
 
         # the top of the panel is another panel which is horizontal
         # left is a notebook with 2 trees
+        # right is the text editor
         self.tree_panel = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.side_panel = SidePanel()
 
@@ -266,8 +267,8 @@ class MinervaWindow(Gtk.Window):
         name = new_project.project_name
         directory = new_project.directory
         logger.info(f'Loading {name} from {directory}')
+        self.side_panel.file_tree.scan_directory(directory)
         title = f'{self.get_title()} - {name}'
-        message_queue.message(Message(Target.TREES, 'scan-directory', directory))
         self.set_title(title)
         self.display()
 
