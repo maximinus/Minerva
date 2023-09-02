@@ -100,8 +100,6 @@ class FileTree(Gtk.ScrolledWindow):
         self.treeview = Gtk.TreeView(model=self.store)
         self.treeview.append_column(column)
 
-        get_tree_view(self.store, None, None, get_file_icons())
-
         self.treeview.set_activate_on_single_click(False)
         self.treeview.connect('row-activated', self.row_double_click)
         self.treeview.connect('button-press-event', self.button_press)
@@ -140,15 +138,15 @@ class FileTree(Gtk.ScrolledWindow):
         print(f'Selected!: {data}')
 
     def scan_directory(self, directory):
-        # TODO: force an update somehow!!
-        # The store DOES get updated
-        # Replacing the whole store does nothing
-        # Redrawing or resize do not work
-        # If called from a button press this works
-        print(f'Scan: {directory}')
         self.store.clear()
         directory_tree = DirectoryTree(Path(directory))
         get_tree_view(self.store, None, directory_tree, get_file_icons())
+        self.expand_root()
+
+    def expand_root(self):
+        # expand the root folder
+        tree_path = Gtk.TreePath.new_first()
+        self.treeview.expand_row(tree_path, False)
 
 
 def get_lisp_view(store, images):
