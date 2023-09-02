@@ -42,12 +42,13 @@ def get_tree_view(store, row, new_dir, images):
     # directory paths are full paths
     if new_dir is None:
         new_dir = DirectoryTree(Path(__file__).parent.parent)
+    if row is None:
+        # create the top-level row and add everything to it
+        # the top level row should be expanded by default
+        row = store.append(None, [images[0], new_dir.dir_path.name, 'd_a', str(new_dir.dir_path)])
     for next_dir in new_dir.directories:
         sort_value = f'd_{next_dir.dir_path.name.lower()}'
-        if row is None:
-            new_row = store.append(None, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
-        else:
-            new_row = store.append(row, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
+        new_row = store.append(None, [images[0], next_dir.dir_path.name, sort_value, str(next_dir.dir_path)])
         get_tree_view(store, new_row, next_dir, images)
 
     for file in new_dir.files:
@@ -85,8 +86,6 @@ class FileTree(Gtk.ScrolledWindow):
         # icon, displayed name, sort name, full filepath
         # only the first 2 are displayed
         self.store = Gtk.TreeStore(GdkPixbuf.Pixbuf, str, str, str)
-
-        print('Filetree!')
 
         # design the columns and add them
         column = Gtk.TreeViewColumn('Filename')
