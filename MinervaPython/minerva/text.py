@@ -28,6 +28,12 @@ def get_name_label(html_text, color=None):
     return label
 
 
+class SearchText(Gtk.Window):
+    # an overlay to handle searching for text
+    def __init__(self, parent):
+        super().__init__(Gtk.WindowType.POPUP)
+
+
 class TextOverlay(Gtk.Window):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):

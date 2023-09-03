@@ -7,15 +7,15 @@ Future versions
 Version 0.2
 
     * Search and replace functions exist
-    * The text in the editor formats automatically when enter is pressed
-    * The text in the editor is color-coded
+    * Simple code completion works
+    * The REPL can handle exceptions
 
 Version 0.3
 
-    * The REPL which can handle exceptions
+    * The text in the editor formats automatically when enter is pressed
+    * The text in the editor is color-coded
     * User can compile expressions from the text editor to the image in the REPL
     * The namespace widget shows (to a simple degree) the items in the namespace
-    * Simple code completion works
 
 Version 0.5
 
