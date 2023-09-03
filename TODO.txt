@@ -7,7 +7,7 @@ Future versions
 Version 0.1
 
     ! User selects a project to work from; projects are stored locally
-    * User can rename, open, create and delete files from file tab
+    ! User can rename, open, create and delete files from file tab
 
 Version 0.2
 

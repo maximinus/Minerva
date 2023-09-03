@@ -3,22 +3,9 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, Pango
 
-from enum import Enum
 from minerva.logs import logger
+from minerva.constants.keycodes import Keys
 from minerva.actions import Message, message_queue, Target
-
-
-class Keys(Enum):
-    RETURN = 65293
-    CURSOR_UP = 65362
-    CURSOR_DOWN = 65364
-    CURSOR_LEFT = 65361
-    CURSOR_RIGHT = 65363
-    BACKSPACE = 65288
-    DELETE = 65535
-    HOME = 65360
-    END = 65367
-
 
 def build_write_string(messages):
     # given a repl reply, build up the text to reply

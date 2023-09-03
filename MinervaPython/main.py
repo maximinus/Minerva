@@ -20,7 +20,7 @@ from minerva.helpers.messagebox import messagebox
 from minerva.swank import SwankClient
 
 
-VERSION = '0.06'
+VERSION = '0.1'
 ROOT_DIRECTORY = Path().resolve()
 
 

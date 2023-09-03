@@ -4,8 +4,10 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
+
 from minerva.logs import logger
 from minerva.preferences import config
+from minerva.constants.keycodes import Keys
 from minerva.helpers.messagebox import messagebox_yes_no
 from minerva.actions import message_queue, Target, Message
 
@@ -79,13 +81,24 @@ class TextBuffer:
         # we need callbacks when we gain and lose keyboard focus
         self.text_view.connect('focus-in-event', self.gained_focus)
         self.text_view.connect('focus-out-event', self.lost_focus)
+        self.text_view.connect('key-press-event', self.key_press)
+        self.text_view.get_buffer().connect('changed', self.text_changed)
         self.text_view.get_buffer().connect('notify::cursor-position', self.cursor_moved)
 
+    def text_changed(self, _widget):
+        logger.info('Text changed')
+
+    def key_press(self, _widget, event):
+        # enter key pressed?
+        if event.keyval == Keys.RETURN.value:
+            logger.info('Enter pressed')
+
     def gained_focus(self, _event, _data):
-        self.set_code_hint_window()
+        #self.set_code_hint_window()
+        pass
 
     def lost_focus(self, _event, _data):
-        # always hide the codehint window
+        # always hide the code hint window
         self.code_hint.hide()
 
     def cursor_moved(self, _buffer, _params):
@@ -101,7 +114,7 @@ class TextBuffer:
             self.window_decoration_height = s1 - s2
         window_pos = self.get_window_position()
         self.code_hint.move(window_pos[0], window_pos[1])
-        self.code_hint.show_all()
+        #self.code_hint.show_all()
 
     def get_window_position(self):
         # return the position the code hint window should be in
