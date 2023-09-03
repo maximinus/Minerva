@@ -157,12 +157,13 @@ class FileTree(Gtk.ScrolledWindow):
             row = self.store[iter]
             filename = row[1]
             filepath = row[3]
+            print(row.parent)
             if row.parent is None:
                 # it's the root one only
                 options = ['New File', 'New Directory']
                 context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
                 context_menu.popup_at_pointer()
-            if self.store[iter][2].startswith('d_'):
+            elif self.store[iter][2].startswith('d_'):
                 # These options
                 options = ['New File', 'New Directory', f'Rename {filename}', f'Delete {filename}']
                 context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
