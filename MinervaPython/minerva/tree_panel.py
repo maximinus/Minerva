@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from minerva.logs import logger
-from minerva.helpers.messagebox import messagebox_yes_no
+from minerva.helpers.messagebox import messagebox, messagebox_yes_no
 from minerva.helpers.file_functions import rename_path, delete_file, delete_directory, create_file, create_directory
 
 
@@ -154,8 +154,14 @@ class FileTree(Gtk.ScrolledWindow):
             if iter is None:
                 # nothing to select
                 return False
-            filename = self.store[iter][1]
-            filepath = self.store[iter][3]
+            row = self.store[iter]
+            filename = row[1]
+            filepath = row[3]
+            if row.parent is None:
+                # it's the root one only
+                options = ['New File', 'New Directory']
+                context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
+                context_menu.popup_at_pointer()
             if self.store[iter][2].startswith('d_'):
                 # These options
                 options = ['New File', 'New Directory', f'Rename {filename}', f'Delete {filename}']
@@ -209,6 +215,10 @@ class FileTree(Gtk.ScrolledWindow):
                 rename_path(filepath, new_name)
                 self.scan_directory()
         elif action == 2:
+            # don't allow deleting project file
+            if filepath.name == 'project.json':
+                messagebox(self.get_toplevel(), 'Cannot delete project config project.json')
+                return
             # delete filename
             if messagebox_yes_no(self.get_toplevel(), f'Delete file {filepath.name}?') is True:
                 delete_file(filepath)
