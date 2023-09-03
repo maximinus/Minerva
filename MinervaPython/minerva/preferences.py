@@ -72,7 +72,7 @@ class PreferencesDialog:
         logger.info(f'Setting editor font to {font}')
         config.editor_font = font
         config.update()
-        message_queue.message(Message(Target.BUFFERS, 'update_font', font))
+        message_queue.message(Message(Target.TEXT, 'update_font', font))
 
     def set_repl_font(self, widget):
         font = widget.get_font_name()

@@ -154,7 +154,7 @@ class TextBuffer:
 
     def button_clicked(self, button):
         # send a message to close the buffer
-        message_queue.message(Message(Target.BUFFERS, 'close_buffer', self))
+        message_queue.message(Message(Target.TEXT, 'close_buffer', self))
 
     def save_file(self, window):
         # if the filename exists, just save it there
@@ -293,7 +293,7 @@ class TextEdit(Gtk.Notebook):
     def save_file(self):
         self.buffers.get_current().save_file(self)
         # we likely need to update the name on the tab
-        page = self.notebook.get_nth_page(self.notebook.get_current_page())
+        page = self.get_nth_page(self.notebook.get_current_page())
         self.set_tab_label(page, self.buffers.get_current().get_label())
 
     def load_file(self):

@@ -1,6 +1,6 @@
 [
-  {"icon": "new", "tooltip": "Create new Lisp file", "action": "new_file"},
-  {"icon": "open", "tooltip": "Load file", "action": "load_file"},
-  {"icon": "save", "tooltip": "Save file", "action": "new_file"},
-  {"icon": "run", "tooltip": "Run current file", "action": "run_code"}
+  {"icon": "new", "tooltip": "Create new Lisp file", "action": "main:new_file"},
+  {"icon": "open", "tooltip": "Load file", "action": "main:load_file"},
+  {"icon": "save", "tooltip": "Save file", "action": "main:new_file"},
+  {"icon": "run", "tooltip": "Run current file", "action": "main:run_code"}
 ]
