@@ -1,0 +1,14 @@
+Version History
+===============
+
+Version 0.1
+    Released 3rd September 2023
+
+    Basic window and start of project
+    Test files can be loaded, saved and edited
+    Simple REPL connects to Lisp instance via Swank
+    Project manger allows creating or importing projects
+    File manager sidebar allows saving, deleting or renaming files
+    Log file created and written to
+    Config file saves preferences    
+
