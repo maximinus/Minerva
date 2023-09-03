@@ -177,19 +177,23 @@ class FileTree(Gtk.ScrolledWindow):
             new_name = get_file_edit(old_name=None, file=True)
             if len(new_name) > 0:
                 create_file(filepath / new_name)
+                self.scan_directory()
         elif action == 1:
             # new directory
             new_name = get_file_edit(old_name=None, file=False)
             if len(new_name) > 0:
                 create_directory(filepath / new_name)
+                self.scan_directory()
         elif action == 2:
             # rename directory
             new_name = get_file_edit(old_name=filepath.name, file=False)
             if len(new_name) > 0:
                 rename_path(filepath, new_name)
+                self.scan_directory()
         elif action == 3:
             if messagebox_yes_no(self.get_toplevel(), f'Delete directory {filepath.name} and all contents?') is True:
                 delete_directory(filepath)
+                self.scan_directory()
 
     def context_file_selected(self, _widget, data):
         # Based on the data, perform action on this widget
@@ -203,10 +207,12 @@ class FileTree(Gtk.ScrolledWindow):
             new_name = get_file_edit(old_name=filepath.name, file=True)
             if len(new_name) > 0:
                 rename_path(filepath, new_name)
+                self.scan_directory()
         elif action == 2:
             # delete filename
             if messagebox_yes_no(self.get_toplevel(), f'Delete file {filepath.name}?') is True:
                 delete_file(filepath)
+                self.scan_directory()
 
     def scan_directory(self, directory):
         self.store.clear()

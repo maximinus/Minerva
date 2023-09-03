@@ -7,31 +7,46 @@ ACTIONS = {
 }
 
 
-def get_action(action):
-    if action in ACTIONS:
-        return ACTIONS[action]
+#def get_action(action):
+#    if action in ACTIONS:
+#        return ACTIONS[action]
 
 
-def add_window_actions(window):
-    # actions that pertain to the window
-    ACTIONS['new_file'] = window.new_file
-    ACTIONS['load_file'] = window.load_file
-    ACTIONS['save_file'] = window.save_file
-    ACTIONS['quit_minerva'] = window.quit_minerva
-    ACTIONS['run_code'] = window.run_code
-    ACTIONS['debug_code'] = window.debug_code
-    ACTIONS['show_help'] = window.show_help
-    ACTIONS['show_about'] = window.show_about
-    ACTIONS['show_preferences'] = window.show_preferences
+#def add_window_actions(window):
+#    # actions that pertain to the window
+#    ACTIONS['new_file'] = window.new_file
+#    ACTIONS['load_file'] = window.load_file
+#    ACTIONS['save_file'] = window.save_file
+#    ACTIONS['quit_minerva'] = window.quit_minerva
+#    ACTIONS['run_code'] = window.run_code
+#    ACTIONS['debug_code'] = window.debug_code
+#    ACTIONS['show_help'] = window.show_help
+#    ACTIONS['show_about'] = window.show_about
+#    ACTIONS['show_preferences'] = window.show_preferences
 
 
 class Target(Enum):
     EMPTY = 0
     WINDOW = 1
     CONSOLE = 2
-    BUFFERS = 3
+    TEXT = 3
     SWANK = 4
     TREES = 5
+
+
+def get_named_action(name):
+    # match the name else return None
+    match name:
+        case 'main':
+            return Target.WINDOW
+        case 'console':
+            return Target.CONSOLE
+        case 'text':
+            return Target.TEXT
+        case 'swank':
+            return Target.SWANK
+        case 'trees':
+            return Target.TREES
 
 
 class Message:

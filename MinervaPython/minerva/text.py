@@ -5,8 +5,10 @@ from gi.repository import Gtk, Pango, Gdk
 
 from pathlib import Path
 from minerva.logs import logger
-from minerva.actions import message_queue, Target, Message
+from minerva.preferences import config
 from minerva.helpers.messagebox import messagebox_yes_no
+from minerva.actions import message_queue, Target, Message
+
 
 COLOR_RED = '#FF8888'
 COLOR_BLUE = '#8888FF'
@@ -263,10 +265,91 @@ class Buffers:
                 return
             index += 1
 
+
+class TextEdit(Gtk.Notebook):
+    def __init__(self, window):
+        # notebook to handle all code for text files and move out of main.py
+        super(TextEdit, self).__init__()
+        self.buffers = Buffers()
+        self.code_hint_overlay = TextOverlay(window)
+
+        page_data = create_text_view(config.get('editor_font'))
+        self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
+        self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
+        self.connect('switch_page', self.switch_page)
+
+    def switch_page(self, _notebook, _page, page_num):
+        self.buffers.current_page = page_num
+
+    def new_file(self):
+        # add an empty notebook
+        page_data = create_text_view(config.get('editor_font'))
+        self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
+        self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
+        self.show_all()
+        self.set_current_page(-1)
+        self.buffers.current_page = self.notebook.get_current_page()
+
+    def save_file(self):
+        self.buffers.get_current().save_file(self)
+        # we likely need to update the name on the tab
+        page = self.notebook.get_nth_page(self.notebook.get_current_page())
+        self.set_tab_label(page, self.buffers.get_current().get_label())
+
+    def load_file(self):
+        dialog = Gtk.FileChooserDialog(title="Select file", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
+
+        filter_lisp = Gtk.FileFilter()
+        filter_lisp.set_name('Lisp files')
+        filter_lisp.add_pattern("*.lisp")
+        dialog.add_filter(filter_lisp)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            filename = Path(dialog.get_filename())
+
+            # if we already have that file, just go to the tab
+            index = 0
+            for i in self.buffers.buffer_list:
+                if i.filename == filename:
+                    self.set_current_page(index)
+                    dialog.destroy()
+                    return
+                index += 1
+
+            # load the file and add to the textview
+            with open(filename) as f:
+                text = ''.join(f.readlines())
+            page_data = create_text_view(config.get('editor_font'), text=text)
+            self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay, filename))
+            self.status.push(self.status_id, f'Loaded {filename}')
+            self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
+            # switch to the one. Must display before switching
+            self.show_all()
+            self.set_current_page(-1)
+            self.buffers.current_page = self.notebook.get_current_page()
+            logger.info(f'Loaded file from {filename}')
+        dialog.destroy()
+
+    def close_notebook(self, index):
+        # remove the notebook on this index
+        # no need to worry about the data by this point
+        self.remove_page(index)
+
     def message(self, message):
-        if message.action == 'update_font':
-            self.update_font(message.data)
-        elif message.action == 'close_buffer':
-            self.close_buffer(message.data)
-        else:
-            logger.error(f'Buffers cannot understand action {message.action}')
+        match message.action:
+            case 'close-notebook':
+                self.close_notebook(message.data)
+            case 'new-file':
+                self.new_file()
+            case 'load-file':
+                self.load_file()
+            case 'save-file':
+                self.save_file()
+            case 'update_font':
+                 self.buffers.update_font(message.data)
+            case 'close_buffer':
+                 self.close_buffer(message.data)
+            case _:
+                logger.error(f'Text cannot understand action {message.action}')
