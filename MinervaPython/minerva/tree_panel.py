@@ -1,13 +1,14 @@
-import os
-
 import gi
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GdkPixbuf
 
+import os
 from pathlib import Path
 
 from minerva.logs import logger
+from minerva.helpers.messagebox import messagebox_yes_no
+from minerva.helpers.file_functions import rename_path, delete_file, delete_directory, create_file, create_directory
 
 
 FILE_EDIT_DIALOG = Path('./glade/file_rename.glade')
@@ -157,7 +158,7 @@ class FileTree(Gtk.ScrolledWindow):
             filename = self.store[iter][1]
             filepath = self.store[iter][3]
             if self.store[iter][2].startswith('d_'):
-                # it's a folder
+                # These options
                 options = ['New File', 'New Directory', f'Rename {filename}', f'Delete {filename}']
                 context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
                 context_menu.popup_at_pointer()
@@ -171,31 +172,42 @@ class FileTree(Gtk.ScrolledWindow):
     def context_dir_selected(self, _widget, data):
         # Based on the data, perform action on this widget
         action = data[0]
+        filepath = Path(data[1])
         if action == 0:
             # new file
-            get_file_edit(old_name=None, file=True)
+            new_name = get_file_edit(old_name=None, file=True)
+            if len(new_name) > 0:
+                create_file(filepath / new_name)
         elif action == 1:
             # new directory
-            get_file_edit(old_name=None, file=False)
+            new_name = get_file_edit(old_name=None, file=False)
+            if len(new_name) > 0:
+                create_directory(filepath / new_name)
         elif action == 2:
             # rename directory
-            get_file_edit(old_name=data[1], file=False)
+            new_name = get_file_edit(old_name=filepath.name, file=False)
+            if len(new_name) > 0:
+                rename_path(filepath, filepath.parent / new_name)
         elif action == 3:
-            # delete directory
-            print('Sure?')
+            if messagebox_yes_no(self.get_toplevel(), f'Delete directory {filepath.name} and all contents?') is True:
+                delete_directory(filepath)
 
     def context_file_selected(self, _widget, data):
         # Based on the data, perform action on this widget
         action = data[0]
+        filepath = Path(data[1])
         if action == 0:
             # open file
             pass
         elif action == 1:
             # rename file
-            get_file_edit(old_name=data[1], file=True)
+            new_name = get_file_edit(old_name=data[1].name, file=True)
+            if len(new_name) > 0:
+                rename_path(filepath, filepath.parent / new_name)
         elif action == 2:
             # delete filename
-            pass
+            if messagebox_yes_no(self.get_toplevel(), f'Delete file {filepath.name}?') is True:
+                delete_file(filepath)
 
     def scan_directory(self, directory):
         self.store.clear()
