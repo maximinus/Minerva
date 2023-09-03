@@ -183,11 +183,12 @@ class Console:
 
     def message(self, message):
         # this is a message we need to handle
-        if message.action == 'update_font':
-            self.text_view.override_font(message.data)
-        elif message.action == 'update_binary':
-            pass
-        elif message.action == 'eval-return':
-            self.eval_results(message)
-        else:
-            logger.error(f'Console cannot understand action {message.action}')
+        match message.action:
+            case 'update_font':
+                self.text_view.override_font(message.data)
+            case 'update_binary':
+                pass
+            case 'eval-return':
+                self.eval_results(message)
+            case _:
+                logger.error(f'Console cannot understand action {message.action}')

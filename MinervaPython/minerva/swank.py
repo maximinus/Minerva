@@ -289,17 +289,18 @@ class SwankClient:
         self.swank_send(response)
 
     def message(self, message):
-        if message.action == 'message':
-            self.handle_message(message)
-        elif message.action == 'repl-cmd':
-            self.eval(message.data)
-        elif message.action == 'lost-connection':
-            # error and restart lisp binary?
-            logger.error('Lost Lisp binary connection')
-        elif message.action == 'init-complete':
-            logger.info('Swank setup complete')
-        else:
-            logger.error(f'No such message action {message.action} for Swank')
+        match message.action:
+            case 'message':
+                self.handle_message(message)
+            case 'repl-cmd':
+                self.eval(message.data)
+            case 'lost-connection':
+                # error and restart lisp binary?
+                logger.error('Lost Lisp binary connection')
+            case 'init-complete':
+                logger.info('Swank setup complete')
+            case _:
+                logger.error(f'No such message action {message.action} for Swank')
 
 
 if __name__ == '__main__':

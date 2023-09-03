@@ -20,7 +20,7 @@ from minerva.helpers.messagebox import messagebox
 from minerva.swank import SwankClient
 
 
-VERSION = '0.05'
+VERSION = '0.06'
 ROOT_DIRECTORY = Path().resolve()
 
 
@@ -128,19 +128,20 @@ class MinervaWindow(Gtk.Window):
 
     def resolver(self, message):
         # pass messages on to the correct area
-        if message.address == Target.WINDOW:
-            # that's us
-            self.message(message)
-        elif message.address == Target.TEXT:
-            self.text_editors.message(message)
-        elif message.address == Target.CONSOLE:
-            self.console.message(message)
-        elif message.address == Target.SWANK:
-            self.lisp_repl.message(message)
-        elif message.address == Target.TREES:
-            self.side_panel.message(message)
-        else:
-            logger.error(f'No target for message to {message.action}')
+        match message.address:
+            case Target.WINDOW:
+                # that's us
+                self.message(message)
+            case Target.TEXT:
+                self.text_editors.message(message)
+            case Target.CONSOLE:
+                self.console.message(message)
+            case Target.SWANK:
+                self.lisp_repl.message(message)
+            case Target.TREES:
+                self.side_panel.message(message)
+            case _:
+                logger.error(f'No target for message to {message.action}')
 
     def quit_minerva(self):
         handler.close()
@@ -149,13 +150,13 @@ class MinervaWindow(Gtk.Window):
         Gtk.main_quit()
 
     def run_code(self):
-        messagebox('Running code')
+        messagebox(self, 'Running code')
 
     def debug_code(self):
-        messagebox('Debugging code')
+        messagebox(self, 'Debugging code')
 
     def show_help(self):
-        messagebox('This is the help')
+        messagebox(self, 'This is the help')
 
     def show_about(self):
         self.about.show()

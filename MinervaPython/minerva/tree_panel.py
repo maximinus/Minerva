@@ -305,10 +305,11 @@ class SidePanel(Gtk.Notebook):
         self.set_tab_pos(Gtk.PositionType.LEFT)
 
     def message(self, message):
-        if message.action == 'scan-directory':
-            self.file_tree.scan_directory(message.data)
-        else:
-            logger.error(f'Sidepanel cannot understand action {message.action}')
+        match message.action:
+            case 'scan-directory':
+                self.file_tree.scan_directory(message.data)
+            case _:
+                logger.error(f'Sidepanel cannot understand action {message.action}')
 
 
 if __name__ == '__main__':
