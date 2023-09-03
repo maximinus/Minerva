@@ -98,7 +98,6 @@ def get_file_edit(old_name=None, file=True):
     else:
         filename = ''
     dialog.destroy()
-    print(filename)
     return filename
 
 
@@ -187,7 +186,7 @@ class FileTree(Gtk.ScrolledWindow):
             # rename directory
             new_name = get_file_edit(old_name=filepath.name, file=False)
             if len(new_name) > 0:
-                rename_path(filepath, filepath.parent / new_name)
+                rename_path(filepath, new_name)
         elif action == 3:
             if messagebox_yes_no(self.get_toplevel(), f'Delete directory {filepath.name} and all contents?') is True:
                 delete_directory(filepath)
@@ -201,9 +200,9 @@ class FileTree(Gtk.ScrolledWindow):
             pass
         elif action == 1:
             # rename file
-            new_name = get_file_edit(old_name=data[1].name, file=True)
+            new_name = get_file_edit(old_name=filepath.name, file=True)
             if len(new_name) > 0:
-                rename_path(filepath, filepath.parent / new_name)
+                rename_path(filepath, new_name)
         elif action == 2:
             # delete filename
             if messagebox_yes_no(self.get_toplevel(), f'Delete file {filepath.name}?') is True:

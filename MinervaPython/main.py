@@ -277,8 +277,13 @@ def exit_app(app):
     app.quit_minerva()
 
 
+def get_gtk_version():
+    return f'Gtk v{Gtk.get_major_version()}.{Gtk.get_minor_version()}.{Gtk.get_micro_version()}'
+
+
 if __name__ == '__main__':
     load_css_provider()
     app = MinervaWindow()
     app.connect('destroy', exit_app)
+    logger.info(f'Running Minerva v{VERSION} in Gtk {get_gtk_version()}')
     Gtk.main()

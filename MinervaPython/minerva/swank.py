@@ -204,7 +204,7 @@ class SwankClient:
         self.listener_thread.start()
 
     def stop_listener(self):
-        logger.info('Stoppinng Swank client')
+        logger.info('Stopping Swank client')
         if self.listener_thread is not None:
             self.thread_event.set()
         self.swank_server.stop()

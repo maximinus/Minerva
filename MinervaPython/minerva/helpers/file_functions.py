@@ -6,9 +6,13 @@ from pathlib import Path
 from minerva.logs import logger
 
 # code to create / delete files etc..
+FILE_DEBUG = True
 
 
 def rename_path(filepath, new_name):
+    logger.info(f'Renaming file {filepath} to {new_name}')
+    if FILE_DEBUG:
+        return
     new_path = filepath.parent / new_name
     try:
         os.rename(filepath, new_path)
@@ -19,6 +23,9 @@ def rename_path(filepath, new_name):
 
 
 def delete_file(filepath):
+    logger.info(f'Deleting file {filepath}')
+    if FILE_DEBUG:
+        return
     # if it doesn't exist, we don't need to do anything
     if os.path.exists(filepath):
         logger.error(f'Asked to delete an non-existent file: {filepath}')
@@ -31,6 +38,9 @@ def delete_file(filepath):
 
 
 def delete_directory(filepath):
+    logger.info(f'Deleting directory {filepath}')
+    if FILE_DEBUG:
+        return
     # if it doesn't exist, we don't need to do anything
     if os.path.exists(filepath):
         logger.error(f'Asked to delete an non-existent file: {filepath}')
@@ -44,6 +54,9 @@ def delete_directory(filepath):
 
 
 def create_file(filepath):
+    logger.info(f'Creating file {filepath}')
+    if FILE_DEBUG:
+        return
     # the file will be empty
     try:
         Path(filepath).touch()
@@ -56,6 +69,9 @@ def create_file(filepath):
 
 
 def create_directory(filepath):
+    logger.info(f'Creating directory {filepath}')
+    if FILE_DEBUG:
+        return
     # the directory will be empty
     if os.path.exists(filepath):
         logger.error(f'Asked to create a directory that already exists: {filepath}')
