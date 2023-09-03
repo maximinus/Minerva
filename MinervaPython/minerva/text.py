@@ -28,14 +28,7 @@ def get_name_label(html_text, color=None):
     return label
 
 
-class SearchText(Gtk.Window):
-    # an overlay to handle searching for text
-    def __init__(self, parent):
-        super().__init__(Gtk.WindowType.POPUP)
-
-
-class TextOverlay(Gtk.Window):
-    # an overlay to put over the text showing predictive text
+class WindowOverlay(Gtk.Window):
     def __init__(self, parent):
         super().__init__(Gtk.WindowType.POPUP)
         self.set_visible(False)
@@ -43,12 +36,65 @@ class TextOverlay(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_transient_for(parent)
         self.set_resizable(False)
-        self.set_halign(Gtk.Align.START)
-        self.set_valign(Gtk.Align.START)
         geo_hints = Gdk.Geometry()
         geo_hints.min_width = 0
         geo_hints.min_height = 0
         self.set_geometry_hints(None, geo_hints, Gdk.WindowHints.MIN_SIZE)
+
+
+class SearchText(WindowOverlay):
+    # an overlay to handle searching for text
+    def __init__(self, parent):
+        super().__init__()
+        self.match_case = False
+        self.as_regex = False
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        menu_button = Gtk.MenuButton()
+        entry = Gtk.Entry()
+        clear_button = Gtk.Button()
+        case_button = Gtk.Button()
+        regex_button = Gtk.Button()
+        results_label = Gtk.Label()
+        previous_button = Gtk.Button()
+        next_button = Gtk.Button()
+        box.pack_start(menu_button, False, False, 0)
+        box.pack_start(entry, True, True, 0)
+        for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
+            box.pack_start(i, False, False, 0)
+        # connect everything
+        clear_button.connect('clicked', self.clear_search)
+        case_button.connect('clicked', self.set_case)
+        regex_button.connect('clicked', self.set_regex)
+        previous_button.connect('clicked', self.previous)
+        next_button('clicked', self.next)
+
+    def clear_search(self, _button, _data):
+        pass
+
+    def set_case(self, _button, _data):
+        self.match_case = not self.match_case
+
+    def set_regex(self, _button, _data):
+        self.as_regex = not self.as_regex
+
+    def previous(self, _button, _data):
+        # highlight and move to next match
+        pass
+
+    def next(self, _button, _data):
+        # highlight and move to previous match
+        pass
+
+    def close(self, _button, _data):
+        pass
+
+
+class TextOverlay(WindowOverlay):
+    # an overlay to put over the text showing predictive text
+    def __init__(self, parent):
+        super().__init__()
+        self.set_halign(Gtk.Align.START)
+        self.set_valign(Gtk.Align.START)
         self.lines = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.lines.set_orientation(orientation=Gtk.Orientation.VERTICAL)
         self.lines.set_halign(Gtk.Align.START)
