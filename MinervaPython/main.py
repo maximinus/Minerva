@@ -203,6 +203,7 @@ class MinervaWindow(Gtk.Window):
 
 
 def exit_app(app):
+    logger.info('Exiting Minerva')
     app.quit_minerva()
 
 
