@@ -44,7 +44,7 @@ class WindowOverlay(Gtk.Window):
 
 class SearchText(WindowOverlay):
     # an overlay to handle searching for text
-    def __init__(self, parent, notebook):
+    def __init__(self, parent):
         super().__init__(parent)
         self.match_case = False
         self.as_regex = False
@@ -52,12 +52,12 @@ class SearchText(WindowOverlay):
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         menu_button = Gtk.MenuButton()
         entry = Gtk.Entry()
-        clear_button = Gtk.Button()
-        case_button = Gtk.Button()
-        regex_button = Gtk.Button()
-        results_label = Gtk.Label()
-        previous_button = Gtk.Button()
-        next_button = Gtk.Button()
+        clear_button = Gtk.Button.new_with_label('x')
+        case_button = Gtk.Button.new_with_label('Aa')
+        regex_button = Gtk.Button.new_with_label('.*')
+        results_label = Gtk.Label(label='0 results')
+        previous_button = Gtk.Button.new_with_label('<')
+        next_button = Gtk.Button.new_with_label('>')
         box.pack_start(menu_button, False, False, 0)
         box.pack_start(entry, True, True, 0)
         for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
@@ -357,7 +357,7 @@ class TextEdit(Gtk.Notebook):
         super(TextEdit, self).__init__()
         self.buffers = Buffers()
         self.code_hint_overlay = TextOverlay(window)
-        self.search_overlay = SearchText(window, self)
+        self.search_overlay = SearchText(window)
 
         page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))

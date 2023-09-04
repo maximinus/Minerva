@@ -187,6 +187,8 @@ class MinervaWindow(Gtk.Window):
                 self.display()
             case 'init-project':
                 self.load_project(message.data)
+            case 'show-preferences':
+                self.show_preferences()
             case _:
                 logger.error(f'Window cannot understand action {message.action}')
 

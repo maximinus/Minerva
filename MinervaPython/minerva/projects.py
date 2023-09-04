@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 from minerva.logs import logger
+from minerva.preferences import config
 from minerva.actions import Message, Target, message_queue
 from minerva.helpers.messagebox import messagebox, messagebox_yes_no
 
@@ -204,6 +205,8 @@ class NewProjectWindow:
 
 class ProjectWindow:
     def __init__(self):
+        if self.has_default() is True:
+            return
         self.window_builder = Gtk.Builder.new_from_file(str(PROJECTS_DIALOG))
         self.window_builder.connect_signals(self)
         self.dialog = self.window_builder.get_object('projects_window')
@@ -216,6 +219,20 @@ class ProjectWindow:
         self.projects = []
         self.build_project_list()
         self.dialog.show_all()
+
+    def has_default(self):
+        default_project = config.get('start_project')
+        if default_project is None:
+            return
+        # try to load
+        try:
+            project = ProjectDetails.load_json(default_project)
+        except ProjectLoadException as ex:
+            logger.error(f'Could not load default project: {ex}')
+            return False
+        logger.info('Loading start project defined in config')
+        message_queue.message(Message(Target.WINDOW, 'init-project', project))
+        return True
 
     def build_project_list(self):
         projects = get_all_projects()
