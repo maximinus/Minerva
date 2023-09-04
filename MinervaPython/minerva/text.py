@@ -44,10 +44,11 @@ class WindowOverlay(Gtk.Window):
 
 class SearchText(WindowOverlay):
     # an overlay to handle searching for text
-    def __init__(self, parent):
-        super().__init__()
+    def __init__(self, parent, notebook):
+        super().__init__(parent)
         self.match_case = False
         self.as_regex = False
+        self.parent = parent
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         menu_button = Gtk.MenuButton()
         entry = Gtk.Entry()
@@ -66,7 +67,25 @@ class SearchText(WindowOverlay):
         case_button.connect('clicked', self.set_case)
         regex_button.connect('clicked', self.set_regex)
         previous_button.connect('clicked', self.previous)
-        next_button('clicked', self.next)
+        next_button.connect('clicked', self.next)
+
+    def set_position(self, notebook):
+        # position is relative to window itself
+        # since we have no decoration, we must offset by that as well
+        gdk_window = notebook.get_window()
+        s1 = gdk_window.get_frame_extents().height
+        s2 = notebook.get_toplevel().get_allocation().height
+        window_decoration_height = s1 - s2
+        root = notebook.get_toplevel()
+        win_pos = root.get_position()
+        widget_pos = notebook.translate_coordinates(root, 0, 0)
+        # add window position + cursor position + cursor height
+        height = win_pos[1] + widget_pos[1] + window_decoration_height
+        return [win_pos[0] + widget_pos[0], height]
+
+    def show(self, notebook):
+        self.set_position(notebook)
+        self.show_all()
 
     def clear_search(self, _button, _data):
         pass
@@ -92,7 +111,7 @@ class SearchText(WindowOverlay):
 class TextOverlay(WindowOverlay):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):
-        super().__init__()
+        super().__init__(parent)
         self.set_halign(Gtk.Align.START)
         self.set_valign(Gtk.Align.START)
         self.lines = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -123,6 +142,8 @@ class TextBuffer:
     window_decoration_height = 0
 
     def __init__(self, text_view, code_hint, filename=None):
+        # this is a single file of text displayed to the user
+        # we are passed the Gtk.TextVire, the code_hint overlay and the filename
         self.text_view = text_view
         self.code_hint = code_hint
         self.filename = filename
@@ -174,7 +195,6 @@ class TextBuffer:
         win_pos = root.get_position()
         widget_pos = self.text_view.translate_coordinates(root, 0, 0)
         # [0] is for the strong cursor
-        foo = self.text_view.get_cursor_locations(None)
         cursor = self.text_view.get_cursor_locations(None)[0]
         # we always want the window to be over the line below what we are typing
         pos = self.text_view.buffer_to_window_coords(Gtk.TextWindowType.TEXT, cursor.x, cursor.y)
@@ -337,6 +357,7 @@ class TextEdit(Gtk.Notebook):
         super(TextEdit, self).__init__()
         self.buffers = Buffers()
         self.code_hint_overlay = TextOverlay(window)
+        self.search_overlay = SearchText(window, self)
 
         page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
@@ -416,5 +437,9 @@ class TextEdit(Gtk.Notebook):
                  self.buffers.update_font(message.data)
             case 'close_buffer':
                  self.close_buffer(message.data)
+            case 'search-text':
+                self.search_overlay.show(self)
+            case 'replace-text':
+                pass
             case _:
                 logger.error(f'Text cannot understand action {message.action}')
