@@ -68,6 +68,7 @@ class SearchText(WindowOverlay):
         regex_button.connect('clicked', self.set_regex)
         previous_button.connect('clicked', self.previous)
         next_button.connect('clicked', self.next)
+        self.add(box)
 
     def set_position(self, notebook):
         # position is relative to window itself
@@ -81,7 +82,7 @@ class SearchText(WindowOverlay):
         widget_pos = notebook.translate_coordinates(root, 0, 0)
         # add window position + cursor position + cursor height
         height = win_pos[1] + widget_pos[1] + window_decoration_height
-        return [win_pos[0] + widget_pos[0], height]
+        self.move(win_pos[0] + widget_pos[0], height)
 
     def show(self, notebook):
         self.set_position(notebook)
