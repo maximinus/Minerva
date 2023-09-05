@@ -5,19 +5,18 @@ from gi.repository import Gtk, Gdk, Gio
 from pathlib import Path
 
 from minerva.menu import get_menu_from_config
-from minerva.toolbar import get_toolbar_from_config
-from minerva.text import TextEditArea
-from minerva.actions import get_named_action, message_queue, Target, Message
-from minerva.tree_panel import SidePanel
-from minerva.projects import ProjectWindow
+from minerva.toolbar import Toolbar
+from minerva.text import TextEdit
 from minerva.console import Console
-from minerva.searchbar import SearchBar
-from minerva.preferences import PreferencesDialog
-from minerva.logs import logger, handler
-from minerva.preferences import config
 from minerva.about import AboutDialog
-from minerva.helpers.messagebox import messagebox
 from minerva.swank import SwankClient
+from minerva.preferences import config
+from minerva.tree_panel import SidePanel
+from minerva.logs import logger, handler
+from minerva.projects import ProjectWindow
+from minerva.helpers.messagebox import messagebox
+from minerva.preferences import PreferencesDialog
+from minerva.actions import get_named_action, message_queue, Target, Message
 
 
 VERSION = '0.1'
@@ -73,19 +72,16 @@ class MinervaWindow(Gtk.Window):
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
-
-        self.search = SearchBar(get_toolbar_from_config(action_router))
-        box.pack_start(self.search.box, False, False, 0)
-
-        self.text_editors = TextEditArea(self)
+        self.toolbar = Toolbar(action_router)
+        box.pack_start(self.toolbar, False, False, 0)
 
         self.panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
-
         # the top of the panel is another panel which is horizontal
         # left is a notebook with 2 trees
         # right is the text editor
         self.tree_panel = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.side_panel = SidePanel()
+        self.text_editors = TextEdit(self)
 
         self.side_panel.get_style_context().add_class('sidebar_fix')
         self.tree_panel.pack1(self.side_panel, True, True)
@@ -125,6 +121,7 @@ class MinervaWindow(Gtk.Window):
 
     def display(self):
         self.show_all()
+        self.toolbar.hide_search()
 
     def resolver(self, message):
         # pass messages on to the correct area

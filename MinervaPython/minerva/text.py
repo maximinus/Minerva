@@ -28,58 +28,6 @@ def get_name_label(html_text, color=None):
     return label
 
 
-class SearchText(Gtk.Frame):
-    # an overlay to handle searching for text
-    def __init__(self):
-        super().__init__()
-        # we need to add a offset that is the height of the notebook top part
-        self.set_margin_top(32)
-        self.set_halign(Gtk.Align.END)
-        self.set_valign(Gtk.Align.START)
-        self.match_case = False
-        self.as_regex = False
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        menu_button = Gtk.MenuButton()
-        entry = Gtk.Entry()
-        clear_button = Gtk.Button.new_with_label('x')
-        case_button = Gtk.Button.new_with_label('Aa')
-        regex_button = Gtk.Button.new_with_label('.*')
-        results_label = Gtk.Label(label='0 results')
-        previous_button = Gtk.Button.new_with_label('<')
-        next_button = Gtk.Button.new_with_label('>')
-        box.pack_start(menu_button, False, False, 0)
-        box.pack_start(entry, False, False, 0)
-        for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
-            box.pack_start(i, False, False, 0)
-        # connect everything
-        clear_button.connect('clicked', self.clear_search)
-        case_button.connect('clicked', self.set_case)
-        regex_button.connect('clicked', self.set_regex)
-        previous_button.connect('clicked', self.previous)
-        next_button.connect('clicked', self.next)
-        self.add(box)
-
-    def clear_search(self, _button):
-        pass
-
-    def set_case(self, _button):
-        self.match_case = not self.match_case
-
-    def set_regex(self, _button):
-        self.as_regex = not self.as_regex
-
-    def previous(self, _button):
-        # highlight and move to next match
-        pass
-
-    def next(self, _button):
-        # highlight and move to previous match
-        pass
-
-    def close(self, _button, _data):
-        pass
-
-
 class TextOverlay(Gtk.Window):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):
@@ -403,31 +351,20 @@ class TextEdit(Gtk.Notebook):
         # no need to worry about the data by this point
         self.remove_page(index)
 
-
-class TextEditArea(Gtk.Overlay):
-    def __init__(self, window):
-        super().__init__()
-        self.text_edit = TextEdit(window)
-        self.search_overlay = SearchText()
-        self.add_overlay(self.text_edit)
-        self.add_overlay(self.search_overlay)
-
     def message(self, message):
         match message.action:
             case 'close-notebook':
-                self.text_edit.close_notebook(message.data)
+                self.close_notebook(message.data)
             case 'new-file':
-                self.text_edit.new_file()
+                self.new_file()
             case 'load-file':
-                self.text_edit.load_file()
+                self.load_file()
             case 'save-file':
-                self.text_edit.save_file()
+                self.save_file()
             case 'update_font':
-                self.text_edit.buffers.update_font(message.data)
+                self.buffers.update_font(message.data)
             case 'close_buffer':
-                self.text_edit.close_buffer(message.data)
-            case 'search-text':
-                self.search_overlay.show_all()
+                self.close_buffer(message.data)
             case 'replace-text':
                 pass
             case _:
