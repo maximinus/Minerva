@@ -72,7 +72,7 @@ class TextBuffer:
 
     def __init__(self, text_view, code_hint, filename=None):
         # this is a single file of text displayed to the user
-        # we are passed the Gtk.TextVire, the code_hint overlay and the filename
+        # we are passed the Gtk.TextView, the code_hint overlay and the filename
         self.text_view = text_view
         self.code_hint = code_hint
         self.filename = filename
@@ -229,6 +229,9 @@ class TextBuffer:
     def update_font(self, new_font):
         self.text_view.override_font(Pango.FontDescription(new_font))
 
+    def get_text_buffer(self):
+        return self.text_view.get_buffer()
+
 
 def create_text_view(font, text=None):
     # textview needs to go into a scrolled window of course
@@ -249,6 +252,7 @@ def create_text_view(font, text=None):
 
 class Buffers:
     def __init__(self):
+        # Each buffer is a TextBuffer object
         self.buffer_list = []
         # current page being shown
         self.current_page = 0
@@ -355,6 +359,17 @@ class TextEdit(Gtk.Notebook):
     def show_search(self):
         self.searchbar.show_search()
 
+    def search_text(self, search_params):
+        text_buffer = self.buffers.get_current().get_text_buffer()
+        # we need to do a search in the TextView
+        start_iter = text_buffer.get_start_iter()
+        if search_params.case is True:
+            found = start_iter.forward_search(search_params.text, 0, None)
+        else:
+            found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
+        if found:
+            start, end = found
+            text_buffer.select_range(start, end)
 
     def message(self, message):
         match message.action:
@@ -370,8 +385,10 @@ class TextEdit(Gtk.Notebook):
                 self.buffers.update_font(message.data)
             case 'close_buffer':
                 self.close_buffer(message.data)
-            case 'search-text':
+            case 'show-search':
                 self.show_search()
+            case 'search-text':
+                self.search_text(message.data)
             case 'replace-text':
                 pass
             case _:

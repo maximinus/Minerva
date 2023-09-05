@@ -4,6 +4,9 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 
+from minerva.actions import Message, message_queue, Target
+
+
 SEARCH_MAX_HISTORY = 20
 
 
@@ -20,6 +23,14 @@ def get_search_button(filename):
     return button
 
 
+class SearchParams:
+    def __init__(self, text, case, regex, widget):
+        self.text = text
+        self.case = case
+        self.regex = regex
+        self.widget = widget
+
+
 class SearchBar(Gtk.Box):
     # an overlay to handle searching for text
     def __init__(self):
@@ -31,6 +42,7 @@ class SearchBar(Gtk.Box):
         self.entry = Gtk.Entry()
         self.entry.set_has_frame(False)
         self.entry.get_style_context().add_class('search_entry')
+        self.entry.connect('changed', self.entry_changed)
         clear_button = get_search_button('close')
         case_button = get_search_button('case')
         regex_button = get_search_button('regex')
@@ -48,6 +60,11 @@ class SearchBar(Gtk.Box):
         previous_button.connect('clicked', self.previous)
         next_button.connect('clicked', self.next)
         self.history = []
+
+    def entry_changed(self, _widget):
+        text = self.entry.get_text()
+        search = SearchParams(text, self.match_case, self.as_regex, self)
+        message_queue.message(Message(Target.TEXT, 'search-text', search))
 
     def clear_search(self, _button):
         pass

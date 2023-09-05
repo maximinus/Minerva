@@ -8,7 +8,7 @@
              {"text": "-"},
              {"text": "Quit", "shortcut": "<Control>q", "action": "main:quit-minerva"}]},
   {"text":  "Edit",
-   "items":  [{"text": "Search", "shortcut":  "<Control>f", "action": "text:search-text"},
+   "items":  [{"text": "Search", "shortcut":  "<Control>f", "action": "text:show-search"},
               {"text": "Replace", "shortcut": "<Control>r", "action":  "text:replace-text"}]},
   {"text": "Lisp",
    "items": [{"text": "Run", "icon": "run", "shortcut": "F5", "action":  "main:run-code"},
