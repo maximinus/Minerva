@@ -67,24 +67,6 @@ class TextOverlay(Gtk.Window):
         self.lines.pack_start(new_label, False, False, 0)
 
 
-
-def create_text_view(font, text=None):
-    # textview needs to go into a scrolled window of course
-    scrolled_window = Gtk.ScrolledWindow()
-    scrolled_window.set_hexpand(True)
-    scrolled_window.set_vexpand(True)
-
-    text_view = Gtk.TextView()
-    text_view.override_font(Pango.FontDescription(font))
-    if text is None:
-        text_view.get_buffer().set_text('')
-    else:
-        text_view.get_buffer().set_text(text)
-
-    scrolled_window.add(text_view)
-    return [scrolled_window, text_view]
-
-
 def get_filename(self, window):
     dialog = Gtk.FileChooserDialog(title="Select file", parent=window, action=Gtk.FileChooserAction.SAVE)
     dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
@@ -97,13 +79,9 @@ def get_filename(self, window):
     dialog.destroy()
     return filename
 
-# TODO: Tidy this code from here
-# the TextBuffer should just be a TextView, however it needs to be in a scrolled window
-# it represents a single file
-# all the search functions are here
-
 
 class SingleTextView(Gtk.ScrolledWindow):
+    # Single file of text to be edited
     window_decoration_height = 0
 
     def __init__(self, code_overlay, font=None, text=None, filename=None):
@@ -153,9 +131,9 @@ class SingleTextView(Gtk.ScrolledWindow):
     def set_code_hint_window(self):
         # update window decoration offset if not computed
         if self.window_decoration_height == 0:
-            gdk_window = self.text_view.get_window(Gtk.TextWindowType.WIDGET)
+            gdk_window = self.text.get_window(Gtk.TextWindowType.WIDGET)
             s1 = gdk_window.get_frame_extents().height
-            s2 = self.text_view.get_toplevel().get_allocation().height
+            s2 = self.text.get_toplevel().get_allocation().height
             self.window_decoration_height = s1 - s2
         window_pos = self.get_window_position()
         self.code_hint.move(window_pos[0], window_pos[1])
@@ -221,7 +199,7 @@ class SingleTextView(Gtk.ScrolledWindow):
                 # no filename selected
                 return
         with open(filename, 'w') as file:
-            buffer = self.text_view.get_buffer()
+            buffer = self.text.get_buffer()
             start = buffer.get_start_iter()
             end = buffer.get_end_iter()
             file.write(buffer.get_text(start, end, True))
@@ -237,7 +215,7 @@ class SingleTextView(Gtk.ScrolledWindow):
             # nothing to do, and save is ok
             return True
         # get parent window
-        parent = self.text_view.get_toplevel()
+        parent = self.text.get_toplevel()
         # if we are saved and not modified, no need to ask
         if self.filename is None:
             # Nothing has been defined
@@ -259,58 +237,16 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.text.override_font(Pango.FontDescription(new_font))
 
 
-# this is a class that contains all the seperate textviews. it should be the notebook, right?
-
-class Buffers:
-    def __init__(self):
-        # Each buffer is a TextBuffer object
-        self.buffer_list = []
-        # current page being shown
-        self.current_page = 0
-
-    def add_buffer(self, new_buffer):
-        self.buffer_list.append(new_buffer)
-
-    def update_font(self, new_font):
-        for i in self.buffer_list:
-            i.update_font(new_font)
-
-    def get_index(self, index):
-        return self.buffer_list[index]
-
-    def get_current(self):
-        return self.buffer_list[self.current_page]
-
-    def close_buffer(self, buffer):
-        # find this matching buffer
-        index = 0
-        for i in self.buffer_list:
-            if i == buffer:
-                if i.close():
-                    # tell main window to close notebook
-                    self.buffer_list.pop(index)
-                    message_queue.message(Message(Target.WINDOW, 'close_notebook', index))
-                # either way we are done with the buffer
-                return
-            index += 1
-
-
 class TextEdit(Gtk.Notebook):
     def __init__(self, window, search):
         # notebook to handle all code for text files and move out of main.py
         super().__init__()
-        self.buffers = Buffers()
         self.code_hint_overlay = TextOverlay(window)
         self.searchbar = search
-
-        #page_data = create_text_view(config.get('editor_font'))
-        #self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
 
         # create a single page
         new_view = SingleTextView(self.code_hint_overlay)
         self.append_page(new_view, new_view.get_label())
-
-        #self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         self.connect('switch_page', self.switch_page)
 
     def switch_page(self, _notebook, _page, page_num):
@@ -321,13 +257,8 @@ class TextEdit(Gtk.Notebook):
         # add an empty notebook
         new_view = SingleTextView(self.code_hint_overlay)
         self.append_page(new_view, new_view.get_label())
-
-        #page_data = create_text_view(config.get('editor_font'))
-        #self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
-        #self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
         self.show_all()
         self.set_current_page(-1)
-        #self.buffers.current_page = self.notebook.get_current_page()
 
     def get_current_textview(self):
         index = self.get_current_page()
@@ -337,7 +268,6 @@ class TextEdit(Gtk.Notebook):
         return self.get_nth_page(index).text
 
     def save_file(self):
-        #self.buffers.get_current().save_file(self)
         text_view = self.get_current_textview()
         if text_view is None:
             return
@@ -371,16 +301,12 @@ class TextEdit(Gtk.Notebook):
             # load the file and add to the textview
             with open(filename) as f:
                 text = ''.join(f.readlines())
-            #page_data = create_text_view(config.get('editor_font'), text=text)
-            #self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay, filename))
             new_view = SingleTextView(self.code_hint_overlay, filename=filename, text=text)
             self.append_page(new_view, new_view.get_label())
 
-            #self.append_page(page_data[0], self.buffers.get_index(-1).get_label())
-            # switch to the one. Must display before switching
+            # switch to the new page one. Must display before switching
             self.show_all()
             self.set_current_page(-1)
-            #self.buffers.current_page = self.notebook.get_current_page()
             logger.info(f'Loaded file from {filename}')
         dialog.destroy()
 
