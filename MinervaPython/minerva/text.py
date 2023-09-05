@@ -67,10 +67,33 @@ class TextOverlay(Gtk.Window):
         self.lines.pack_start(new_label, False, False, 0)
 
 
+# TODO: Tidy this code from here
+# the TextBuffer should just be a TextView
+# it represents a single file
+# all the search functions are here
+
+def create_text_view(font, text=None):
+    # textview needs to go into a scrolled window of course
+    scrolled_window = Gtk.ScrolledWindow()
+    scrolled_window.set_hexpand(True)
+    scrolled_window.set_vexpand(True)
+
+    text_view = Gtk.TextView()
+    text_view.override_font(Pango.FontDescription(font))
+    if text is None:
+        text_view.get_buffer().set_text('')
+    else:
+        text_view.get_buffer().set_text(text)
+
+    scrolled_window.add(text_view)
+    return [scrolled_window, text_view]
+
+
 class TextBuffer:
     window_decoration_height = 0
 
     def __init__(self, text_view, code_hint, filename=None):
+        super().__init__()
         # this is a single file of text displayed to the user
         # we are passed the Gtk.TextView, the code_hint overlay and the filename
         self.text_view = text_view
@@ -233,22 +256,7 @@ class TextBuffer:
         return self.text_view.get_buffer()
 
 
-def create_text_view(font, text=None):
-    # textview needs to go into a scrolled window of course
-    scrolled_window = Gtk.ScrolledWindow()
-    scrolled_window.set_hexpand(True)
-    scrolled_window.set_vexpand(True)
-
-    text_view = Gtk.TextView()
-    text_view.override_font(Pango.FontDescription(font))
-    if text is None:
-        text_view.get_buffer().set_text('')
-    else:
-        text_view.get_buffer().set_text(text)
-
-    scrolled_window.add(text_view)
-    return [scrolled_window, text_view]
-
+# this is a class that contains all the seperate textviews. it should be the notebook, right?
 
 class Buffers:
     def __init__(self):
@@ -363,13 +371,23 @@ class TextEdit(Gtk.Notebook):
         text_buffer = self.buffers.get_current().get_text_buffer()
         # we need to do a search in the TextView
         start_iter = text_buffer.get_start_iter()
-        if search_params.case is True:
-            found = start_iter.forward_search(search_params.text, 0, None)
+        # keep searching until no more are found
+        still_searching = True
+        total_found = 0
+        while still_searching:
+            if search_params.case is True:
+                found = start_iter.forward_search(search_params.text, 0, None)
+            else:
+                found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
+            if found:
+                start, end = found
+                text_buffer.select_range(start, end)
+                total_found +=1
+            else:
+                still_searching = False
         else:
-            found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
-        if found:
-            start, end = found
-            text_buffer.select_range(start, end)
+            # clear selection
+            pass
 
     def message(self, message):
         match message.action:
