@@ -16,7 +16,6 @@ def get_search_button(filename):
     button.set_vexpand(False)
     button.set_hexpand(False)
     button.set_valign(Gtk.Align.CENTER)
-    #button.set_relief(Gtk.ReliefStyle.NONE)
     button.set_focus_on_click(False)
     return button
 
@@ -29,9 +28,9 @@ class SearchBar(Gtk.Box):
         self.as_regex = False
         self.set_valign(Gtk.Align.CENTER)
         menu_button = Gtk.MenuButton()
-        entry = Gtk.Entry()
-        entry.set_has_frame(False)
-        entry.get_style_context().add_class('search_entry')
+        self.entry = Gtk.Entry()
+        self.entry.set_has_frame(False)
+        self.entry.get_style_context().add_class('search_entry')
         clear_button = get_search_button('close')
         case_button = get_search_button('case')
         regex_button = get_search_button('regex')
@@ -39,7 +38,7 @@ class SearchBar(Gtk.Box):
         previous_button = get_search_button('previous')
         next_button = get_search_button('next')
         self.pack_start(menu_button, False, False, 0)
-        self.pack_start(entry, False, False, 0)
+        self.pack_start(self.entry, False, False, 0)
         for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
             self.pack_start(i, False, False, 0)
         # connect everything
@@ -67,11 +66,15 @@ class SearchBar(Gtk.Box):
         # highlight and move to previous match
         pass
 
-    def close(self, _button, _data):
-        pass
-
     def add_history(self, new_search):
         # first in last out stack
         self.history.append(new_search)
         if len(self.history) > 20:
             self.history = self.history[SEARCH_MAX_HISTORY:]
+
+    def show_search(self):
+        self.show()
+        self.entry.grab_focus()
+
+    def hide_search(self):
+        self.hide()

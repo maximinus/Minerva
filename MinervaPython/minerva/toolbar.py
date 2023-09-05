@@ -37,6 +37,3 @@ class Toolbar(Gtk.Box):
         self.search_toolbar = SearchBar()
         self.pack_start(self.main_toolbar, False, False, 0)
         self.pack_end(self.search_toolbar, False, False, 0)
-
-    def hide_search(self):
-        self.search_toolbar.hide()

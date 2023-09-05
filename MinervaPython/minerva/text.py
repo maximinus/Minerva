@@ -281,11 +281,12 @@ class Buffers:
 
 
 class TextEdit(Gtk.Notebook):
-    def __init__(self, window):
+    def __init__(self, window, search):
         # notebook to handle all code for text files and move out of main.py
         super().__init__()
         self.buffers = Buffers()
         self.code_hint_overlay = TextOverlay(window)
+        self.searchbar = search
 
         page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
@@ -351,6 +352,10 @@ class TextEdit(Gtk.Notebook):
         # no need to worry about the data by this point
         self.remove_page(index)
 
+    def show_search(self):
+        self.searchbar.show_search()
+
+
     def message(self, message):
         match message.action:
             case 'close-notebook':
@@ -365,6 +370,8 @@ class TextEdit(Gtk.Notebook):
                 self.buffers.update_font(message.data)
             case 'close_buffer':
                 self.close_buffer(message.data)
+            case 'search-text':
+                self.show_search()
             case 'replace-text':
                 pass
             case _:

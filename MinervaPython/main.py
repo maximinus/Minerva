@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, Gio
 from pathlib import Path
 
+from minerva.constants.keycodes import Keys
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import Toolbar
 from minerva.text import TextEdit
@@ -63,6 +64,7 @@ class MinervaWindow(Gtk.Window):
         self.lisp_repl = SwankClient(ROOT_DIRECTORY, config.get('lisp_binary'))
         message_queue.set_resolver(self.resolver)
         self.lisp_repl.swank_init()
+        self.connect('key-press-event', self.key_pressed)
 
         # Note this size does NOT include window decorations
         win_size = config.get('window_size')
@@ -81,7 +83,7 @@ class MinervaWindow(Gtk.Window):
         # right is the text editor
         self.tree_panel = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.side_panel = SidePanel()
-        self.text_editors = TextEdit(self)
+        self.text_editors = TextEdit(self, self.toolbar.search_toolbar)
 
         self.side_panel.get_style_context().add_class('sidebar_fix')
         self.tree_panel.pack1(self.side_panel, True, True)
@@ -119,9 +121,16 @@ class MinervaWindow(Gtk.Window):
         # show the project window
         self.startup = ProjectWindow()
 
+    def key_pressed(self, _widget, event):
+        if event.keyval == Keys.ESCAPE.value:
+            # escape closes the current search
+            self.toolbar.search_toolbar.hide_search()
+        # pass the event on
+        return False
+
     def display(self):
         self.show_all()
-        #self.toolbar.hide_search()
+        self.toolbar.search_toolbar.hide_search()
 
     def resolver(self, message):
         # pass messages on to the correct area

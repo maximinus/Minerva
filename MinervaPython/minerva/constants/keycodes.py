@@ -1,5 +1,6 @@
 from enum import Enum
 
+# these are constants in Gdk: see https://docs.gtk.org/gdk3/index.html
 
 class Keys(Enum):
     RETURN = 65293
@@ -11,3 +12,4 @@ class Keys(Enum):
     DELETE = 65535
     HOME = 65360
     END = 65367
+    ESCAPE = 65307
