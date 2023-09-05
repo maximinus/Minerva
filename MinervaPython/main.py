@@ -121,7 +121,7 @@ class MinervaWindow(Gtk.Window):
 
     def display(self):
         self.show_all()
-        self.toolbar.hide_search()
+        #self.toolbar.hide_search()
 
     def resolver(self, message):
         # pass messages on to the correct area

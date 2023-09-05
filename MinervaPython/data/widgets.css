@@ -37,3 +37,13 @@ notebook tab {
 notebook header.top {
     padding: 0px 0px 0px 0px;
 }
+
+.search_entry {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-height: 0px;
+    min-width: 120px;
+    font-size: 12px;
+}
