@@ -6,7 +6,7 @@ from pathlib import Path
 
 from minerva.menu import get_menu_from_config
 from minerva.toolbar import get_toolbar_from_config
-from minerva.text import TextEdit
+from minerva.text import TextEditArea
 from minerva.actions import get_named_action, message_queue, Target, Message
 from minerva.tree_panel import SidePanel
 from minerva.projects import ProjectWindow
@@ -77,7 +77,7 @@ class MinervaWindow(Gtk.Window):
         self.search = SearchBar(get_toolbar_from_config(action_router))
         box.pack_start(self.search.box, False, False, 0)
 
-        self.text_editors = TextEdit(self)
+        self.text_editors = TextEditArea(self)
 
         self.panel = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
 

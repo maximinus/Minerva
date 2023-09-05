@@ -28,28 +28,12 @@ def get_name_label(html_text, color=None):
     return label
 
 
-class WindowOverlay(Gtk.Window):
-    def __init__(self, parent):
-        super().__init__(Gtk.WindowType.POPUP)
-        self.set_visible(False)
-        self.set_decorated(False)
-        self.set_skip_taskbar_hint(True)
-        self.set_transient_for(parent)
-        self.set_resizable(False)
-        geo_hints = Gdk.Geometry()
-        geo_hints.min_width = 0
-        geo_hints.min_height = 0
-        self.set_geometry_hints(None, geo_hints, Gdk.WindowHints.MIN_SIZE)
-
-
-class SearchText(WindowOverlay):
+class SearchText(Gtk.Box):
     # an overlay to handle searching for text
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL)
         self.match_case = False
         self.as_regex = False
-        self.parent = parent
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         menu_button = Gtk.MenuButton()
         entry = Gtk.Entry()
         clear_button = Gtk.Button.new_with_label('x')
@@ -58,35 +42,16 @@ class SearchText(WindowOverlay):
         results_label = Gtk.Label(label='0 results')
         previous_button = Gtk.Button.new_with_label('<')
         next_button = Gtk.Button.new_with_label('>')
-        box.pack_start(menu_button, False, False, 0)
-        box.pack_start(entry, True, True, 0)
+        self.pack_start(menu_button, False, False, 0)
+        self.pack_start(entry, True, True, 0)
         for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
-            box.pack_start(i, False, False, 0)
+            self.pack_start(i, False, False, 0)
         # connect everything
         clear_button.connect('clicked', self.clear_search)
         case_button.connect('clicked', self.set_case)
         regex_button.connect('clicked', self.set_regex)
         previous_button.connect('clicked', self.previous)
         next_button.connect('clicked', self.next)
-        self.add(box)
-
-    def set_position(self, notebook):
-        # position is relative to window itself
-        # since we have no decoration, we must offset by that as well
-        gdk_window = notebook.get_window()
-        s1 = gdk_window.get_frame_extents().height
-        s2 = notebook.get_toplevel().get_allocation().height
-        window_decoration_height = s1 - s2
-        root = notebook.get_toplevel()
-        win_pos = root.get_position()
-        widget_pos = notebook.translate_coordinates(root, 0, 0)
-        # add window position + cursor position + cursor height
-        height = win_pos[1] + widget_pos[1] + window_decoration_height
-        self.move(win_pos[0] + widget_pos[0], height)
-
-    def show(self, notebook):
-        self.set_position(notebook)
-        self.show_all()
 
     def clear_search(self, _button, _data):
         pass
@@ -109,10 +74,19 @@ class SearchText(WindowOverlay):
         pass
 
 
-class TextOverlay(WindowOverlay):
+class TextOverlay(Gtk.Window):
     # an overlay to put over the text showing predictive text
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(Gtk.WindowType.POPUP)
+        self.set_visible(False)
+        self.set_decorated(False)
+        self.set_skip_taskbar_hint(True)
+        self.set_transient_for(parent)
+        self.set_resizable(False)
+        geo_hints = Gdk.Geometry()
+        geo_hints.min_width = 0
+        geo_hints.min_height = 0
+        self.set_geometry_hints(None, geo_hints, Gdk.WindowHints.MIN_SIZE)
         self.set_halign(Gtk.Align.START)
         self.set_valign(Gtk.Align.START)
         self.lines = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -355,10 +329,9 @@ class Buffers:
 class TextEdit(Gtk.Notebook):
     def __init__(self, window):
         # notebook to handle all code for text files and move out of main.py
-        super(TextEdit, self).__init__()
+        super().__init__()
         self.buffers = Buffers()
         self.code_hint_overlay = TextOverlay(window)
-        self.search_overlay = SearchText(window)
 
         page_data = create_text_view(config.get('editor_font'))
         self.buffers.add_buffer(TextBuffer(page_data[1], self.code_hint_overlay))
@@ -424,22 +397,30 @@ class TextEdit(Gtk.Notebook):
         # no need to worry about the data by this point
         self.remove_page(index)
 
+
+class TextEditArea(Gtk.Overlay):
+    def __init__(self, window):
+        super().__init__()
+        self.text_edit = TextEdit(window)
+        self.search_overlay = SearchText()
+        self.add(self.text_edit)
+
     def message(self, message):
         match message.action:
             case 'close-notebook':
-                self.close_notebook(message.data)
+                self.text_edit.close_notebook(message.data)
             case 'new-file':
-                self.new_file()
+                self.text_edit.new_file()
             case 'load-file':
-                self.load_file()
+                self.text_edit.load_file()
             case 'save-file':
-                self.save_file()
+                self.text_edit.save_file()
             case 'update_font':
-                 self.buffers.update_font(message.data)
+                self.text_edit.buffers.update_font(message.data)
             case 'close_buffer':
-                 self.close_buffer(message.data)
+                self.text_edit.close_buffer(message.data)
             case 'search-text':
-                self.search_overlay.show(self)
+                self.search_overlay.show_all()
             case 'replace-text':
                 pass
             case _:
