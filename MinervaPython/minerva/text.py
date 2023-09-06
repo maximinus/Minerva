@@ -136,8 +136,8 @@ class SingleTextView(Gtk.ScrolledWindow):
             s2 = self.text.get_toplevel().get_allocation().height
             self.window_decoration_height = s1 - s2
         window_pos = self.get_window_position()
-        self.code_hint.move(window_pos[0], window_pos[1])
-        #self.code_hint.show_all()
+        self.code_overlay.move(window_pos[0], window_pos[1])
+        #self.code_overlay.show_all()
 
     def get_window_position(self):
         # return the position the code hint window should be in
@@ -236,6 +236,29 @@ class SingleTextView(Gtk.ScrolledWindow):
     def update_font(self, new_font):
         self.text.override_font(Pango.FontDescription(new_font))
 
+    def search_text(self, search_params):
+        text_buffer = self.text.get_buffer()
+        # we need to do a search in the TextView
+        start_iter = text_buffer.get_start_iter()
+        # keep searching until no more are found
+        still_searching = True
+        total_found = 0
+        while still_searching:
+            if search_params.case is True:
+                found = start_iter.forward_search(search_params.text, 0, None)
+            else:
+                found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
+            if found:
+                start, end = found
+                text_buffer.select_range(start, end)
+                total_found += 1
+                start_iter = end
+            else:
+                still_searching = False
+        else:
+            # clear selection
+            pass
+
 
 class TextEdit(Gtk.Notebook):
     def __init__(self, window, search):
@@ -318,35 +341,15 @@ class TextEdit(Gtk.Notebook):
     def show_search(self):
         self.searchbar.show_search()
 
-    def search_text(self, search_params):
-        # TODO: Switch this to the textview
-        text_view = self.get_current_textview()
-        if text_view is None:
-            return
-        text_buffer = text_view.get_buffer()
-        # we need to do a search in the TextView
-        start_iter = text_buffer.get_start_iter()
-        # keep searching until no more are found
-        still_searching = True
-        total_found = 0
-        while still_searching:
-            if search_params.case is True:
-                found = start_iter.forward_search(search_params.text, 0, None)
-            else:
-                found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
-            if found:
-                start, end = found
-                text_buffer.select_range(start, end)
-                total_found +=1
-            else:
-                still_searching = False
-        else:
-            # clear selection
-            pass
-
     def update_font(self, font_data):
         for text_view in self.get_children():
             text_view.update_font(font_data)
+
+    def search_text(self, search_params):
+        # pass this on to the current textview
+        index = self.get_current_page()
+        if index >= 0:
+            self.get_nth_page(index).search_text(search_params)
 
     def message(self, message):
         match message.action:
