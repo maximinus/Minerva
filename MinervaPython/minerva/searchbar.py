@@ -13,7 +13,6 @@ SEARCH_MAX_HISTORY = 20
 
 
 def get_search_button(filename):
-    toolbar = Gtk.Toolbar()
     image = Gtk.Image()
     image.set_from_file(f'./gfx/search_icons/{filename}.png')
     button = Gtk.ToolButton()

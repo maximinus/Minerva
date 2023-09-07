@@ -276,7 +276,7 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.text.override_font(Pango.FontDescription(new_font))
 
     def search_text(self, search_params):
-        match search_params.message_type:
+        match search_params.type:
             case SearchMessage.NEW_SEARCH:
                 self.new_search(search_params)
             case SearchMessage.NEXT:
@@ -290,7 +290,9 @@ class SingleTextView(Gtk.ScrolledWindow):
 
     def new_search(self, search_params):
         # we need to do a search in the TextView
+        # clear the old search
         start_iter = self.buffer.get_start_iter()
+        self.buffer.remove_all_tags(start_iter, self.buffer.get_end_iter())
         # keep searching until no more are found
         still_searching = True
         self.search_results = SearchResults([])
@@ -309,9 +311,9 @@ class SingleTextView(Gtk.ScrolledWindow):
             message_queue.message(Target.SEARCHBAR, 'update-search', '0 results')
             return
         # highlight the first one
-        for index, i in self.search_results.matches:
+        for index, i in enumerate(self.search_results.matches):
             if index != self.search_results.index:
-                self.buffer(self.search_tag, i.start, i.end)
+                self.buffer.apply_tag(self.search_tag, i.start, i.end)
             else:
                 self.buffer.select_range(i.start, i.end)
 
@@ -368,26 +370,31 @@ class TextEdit(Gtk.Notebook):
         self.set_tab_label(page, text_view.get_label())
 
     def load_file(self):
-        dialog = Gtk.FileChooserDialog(title="Select file", parent=self, action=Gtk.FileChooserAction.OPEN)
+        dialog = Gtk.FileChooserDialog(title="Select file", parent=self.get_toplevel(), action=Gtk.FileChooserAction.OPEN)
         dialog.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK)
 
         filter_lisp = Gtk.FileFilter()
         filter_lisp.set_name('Lisp files')
-        filter_lisp.add_pattern("*.lisp")
+        filter_lisp.add_pattern('*.lisp')
         dialog.add_filter(filter_lisp)
+
+        filter_txt = Gtk.FileFilter()
+        filter_txt.set_name('Text files')
+        filter_txt.add_pattern('*.txt')
+        dialog.add_filter(filter_txt)
 
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             filename = Path(dialog.get_filename())
 
-            # if we already have that file, just go to the tab
-            index = 0
-            for i in self.buffers.buffer_list:
-                if i.filename == filename:
-                    self.set_current_page(index)
-                    dialog.destroy()
-                    return
-                index += 1
+            # TODO: if we already have that file, just go to the tab
+            #index = 0
+            #for i in self.buffers.buffer_list:
+            #    if i.filename == filename:
+            #        self.set_current_page(index)
+            #        dialog.destroy()
+            #        return
+            #    index += 1
 
             # load the file and add to the textview
             with open(filename) as f:
