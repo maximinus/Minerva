@@ -4,6 +4,7 @@ import json
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from minerva.logs import logger
 from minerva.searchbar import SearchBar
 
 
@@ -37,3 +38,11 @@ class Toolbar(Gtk.Box):
         self.search_toolbar = SearchBar()
         self.pack_start(self.main_toolbar, False, False, 0)
         self.pack_end(self.search_toolbar, False, False, 0)
+
+    def message(self, message):
+        match message.action:
+            case 'update-search':
+                self.search_toolbar.update_results(message.data)
+                self.close_notebook(message.data)
+            case _:
+                logger.error(f'Toolbar cannot understand action {message.action}')

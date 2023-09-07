@@ -146,6 +146,8 @@ class MinervaWindow(Gtk.Window):
                 self.lisp_repl.message(message)
             case Target.TREES:
                 self.side_panel.message(message)
+            case Target.TOOLBAR:
+                self.toolbar.message(message)
             case _:
                 logger.error(f'No target for message to {message.action}')
 

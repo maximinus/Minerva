@@ -8,6 +8,7 @@ from pathlib import Path
 from minerva.logs import logger
 from minerva.preferences import config
 from minerva.constants.keycodes import Keys
+from minerva.constants.misc import SearchMessage
 from minerva.helpers.messagebox import messagebox_yes_no
 from minerva.actions import message_queue, Target, Message
 
@@ -16,6 +17,40 @@ COLOR_RED = '#FF8888'
 COLOR_BLUE = '#8888FF'
 
 NOTEBOOK_LABEL_MARGIN = 2
+
+
+# TODO: Text search
+# when text is searched, the following happens:
+# all matches are highlighted in orange, and the first selection is selected (and not yellow)
+# The selection is the first match that is in front of the cursor
+# Clicking next or previous will move the selection forward or back
+# If the text is changed, search begins again
+# If escape or close is clicked, everything is cleared
+# if case is selected / deselected, the search is started again
+# If a new page is selected and search is active, the search is done on the new page
+
+class IterPair:
+    # store a pair of Gtk.TextIters for each match
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+
+class SearchResults:
+    # store the results
+    def __init__(self, matches, index=0):
+        self.matches = matches
+        self.index = index
+
+    def add_match(self, single_match):
+        self.matches.append(single_match)
+
+    @property
+    def empty(self):
+        return len(self.matches) == 0
+
+    def get_current_selection(self):
+        return self.matches[self.index]
 
 
 def get_name_label(html_text, color=None):
@@ -89,24 +124,28 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.set_hexpand(True)
         self.set_vexpand(True)
         self.text = Gtk.TextView()
+        self.buffer = self.text.get_buffer()
         if font is None:
             Pango.FontDescription(config.get('editor_font'))
         else:
             self.text.override_font(Pango.FontDescription(font))
         if text is None:
-            self.text.get_buffer().set_text('')
+            self.buffer.set_text('')
         else:
-            self.text.get_buffer().set_text(text)
+            self.buffer.set_text(text)
         self.add(self.text)
         self.code_overlay = code_overlay
         self.filename = filename
+        self.search_results = None
         # if we have a filename then we are saved
         self.saved = filename is not None
         self.text.connect('focus-in-event', self.gained_focus)
         self.text.connect('focus-out-event', self.lost_focus)
         self.text.connect('key-press-event', self.key_press)
-        self.text.get_buffer().connect('changed', self.text_changed)
-        self.text.get_buffer().connect('notify::cursor-position', self.cursor_moved)
+        self.buffer.connect('changed', self.text_changed)
+        self.buffer.connect('notify::cursor-position', self.cursor_moved)
+        # the tag applied if there is a match for the search or replace
+        self.search_tag = self.buffer.create_tag('orange_background', background='orange')
 
     def text_changed(self, _widget):
         logger.info('Text changed')
@@ -237,27 +276,56 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.text.override_font(Pango.FontDescription(new_font))
 
     def search_text(self, search_params):
-        text_buffer = self.text.get_buffer()
+        match search_params.message_type:
+            case SearchMessage.NEW_SEARCH:
+                self.new_search(search_params)
+            case SearchMessage.NEXT:
+                self.search_next()
+            case SearchMessage.PREVIOUS:
+                self.search_previous()
+            case SearchMessage.CLOSE:
+                self.search_close()
+            case _:
+                logger.error(f'Did not understand search message {search_params.message_type}')
+
+    def new_search(self, search_params):
         # we need to do a search in the TextView
-        start_iter = text_buffer.get_start_iter()
+        start_iter = self.buffer.get_start_iter()
         # keep searching until no more are found
         still_searching = True
-        total_found = 0
+        self.search_results = SearchResults([])
+        search_type = Gtk.TextSearchFlags.CASE_INSENSITIVE if search_params.case else None
         while still_searching:
-            if search_params.case is True:
-                found = start_iter.forward_search(search_params.text, 0, None)
-            else:
-                found = start_iter.forward_search(search_params.text, Gtk.TextSearchFlags.CASE_INSENSITIVE)
+            found = start_iter.forward_search(search_params.text, 0, search_type)
             if found:
                 start, end = found
-                text_buffer.select_range(start, end)
-                total_found += 1
+                self.search_results.add_match(IterPair(start, end))
                 start_iter = end
             else:
                 still_searching = False
-        else:
-            # clear selection
-            pass
+        # get the total results
+        if self.search_results.empty:
+            # nothing to do
+            message_queue.message(Target.SEARCHBAR, 'update-search', '0 results')
+            return
+        # highlight the first one
+        for index, i in self.search_results.matches:
+            if index != self.search_results.index:
+                self.buffer(self.search_tag, i.start, i.end)
+            else:
+                self.buffer.select_range(i.start, i.end)
+
+
+    def search_next(self):
+        if self.search_results is None:
+            return
+
+    def search_previous(self):
+        if self.search_results is None:
+            return
+
+    def search_close(self):
+        pass
 
 
 class TextEdit(Gtk.Notebook):

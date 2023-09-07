@@ -10,6 +10,7 @@ class Target(Enum):
     TEXT = 3
     SWANK = 4
     TREES = 5
+    TOOLBAR = 6
 
 
 def get_named_action(name):
@@ -25,6 +26,8 @@ def get_named_action(name):
             return Target.SWANK
         case 'trees':
             return Target.TREES
+        case 'toolbar':
+            return Target.TOOLBAR
 
 
 class Message:

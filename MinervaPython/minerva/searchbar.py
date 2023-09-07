@@ -1,10 +1,12 @@
 import gi
+from enum import Enum
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 
 from minerva.actions import Message, message_queue, Target
+from minerva.constants.misc import SearchMessage
 
 
 SEARCH_MAX_HISTORY = 20
@@ -24,11 +26,11 @@ def get_search_button(filename):
 
 
 class SearchParams:
-    def __init__(self, text, case, regex, widget):
-        self.text = text
-        self.case = case
-        self.regex = regex
-        self.widget = widget
+    def __init__(self, searchbar, message_type=SearchMessage.NEW_SEARCH):
+        self.text = searchbar.entry.get_text()
+        self.case = searchbar.match_case
+        self.regex = searchbar.as_regex
+        self.type = message_type
 
 
 class SearchBar(Gtk.Box):
@@ -46,12 +48,12 @@ class SearchBar(Gtk.Box):
         clear_button = get_search_button('close')
         case_button = get_search_button('case')
         regex_button = get_search_button('regex')
-        results_label = Gtk.Label(label='0 results')
+        self.results_label = Gtk.Label(label='0 results')
         previous_button = get_search_button('previous')
         next_button = get_search_button('next')
         self.pack_start(menu_button, False, False, 0)
         self.pack_start(self.entry, False, False, 0)
-        for i in [clear_button, case_button, regex_button, results_label, previous_button, next_button]:
+        for i in [clear_button, case_button, regex_button, self.results_label, previous_button, next_button]:
             self.pack_start(i, False, False, 0)
         # connect everything
         clear_button.connect('clicked', self.clear_search)
@@ -63,8 +65,7 @@ class SearchBar(Gtk.Box):
 
     def entry_changed(self, _widget):
         text = self.entry.get_text()
-        search = SearchParams(text, self.match_case, self.as_regex, self)
-        message_queue.message(Message(Target.TEXT, 'search-text', search))
+        message_queue.message(Message(Target.TEXT, 'search-text', SearchParams(self)))
 
     def clear_search(self, _button):
         pass
@@ -77,11 +78,13 @@ class SearchBar(Gtk.Box):
 
     def previous(self, _button):
         # highlight and move to next match
-        pass
+        params = SearchParams(self, message_type=SearchMessage.PREVIOUS)
+        message_queue.message(Message(Target.TEXT, 'search-text', params))
 
     def next(self, _button):
         # highlight and move to previous match
-        pass
+        params = SearchParams(self, message_type=SearchMessage.NEXT)
+        message_queue.message(Message(Target.TEXT, 'search-text', params))
 
     def add_history(self, new_search):
         # first in last out stack
@@ -95,3 +98,6 @@ class SearchBar(Gtk.Box):
 
     def hide_search(self):
         self.hide()
+
+    def update_results(self, text):
+        self.results_label.text = text
