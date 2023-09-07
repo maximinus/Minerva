@@ -52,6 +52,14 @@ class SearchResults:
     def get_current_selection(self):
         return self.matches[self.index]
 
+    def increment(self):
+        if self.index + 1 < len(self.matches):
+            self.index += 1
+
+    def decrement(self):
+        if self.index > 0:
+            self.index -= 1
+
 
 def get_name_label(html_text, color=None):
     # return a label with markup
@@ -292,7 +300,6 @@ class SingleTextView(Gtk.ScrolledWindow):
         # we need to do a search in the TextView
         # clear the old search
         start_iter = self.buffer.get_start_iter()
-        self.buffer.remove_all_tags(start_iter, self.buffer.get_end_iter())
         # keep searching until no more are found
         still_searching = True
         self.search_results = SearchResults([])
@@ -308,9 +315,13 @@ class SingleTextView(Gtk.ScrolledWindow):
         # get the total results
         if self.search_results.empty:
             # nothing to do
+            self.buffer.remove_all_tags(self.buffer.get_end_iter(), self.buffer.get_end_iter())
             message_queue.message(Message(Target.TOOLBAR, 'update-search', '0 results'))
             return
-        # highlight the first one
+        self.update_search_tags()
+
+    def update_search_tags(self):
+        self.buffer.remove_all_tags(self.buffer.get_end_iter(), self.buffer.get_end_iter())
         for index, i in enumerate(self.search_results.matches):
             if index != self.search_results.index:
                 self.buffer.apply_tag(self.search_tag, i.start, i.end)
@@ -325,10 +336,14 @@ class SingleTextView(Gtk.ScrolledWindow):
     def search_next(self):
         if self.search_results is None:
             return
+        self.search_results.increment()
+        self.update_search_tags()
 
     def search_previous(self):
         if self.search_results is None:
             return
+        self.search_results.decrement()
+        self.update_search_tags()
 
     def search_close(self):
         pass
