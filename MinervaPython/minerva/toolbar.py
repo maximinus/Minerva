@@ -43,6 +43,5 @@ class Toolbar(Gtk.Box):
         match message.action:
             case 'update-search':
                 self.search_toolbar.update_results(message.data)
-                self.close_notebook(message.data)
             case _:
                 logger.error(f'Toolbar cannot understand action {message.action}')

@@ -308,7 +308,7 @@ class SingleTextView(Gtk.ScrolledWindow):
         # get the total results
         if self.search_results.empty:
             # nothing to do
-            message_queue.message(Target.SEARCHBAR, 'update-search', '0 results')
+            message_queue.message(Message(Target.TOOLBAR, 'update-search', '0 results'))
             return
         # highlight the first one
         for index, i in enumerate(self.search_results.matches):
@@ -316,7 +316,11 @@ class SingleTextView(Gtk.ScrolledWindow):
                 self.buffer.apply_tag(self.search_tag, i.start, i.end)
             else:
                 self.buffer.select_range(i.start, i.end)
-
+        results = len(self.search_results.matches)
+        if results == 1:
+            message_queue.message(Message(Target.TOOLBAR, 'update-search', '1 result'))
+        else:
+            message_queue.message(Message(Target.TOOLBAR, 'update-search', f'{results} results'))
 
     def search_next(self):
         if self.search_results is None:

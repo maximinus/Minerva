@@ -99,4 +99,4 @@ class SearchBar(Gtk.Box):
         self.hide()
 
     def update_results(self, text):
-        self.results_label.text = text
+        self.results_label.set_text(text)
