@@ -315,13 +315,13 @@ class SingleTextView(Gtk.ScrolledWindow):
         # get the total results
         if self.search_results.empty:
             # nothing to do
-            self.buffer.remove_all_tags(self.buffer.get_end_iter(), self.buffer.get_end_iter())
+            self.buffer.remove_all_tags(self.buffer.get_start_iter(), self.buffer.get_end_iter())
             message_queue.message(Message(Target.TOOLBAR, 'update-search', '0 results'))
             return
         self.update_search_tags()
 
     def update_search_tags(self):
-        self.buffer.remove_all_tags(self.buffer.get_end_iter(), self.buffer.get_end_iter())
+        self.buffer.remove_all_tags(self.buffer.get_start_iter(), self.buffer.get_end_iter())
         for index, i in enumerate(self.search_results.matches):
             if index != self.search_results.index:
                 self.buffer.apply_tag(self.search_tag, i.start, i.end)

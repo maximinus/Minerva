@@ -48,6 +48,8 @@ class SearchBar(Gtk.Box):
         case_button = get_search_button('case')
         regex_button = get_search_button('regex')
         self.results_label = Gtk.Label(label='0 results')
+        self.results_label.set_justify(Gtk.Justification.CENTER)
+        self.results_label.set_width_chars(14)
         previous_button = get_search_button('previous')
         next_button = get_search_button('next')
         self.pack_start(menu_button, False, False, 0)
