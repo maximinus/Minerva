@@ -2,7 +2,7 @@
     "editor_font": "Inconsolata 13",
     "repl_font": "Inconsolata 13",
     "lisp_binary": "/usr/bin/sbcl",
-    "start_repl": false,
+    "start_repl": true,
     "window_size": [
         1024,
         768

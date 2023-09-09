@@ -1,6 +1,7 @@
 import socket
 import threading
 import subprocess
+import time
 
 from enum import Enum
 from pathlib import Path
@@ -159,7 +160,35 @@ def get_all_messages(sock, event):
             break
 
 
+def create_connection():
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((HOST, PORT))
+        sock.setblocking(True)
+        return sock, None
+    except socket.error as ex:
+        return None, ex
+
+
+def connect_to_lisp():
+    # this is the thread that runs until a connection can be made
+    attempts = 0
+    while attempts < 5:
+        sock, error = create_connection()
+        if sock is None:
+            # wait half a second
+            time.sleep(0.5)
+        else:
+            # we need to return some data
+            message_queue.message(Message(Target.SWANK, 'lisp-connected', sock))
+            return
+        attempts += 1
+    message_queue.message(Message(Target.SWANK, 'lisp-connect-fail', error))
+
+
 class FutureMessage:
+    # a message to be added to the queue to be handled in sequence
+    # the return messages from other events need to complete before this message is sent
     def __init__(self, cmd, return_event, thread, counter):
         self.cmd = cmd
         self.return_event = return_event
@@ -178,17 +207,29 @@ class SwankClient:
         self.thread_event = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
+        self.counter = 1
+        self.sock = None
+        self.connected = False
+
+    def start_swank(self):
+        # this is done after main window is displayed
         if not config.get('start_repl'):
             logger.info('Config says to not start Lisp instance')
             return
         self.swank_server.start()
-        self.counter = 1
-        self.sock = self.create_connection()
-        if self.sock is None:
-            logger.error('Could not connect to Lisp instance')
-            return
+        lisp_start_task = threading.Thread(target=connect_to_lisp)
+        lisp_start_task.start()
+
+    def got_lisp_connection(self, lisp_sock):
+        self.sock = lisp_sock
         self.start_listener()
         self.connected = True
+        self.start_swank()
+
+    def lisp_connection_failed(self, ex):
+        logger.error('Could not connect to Lisp server: {ex}')
+        # inform the console
+        message_queue.message(Message(Target.CONSOLE, 'no-lisp-connection', str(ex)))
 
     def swank_init(self):
         # send init command
@@ -208,15 +249,6 @@ class SwankClient:
         if self.listener_thread is not None:
             self.thread_event.set()
         self.swank_server.stop()
-
-    def create_connection(self):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((HOST, PORT))
-            sock.setblocking(True)
-            return sock
-        except socket.error as ex:
-            logger.error(f'Socket error connecting to Swank: {ex}')
 
     def swank_send(self, text):
         l = "%06x" % len(str(text))
@@ -299,6 +331,13 @@ class SwankClient:
                 logger.error('Lost Lisp binary connection')
             case 'init-complete':
                 logger.info('Swank setup complete')
+                message_queue.message(Message(Target.CONSOLE, 'lisp-connected'))
+            case 'start-swank':
+                self.start_swank()
+            case 'lisp-connected':
+                self.got_lisp_connection(message.data)
+            case 'lisp-connect-fail':
+                self.lisp_connection_failed(message.data)
             case _:
                 logger.error(f'No such message action {message.action} for Swank')
 

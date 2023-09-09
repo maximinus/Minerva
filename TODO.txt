@@ -6,9 +6,13 @@ Future versions
 
 Version 0.2
 
-    * Search and function exists
+    * Search and function exists (complete)
     * Simple code completion works
     * The REPL can handle exceptions
+        - Minerva starts the Lisp process in the background
+        - The REPL process nothing and gives a warning if Lisp is not reachable
+        - All errors are handled in the console
+        - Stop runaway processes
 
 Version 0.3
 

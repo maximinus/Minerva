@@ -12,7 +12,7 @@ from minerva.actions import message_queue, Message, Target
 
 PREFERENCES_FILE = Path('./glade/preferences.glade')
 CONFIG_DIR = Path(__file__).parent.parent.resolve()
-DEFAULT_CONFIG_FILE = CONFIG_DIR / '.' / 'config' / 'minerva.config'
+DEFAULT_CONFIG_FILE = CONFIG_DIR / '.' / 'config' / 'minerva_config.json'
 
 
 class Config:

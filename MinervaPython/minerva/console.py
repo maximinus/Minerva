@@ -30,6 +30,7 @@ class Console:
         self.setup_text_view(font)
         self.history = []
         self.history_index = 0
+        self.connected = False
 
     def setup_text_view(self, font):
         self.text_view.override_font(Pango.FontDescription(font))
@@ -121,13 +122,14 @@ class Console:
         end_line_pos = self.buffer.get_end_iter()
         # grab the text between the iters
         line_text = self.buffer.get_slice(line_start_pos, end_line_pos, False)
-        self.process(line_text)
-        # TODO: Disallow edits until message comes in
+        if self.connected is True:
+            self.process(line_text)
+        else:
+            self.display_messages(['Error: Cannot run command until Lisp is connected'])
 
-    def eval_results(self, message):
-        display_strings = build_write_string(message.data)
+    def display_messages(self, messages):
         # insert all new lines
-        for line in display_strings:
+        for line in messages:
             end_line_pos = self.buffer.get_end_iter()
             # insert new text to the end of the buffer, move the cursor and set the line start again
             new_text = f'\n> {line}\n* '
@@ -139,6 +141,16 @@ class Console:
         self.buffer.delete_mark(self.line_end)
         # and move it back to the where we are now
         self.buffer.add_mark(self.line_end, new_end)
+
+    def eval_results(self, message):
+        display_strings = build_write_string(message.data)
+        self.display_messages(display_strings)
+
+    def no_connection(self, message):
+        # connection failed. So don't handle any input events
+        messages = [f'\n* Lisp connection failed: {message}',
+                    'Cannot process Lisp messages']
+        self.display_messages(messages)
 
     def clicked(self, _widget, event):
         # get the positions of the line_start and end iters
@@ -177,5 +189,10 @@ class Console:
                 pass
             case 'eval-return':
                 self.eval_results(message)
+            case 'no-lisp-connection':
+                self.no_connection(message.data)
+            case 'lisp-connected':
+                self.connected = True
+                self.display_messages(['Connected to Lisp instance'])
             case _:
                 logger.error(f'Console cannot understand action {message.action}')

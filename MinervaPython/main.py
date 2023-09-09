@@ -120,6 +120,7 @@ class MinervaWindow(Gtk.Window):
         logger.info('Finished setup')
         # show the project window
         self.startup = ProjectWindow()
+        message_queue.message(Message(Target.SWANK, 'start-swank'))
 
     def key_pressed(self, _widget, event):
         if event.keyval == Keys.ESCAPE.value:
