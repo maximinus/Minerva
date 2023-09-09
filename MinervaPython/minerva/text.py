@@ -134,7 +134,7 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.text = Gtk.TextView()
         self.buffer = self.text.get_buffer()
         if font is None:
-            Pango.FontDescription(config.get('editor_font'))
+            self.text.override_font(Pango.FontDescription(config.get('editor_font')))
         else:
             self.text.override_font(Pango.FontDescription(font))
         if text is None:
@@ -346,7 +346,8 @@ class SingleTextView(Gtk.ScrolledWindow):
         self.update_search_tags()
 
     def search_close(self):
-        pass
+        # remove all tags
+        self.buffer.remove_all_tags(self.buffer.get_start_iter(), self.buffer.get_end_iter())
 
 
 class TextEdit(Gtk.Notebook):

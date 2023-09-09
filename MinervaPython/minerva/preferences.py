@@ -41,8 +41,8 @@ class Config:
             self.valid = False
 
     def create_default_config(self):
-        self.data = {'editor_font': 'Inconsolata 12',
-                     'repl_font': 'Inconsolata 12',
+        self.data = {'editor_font': 'Inconsolata 13',
+                     'repl_font': 'Inconsolata 13',
                      'lisp_binary': '/usr/bin/sbcl',
                      'start_repl': True}
         self.update()

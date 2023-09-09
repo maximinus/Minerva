@@ -1,5 +1,4 @@
 import gi
-from enum import Enum
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -12,7 +11,7 @@ from minerva.constants.misc import SearchMessage
 SEARCH_MAX_HISTORY = 20
 
 
-def get_search_button(filename):
+def get_button(filename):
     image = Gtk.Image()
     image.set_from_file(f'./gfx/search_icons/{filename}.png')
     button = Gtk.ToolButton()
@@ -44,14 +43,14 @@ class SearchBar(Gtk.Box):
         self.entry.set_has_frame(False)
         self.entry.get_style_context().add_class('search_entry')
         self.entry.connect('changed', self.entry_changed)
-        clear_button = get_search_button('close')
-        case_button = get_search_button('case')
-        regex_button = get_search_button('regex')
+        clear_button = get_button('close')
+        case_button = get_button('case')
+        regex_button = get_button('regex')
         self.results_label = Gtk.Label(label='0 results')
         self.results_label.set_justify(Gtk.Justification.CENTER)
         self.results_label.set_width_chars(14)
-        previous_button = get_search_button('previous')
-        next_button = get_search_button('next')
+        previous_button = get_button('previous')
+        next_button = get_button('next')
         self.pack_start(menu_button, False, False, 0)
         self.pack_start(self.entry, False, False, 0)
         for i in [clear_button, case_button, regex_button, self.results_label, previous_button, next_button]:
@@ -99,6 +98,8 @@ class SearchBar(Gtk.Box):
 
     def hide_search(self):
         self.hide()
+        params = SearchParams(self, message_type=SearchMessage.CLOSE)
+        message_queue.message(Message(Target.TEXT, 'search-text', params))
 
     def update_results(self, text):
         self.results_label.set_text(text)

@@ -172,7 +172,7 @@ class Console:
         # this is a message we need to handle
         match message.action:
             case 'update_font':
-                self.text_view.override_font(message.data)
+                self.update_font(message.data)
             case 'update_binary':
                 pass
             case 'eval-return':
