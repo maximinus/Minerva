@@ -16,10 +16,21 @@ from minerva.actions import message_queue, Message, Target
 # how to start a swank session on Lisp: sbcl --load start-swank.lisp
 
 
+# To clean this up:
+
+# Make sure all threads use queues to pass information back
+# Make sure all queues use an event to exit properly
+# Ensure all threads are killed on exit
+# Make sure Lisp info is logged to the normal log file
+# Take some of these values and throw them into the config file; in particular
+# HOST, PORT, SWANK_SCRIPT and RECV_CHUNK_SIZE, MAX_CONNECTION_ATTEMPTS
+
+
 HOST = '127.0.0.1'
 PORT = 4005
 SWANK_SCRIPT = 'start-swank.lisp'
 RECV_CHUNK_SIZE = 4096
+MAX_CONNECTION_EVENTS = 20
 
 PACKAGE = 'COMMON-LISP-USER'
 THREAD = 'T'
@@ -39,6 +50,101 @@ SWANK1 = '(swank:connection-info)'
 SWANK2 = f'''(swank:swank-require '({" ".join(SWANK_REQUIRES)}))'''
 SWANK3 = '(swank:init-presentations)'
 SWANK4 = '(swank-repl:create-repl nil :coding-system "utf-8-unix")'
+
+
+# here are the threads and their helper functions.
+# the whole process is as follows
+# First, we wait until the main window is displayed and ready
+#   We then start the Lisp server and a thread to read it's output
+#   We then start a thread to connect to the lisp server and wait for it to send a message back
+#       If it fails to connect, we
+#           1: Stop the Lisp server and all threads
+#           2: Show a message on the console
+#           3: Prevent console from accepting REPL commands
+#       If it connects, we
+#           1: Start the listener process
+#           2: Push the required swank messages out
+#       If swank messages work, we:
+#           Update this in the console
+#       Otherwise we
+#           1: Stop all threads, the Lisp server and update the console as above
+
+
+def get_message(sock, timeout=0):
+    # attempt to get a message from the lisp server
+    # timeout = 0, don't wait for socket
+    try:
+        if timeout > 0:
+            sock.settimeout(timeout)
+        else:
+            sock.settimeout(None)
+        length_data = sock.recv(6)
+        if len(length_data) == 0:
+            # nothing was returned, swank server is likely dead
+            return
+        length = int(length_data, 16)
+        all_data = []
+        while length > 0:
+            bytes_to_get = min(length, RECV_CHUNK_SIZE)
+            # sometimes it doesn't send the full buffer
+            chunk_data = sock.recv(bytes_to_get)
+            all_data.append(chunk_data)
+            length -= len(chunk_data)
+        joined_data = ''.join([x.decode('utf-8') for x in all_data])
+        return SwankMessage(joined_data)
+    except socket.error:
+        # not always an error, since we poll most of the time anyway
+        return
+
+
+def get_all_messages(sock, event, thread_queue):
+    # this is the thread routine that gets all messages forever
+    while True:
+        # loop forever and raise messages
+        data = get_message(sock, timeout=2)
+        if data is not None:
+            thread_queue.put(Message(Target.SWANK, 'message', data))
+        if event.is_set():
+            # end this event and exit
+            return
+
+
+def get_lisp_output(process, event, thread_queue):
+    # this is the thread to get the output of the lisp process
+    while not event.is_set():
+        output = process.stdout.readline()
+        if len(output) != 0:
+            thread_queue.put(output)
+        time.sleep(0.2)
+
+
+def create_connection():
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((HOST, PORT))
+        sock.setblocking(True)
+        return sock, None
+    except socket.error as ex:
+        return None, ex
+
+
+def connect_to_lisp(message_queue, event):
+    # this is the thread that runs until a connection can be made
+    attempts = 0
+    while attempts < MAX_CONNECTION_EVENTS:
+        if event.is_set():
+            # end the thread
+            break
+        sock, error = create_connection()
+        if sock is None:
+            # wait half a second
+            time.sleep(0.5)
+        else:
+            # add message to queue
+            message_queue.put(['lisp-connected', sock])
+            return
+        attempts += 1
+    message_queue.put(['lisp-connect-fail', None])
 
 
 class LispRuntime:
@@ -120,44 +226,6 @@ def get_text_reply(messages):
         if message_type == 'write-string':
             text_reply.append(data[1][1:-1])
     return ''.join(text_reply)
-
-
-def get_message(sock, timeout=0):
-    # timeout = 0, don't wait for socket
-    try:
-        if timeout > 0:
-            sock.settimeout(timeout)
-        else:
-            sock.settimeout(None)
-        length_data = sock.recv(6)
-        if len(length_data) == 0:
-            # nothing was returned, swank server is likely dead
-            return
-        length = int(length_data, 16)
-        all_data = []
-        while length > 0:
-            bytes_to_get = min(length, RECV_CHUNK_SIZE)
-            # sometimes it doesn't send the full buffer
-            chunk_data = sock.recv(bytes_to_get)
-            all_data.append(chunk_data)
-            length -= len(chunk_data)
-        joined_data = ''.join([x.decode('utf-8') for x in all_data])
-        return SwankMessage(joined_data)
-    except socket.error:
-        # not always an error, since we poll most of the time anyway
-        return
-
-
-def get_all_messages(sock, event):
-    # this is the thread routine that gets all messages forever
-    while True:
-        # loop forever and raise messages
-        data = get_message(sock, timeout=2)
-        if data is not None:
-            message_queue.message(Message(Target.SWANK, 'message', data))
-        if event.is_set():
-            # end this event and exit
-            break
 
 
 def create_connection():
