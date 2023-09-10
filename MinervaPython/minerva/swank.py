@@ -126,7 +126,6 @@ class LispRuntime:
         self.event = threading.Event()
         self.queue = queue.LifoQueue()
         self.listen_thread = threading.Thread(target=self.get_lisp_output)
-        self.listen_thread.start()
 
     @property
     def running(self):
@@ -141,13 +140,18 @@ class LispRuntime:
             time.sleep(0.2)
 
     def start(self):
+        # start the server; returns False if not started
         if self.lisp_binary is None:
             logger.info('Assuming Lisp server already started')
-            return
+            return False
+        if self.process is not None:
+            logger.error('Lisp server already started, but asked to start again')
+            return False
         logger.info(f'Starting Lisp server at {self.lisp_binary}')
         self.process = subprocess.Popen([self.lisp_binary, '--load', str(self.swank_file)],
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.listen_thread.start()
+        return True
 
     def stop(self):
         logger.info('Killing Lisp server')
