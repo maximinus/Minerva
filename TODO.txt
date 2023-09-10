@@ -13,6 +13,7 @@ Version 0.2
         - The REPL process nothing and gives a warning if Lisp is not reachable
         - All errors are handled in the console
         - Stop runaway processes
+        - Check threads are closed when Minerva is closed
 
 Version 0.3
 

@@ -204,6 +204,7 @@ class SwankClient:
         self.received_queue = []
         self.connected = False
         self.listener_thread = None
+        self.lisp_start_thread = None
         self.thread_event = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
@@ -217,8 +218,8 @@ class SwankClient:
             logger.info('Config says to not start Lisp instance')
             return
         self.swank_server.start()
-        lisp_start_task = threading.Thread(target=connect_to_lisp)
-        lisp_start_task.start()
+        self.lisp_start_thread = threading.Thread(target=connect_to_lisp)
+        self.lisp_start_thread.start()
 
     def got_lisp_connection(self, lisp_sock):
         self.sock = lisp_sock
@@ -320,6 +321,14 @@ class SwankClient:
         response = f'(:EMACS-PONG {message.ast[1]} {message.ast[2]}'
         self.swank_send(response)
 
+    def kill_all_threads(self):
+        if self.listener_thread is not None:
+            # kill thread
+            pass
+        if self.lisp_start_thread is not None:
+            # kil thread
+            pass
+
     def message(self, message):
         match message.action:
             case 'message':
@@ -338,6 +347,8 @@ class SwankClient:
                 self.got_lisp_connection(message.data)
             case 'lisp-connect-fail':
                 self.lisp_connection_failed(message.data)
+            case 'kill-threads':
+                self.kill_all_threads()
             case _:
                 logger.error(f'No such message action {message.action} for Swank')
 

@@ -212,6 +212,7 @@ class MinervaWindow(Gtk.Window):
 
 
 def exit_app(app):
+    message_queue.message(Message(Target.SWANK, 'kill-threads'))
     logger.info('Exiting Minerva')
     app.quit_minerva()
 
