@@ -1,4 +1,5 @@
 import time
+import queue
 import socket
 import threading
 import subprocess
@@ -23,7 +24,7 @@ from minerva.actions import message_queue, Message, Target
 # Ensure all threads are killed on exit
 # Make sure Lisp info is logged to the normal log file
 # Take some of these values and throw them into the config file; in particular
-# HOST, PORT, SWANK_SCRIPT and RECV_CHUNK_SIZE, MAX_CONNECTION_ATTEMPTS
+# HOST, PORT, SWANK_SCRIPT and RECV_CHUNK_SIZE, MAX_CONNECTION_ATTEMPTS, TIME_BETWEEN_CONNECTIONS
 
 
 HOST = '127.0.0.1'
@@ -31,6 +32,7 @@ PORT = 4005
 SWANK_SCRIPT = 'start-swank.lisp'
 RECV_CHUNK_SIZE = 4096
 MAX_CONNECTION_EVENTS = 20
+TIME_BETWEEN_CONNECTIONS = 0.5
 
 PACKAGE = 'COMMON-LISP-USER'
 THREAD = 'T'
@@ -128,7 +130,7 @@ def create_connection():
         return None, ex
 
 
-def connect_to_lisp(message_queue, event):
+def connect_to_lisp(thread_queue, event):
     # this is the thread that runs until a connection can be made
     attempts = 0
     while attempts < MAX_CONNECTION_EVENTS:
@@ -138,13 +140,13 @@ def connect_to_lisp(message_queue, event):
         sock, error = create_connection()
         if sock is None:
             # wait half a second
-            time.sleep(0.5)
+            time.sleep(TIME_BETWEEN_CONNECTIONS)
         else:
             # add message to queue
-            message_queue.put(['lisp-connected', sock])
+            thread_queue.put(Message(Target.SWANK, 'lisp-connected', sock))
             return
         attempts += 1
-    message_queue.put(['lisp-connect-fail', None])
+    thread_queue.put(Message(Target.SWANK, 'lisp-connect-failure'))
 
 
 class LispRuntime:
@@ -154,6 +156,10 @@ class LispRuntime:
         self.swank_file = self.get_swank_file(root_path)
         logger.info(f'Swank startup file found at {self.swank_file}')
         self.process = None
+        self.event = threading.Event()
+        self.queue = queue.LifoQueue()
+        self.listen_thread = threading.Thread(target=print_to_console, args=(self.process, self.event, self.queue))
+        self.listen_thread.start()
 
     @property
     def running(self):
@@ -165,9 +171,12 @@ class LispRuntime:
             return
         logger.info(f'Starting Lisp server at {self.lisp_binary}')
         self.process = subprocess.Popen([self.lisp_binary, '--load', str(self.swank_file)],
-                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.listen_thread = threading.Thread(target=get_lisp_output, args=(self.process, self.event, self.queue))
+        self.listen_thread.start()
 
     def stop(self):
+        logger.info('Killing Lisp server')
         if self.process is None:
             # already stopped
             return
@@ -177,6 +186,9 @@ class LispRuntime:
         except subprocess.TimeoutExpired:
             logger.error('Process timed out on close - killing')
             self.process.kill()
+        # kill the listening thread
+        self.event.set()
+        self.listen_thread.join()
 
     def get_swank_file(self, root_dir):
         if root_dir is None:
