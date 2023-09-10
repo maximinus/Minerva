@@ -151,7 +151,7 @@ class MinervaWindow(Gtk.Window):
                 self.toolbar.message(message)
             case Target.LOGS:
                 # dump into the logs
-                logger.info(message.data)
+                logger.info(message.data.strip())
             case _:
                 logger.error(f'No target for message to {message.action}')
 
@@ -217,6 +217,7 @@ class MinervaWindow(Gtk.Window):
 def exit_app(app):
     logger.info('Exiting Minerva')
     app.quit_minerva()
+    logger.info('Finished')
 
 
 def get_gtk_version():
