@@ -1,3 +1,8 @@
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import GLib
+
 import time
 import queue
 import socket
@@ -111,44 +116,6 @@ def get_all_messages(sock, event, thread_queue):
             return
 
 
-def get_lisp_output(process, event, thread_queue):
-    # this is the thread to get the output of the lisp process
-    while not event.is_set():
-        output = process.stdout.readline()
-        if len(output) != 0:
-            thread_queue.put(output)
-        time.sleep(0.2)
-
-
-def create_connection():
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((HOST, PORT))
-        sock.setblocking(True)
-        return sock, None
-    except socket.error as ex:
-        return None, ex
-
-
-def connect_to_lisp(thread_queue, event):
-    # this is the thread that runs until a connection can be made
-    attempts = 0
-    while attempts < MAX_CONNECTION_EVENTS:
-        if event.is_set():
-            # end the thread
-            break
-        sock, error = create_connection()
-        if sock is None:
-            # wait half a second
-            time.sleep(TIME_BETWEEN_CONNECTIONS)
-        else:
-            # add message to queue
-            thread_queue.put(Message(Target.SWANK, 'lisp-connected', sock))
-            return
-        attempts += 1
-    thread_queue.put(Message(Target.SWANK, 'lisp-connect-failure'))
-
-
 class LispRuntime:
     def __init__(self, root_path, binary_path):
         # controls the lisp binary that runs swank
@@ -158,12 +125,20 @@ class LispRuntime:
         self.process = None
         self.event = threading.Event()
         self.queue = queue.LifoQueue()
-        self.listen_thread = threading.Thread(target=print_to_console, args=(self.process, self.event, self.queue))
+        self.listen_thread = threading.Thread(target=self.get_lisp_output)
         self.listen_thread.start()
 
     @property
     def running(self):
         return self.process is not None
+
+    def get_lisp_output(self):
+        # this is the thread to get the output of the lisp process
+        while not self.event.is_set():
+            output = self.process.stdout.readline()
+            if len(output) != 0:
+                self.queue.put(output)
+            time.sleep(0.2)
 
     def start(self):
         if self.lisp_binary is None:
@@ -172,7 +147,6 @@ class LispRuntime:
         logger.info(f'Starting Lisp server at {self.lisp_binary}')
         self.process = subprocess.Popen([self.lisp_binary, '--load', str(self.swank_file)],
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.listen_thread = threading.Thread(target=get_lisp_output, args=(self.process, self.event, self.queue))
         self.listen_thread.start()
 
     def stop(self):
@@ -189,11 +163,53 @@ class LispRuntime:
         # kill the listening thread
         self.event.set()
         self.listen_thread.join()
+        logger.info('Server and listener thread killed')
 
     def get_swank_file(self, root_dir):
         if root_dir is None:
             return Path().resolve() / SWANK_SCRIPT
         return Path(root_dir) / SWANK_SCRIPT
+
+
+class LispConnectThread:
+    def __init__(self):
+        self.event = threading.Event()
+        self.queue = queue.LifoQueue()
+        self.lisp_connect = threading.Thread(target=self.connect_to_lisp)
+
+    def start(self):
+        self.lisp_connect.start()
+
+    def stop(self):
+        self.event.set()
+        self.lisp_connect.join()
+
+    def create_connection(self):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((HOST, PORT))
+            sock.setblocking(True)
+            return sock, None
+        except socket.error as ex:
+            return None, ex
+
+    def connect_to_lisp(self):
+        # this is the thread that runs until a connection can be made
+        attempts = 0
+        while attempts < MAX_CONNECTION_EVENTS:
+            if self.event.is_set():
+                # end the thread
+                break
+            sock, error = self.create_connection()
+            if sock is None:
+                # wait half a second
+                time.sleep(TIME_BETWEEN_CONNECTIONS)
+            else:
+                # add message to queue
+                self.queue.put(Message(Target.SWANK, 'lisp-connected', sock))
+                return
+            attempts += 1
+        self.queue.put(Message(Target.SWANK, 'lisp-connect-failure'))
 
 
 class SwankType(str, Enum):
@@ -221,6 +237,7 @@ class SwankMessage:
 
 
 def requote(s, line_end=False):
+    # helper function for passing correctly quoted strings to swank
     t = s.replace('\\', '\\\\')
     t = t.replace('"', '\\"')
     if line_end:
@@ -240,40 +257,24 @@ def get_text_reply(messages):
     return ''.join(text_reply)
 
 
-def create_connection():
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((HOST, PORT))
-        sock.setblocking(True)
-        return sock, None
-    except socket.error as ex:
-        return None, ex
-
-
-def connect_to_lisp():
-    # this is the thread that runs until a connection can be made
-    attempts = 0
-    while attempts < 5:
-        sock, error = create_connection()
-        if sock is None:
-            # wait half a second
-            time.sleep(0.5)
-        else:
-            # we need to return some data
-            message_queue.message(Message(Target.SWANK, 'lisp-connected', sock))
-            return
-        attempts += 1
-    message_queue.message(Message(Target.SWANK, 'lisp-connect-fail', error))
-
-
 class FutureMessage:
     # a message to be added to the queue to be handled in sequence
     # the return messages from other events need to complete before this message is sent
+    # thus the name; it's a message that will sent to swank in the future, and maybe not now
     def __init__(self, cmd, return_event, thread, counter):
         self.cmd = cmd
         self.return_event = return_event
         self.thread = thread
         self.counter = counter
+
+
+def check_queue(queues):
+    # only return false if we never want to be called again
+    for single_queue in queues:
+        if not single_queue.empty():
+            new_message = message_queue.get()
+            message_queue.message(new_message)
+    return True
 
 
 class SwankClient:
@@ -291,15 +292,17 @@ class SwankClient:
         self.counter = 1
         self.sock = None
         self.connected = False
+        self.lisp_connect_thread = LispConnectThread()
 
     def start_swank(self):
         # this is done after main window is displayed
         if not config.get('start_repl'):
             logger.info('Config says to not start Lisp instance')
             return
+        # start the lisp instance and the thread to connect
         self.swank_server.start()
-        self.lisp_start_thread = threading.Thread(target=connect_to_lisp)
-        self.lisp_start_thread.start()
+        self.lisp_connect_thread.start()
+        GLib.idle_add(check_queue, [self.lisp_connect_thread.queue, self.swank_server.queue])
 
     def got_lisp_connection(self, lisp_sock):
         self.sock = lisp_sock
@@ -402,12 +405,8 @@ class SwankClient:
         self.swank_send(response)
 
     def kill_all_threads(self):
-        if self.listener_thread is not None:
-            # kill thread
-            pass
-        if self.lisp_start_thread is not None:
-            # kil thread
-            pass
+        self.swank_server.stop()
+        self.lisp_connect_thread.stop()
 
     def message(self, message):
         match message.action:
@@ -425,7 +424,7 @@ class SwankClient:
                 self.start_swank()
             case 'lisp-connected':
                 self.got_lisp_connection(message.data)
-            case 'lisp-connect-fail':
+            case 'lisp-connect-failure':
                 self.lisp_connection_failed(message.data)
             case 'kill-threads':
                 self.kill_all_threads()
