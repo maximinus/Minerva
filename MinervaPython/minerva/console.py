@@ -7,6 +7,7 @@ from minerva.logs import logger
 from minerva.constants.keycodes import Keys
 from minerva.actions import Message, message_queue, Target
 
+
 def build_write_string(messages):
     # given a repl reply, build up the text to reply
     reply_string = []

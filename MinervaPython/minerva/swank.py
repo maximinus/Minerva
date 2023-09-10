@@ -105,7 +105,7 @@ def get_message(sock, timeout=0):
 
 
 def get_all_messages(sock, event, thread_queue):
-    # this is the thread routine that gets all messages forever
+    # this is the thread routine that gets all messages forever from the Lisp server
     while True:
         # loop forever and raise messages
         data = get_message(sock, timeout=2)
@@ -136,7 +136,7 @@ class LispRuntime:
         while not self.event.is_set():
             output = self.process.stdout.readline()
             if len(output) != 0:
-                self.queue.put(output)
+                self.queue.put(Message(Target.LOGS, data=f"LISP: {str(output, encoding='utf-8')}"))
             time.sleep(0.2)
 
     def start(self):
@@ -276,7 +276,7 @@ def check_queue(queues):
     # only return false if we never want to be called again
     for single_queue in queues:
         if not single_queue.empty():
-            new_message = message_queue.get()
+            new_message = single_queue.get()
             message_queue.message(new_message)
     return True
 
@@ -289,13 +289,13 @@ class SwankClient:
         self.received_queue = []
         self.connected = False
         self.listener_thread = None
-        self.lisp_start_thread = None
-        self.thread_event = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
         self.counter = 1
         self.sock = None
         self.connected = False
+        self.listener_event = threading.Event()
+        self.listener_queue = queue.LifoQueue()
         self.lisp_connect_thread = LispConnectThread()
 
     def start_swank(self):
@@ -312,7 +312,9 @@ class SwankClient:
         self.sock = lisp_sock
         self.start_listener()
         self.connected = True
-        self.start_swank()
+        # the lisp connect thread should have finished, but just check here
+        self.lisp_connect_thread.stop()
+        message_queue.message(Message(Target.CONSOLE, 'lisp-connected'))
 
     def lisp_connection_failed(self, ex):
         logger.error('Could not connect to Lisp server: {ex}')
@@ -328,14 +330,16 @@ class SwankClient:
 
     def start_listener(self):
         # create a new thread and obtain messages from it
-        self.thread_event = threading.Event()
-        self.listener_thread = threading.Thread(target=get_all_messages, args=(self.sock, self.thread_event))
+        self.listener_thread = threading.Thread(target=get_all_messages, args=(self.sock, self.listener_event, self.listener_queue))
         self.listener_thread.start()
 
     def stop_listener(self):
         logger.info('Stopping Swank client')
+        # kill the listening thread
         if self.listener_thread is not None:
-            self.thread_event.set()
+            self.listener_event.set()
+        self.listener_thread.join()
+        # kill the Lisp instance and it's thread checking stdout
         self.swank_server.stop()
 
     def swank_send(self, text):

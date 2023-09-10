@@ -149,6 +149,9 @@ class MinervaWindow(Gtk.Window):
                 self.side_panel.message(message)
             case Target.TOOLBAR:
                 self.toolbar.message(message)
+            case Target.LOGS:
+                # dump into the logs
+                logger.info(message.data)
             case _:
                 logger.error(f'No target for message to {message.action}')
 
@@ -212,7 +215,6 @@ class MinervaWindow(Gtk.Window):
 
 
 def exit_app(app):
-    message_queue.message(Message(Target.SWANK, 'kill-threads'))
     logger.info('Exiting Minerva')
     app.quit_minerva()
 

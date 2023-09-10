@@ -11,6 +11,7 @@ class Target(Enum):
     SWANK = 4
     TREES = 5
     TOOLBAR = 6
+    LOGS = 7
 
 
 def get_named_action(name):
