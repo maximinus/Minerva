@@ -277,7 +277,6 @@ def check_queue(queues):
     for single_queue in queues:
         if not single_queue.empty():
             new_message = single_queue.get()
-            print(f'LL: {new_message}')
             message_queue.message(new_message)
     return True
 
@@ -387,8 +386,10 @@ class SwankClient:
         # if nothing is awaiting, then ignore
         return_value = swank_message.data.last
         while len(self.swank_send_queue) > 0:
+            # the last message sent is still on the queue
             oldest_message = self.swank_send_queue.pop(0)
             if str(oldest_message.counter) != return_value:
+                # keep cycling until we match the return index with the message
                 continue
             # we are looking at the right message
             return_message = oldest_message.return_event
@@ -396,14 +397,17 @@ class SwankClient:
                 # nothing to do except tidy up
                 self.received_queue = []
                 break
+            # Along with the message we send as data all the swank messages that replied
+            # it is up to the message receiver to sort these out
             return_message.data = self.received_queue
             self.received_queue = []
+            # broadcast the message now we have the swank reply
             message_queue.message(return_message)
             break
-        # send next message to swank if it exists
+        # finally, send next message to swank if it exists
         if len(self.swank_send_queue) > 0:
-            next = self.swank_send_queue[0]
-            self.swank_rex(next.cmd, next.counter, next.thread)
+            send_message = self.swank_send_queue[0]
+            self.swank_rex(send_message.cmd, send_message.counter, send_message.thread)
 
     def handle_message(self, swank_message):
         # what we get is the full message data. Decide what to do with it
