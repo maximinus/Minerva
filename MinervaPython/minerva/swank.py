@@ -277,6 +277,7 @@ def check_queue(queues):
     for single_queue in queues:
         if not single_queue.empty():
             new_message = single_queue.get()
+            print(f'LL: {new_message}')
             message_queue.message(new_message)
     return True
 
@@ -285,7 +286,7 @@ class SwankClient:
     def __init__(self, root_path, binary_path=None):
         # messages are sent one at a time, and we wait for the transaction
         # to finish before we send the next message
-        self.message_queue = []
+        self.swank_send_queue = []
         self.received_queue = []
         self.connected = False
         self.binary_path = binary_path
@@ -306,10 +307,13 @@ class SwankClient:
         # start the lisp instance and the thread to connect
         self.swank_server.start()
         self.lisp_connect_thread.start()
-        GLib.idle_add(check_queue, [self.lisp_connect_thread.queue, self.swank_server.queue])
+        GLib.idle_add(check_queue, [self.lisp_connect_thread.queue,
+                                    self.swank_server.queue,
+                                    self.listener_queue])
 
     def got_lisp_connection(self, lisp_sock):
         # called when we have started Lisp and have a sock connection
+        self.sock = lisp_sock
         self.sock = lisp_sock
         self.start_listener()
         self.connected = True
@@ -367,9 +371,10 @@ class SwankClient:
         if not self.connected:
             logger.info('Not sending message: Lisp instance not connected')
             return
-        self.message_queue.append(FutureMessage(cmd, return_event, thread, self.counter))
+        self.swank_send_queue.append(FutureMessage(cmd, return_event, thread, self.counter))
         self.counter += 1
-        if len(self.message_queue) == 1:
+        if len(self.swank_send_queue) == 1:
+            # it's the only message, so send it; all other messages need the current message to be complete
             self.swank_rex(cmd, self.counter - 1, thread)
 
     def eval(self, exp):
@@ -381,8 +386,8 @@ class SwankClient:
         # we finally have a "return" message, so we can close off a message
         # if nothing is awaiting, then ignore
         return_value = swank_message.data.last
-        while len(self.message_queue) > 0:
-            oldest_message = self.message_queue.pop(0)
+        while len(self.swank_send_queue) > 0:
+            oldest_message = self.swank_send_queue.pop(0)
             if str(oldest_message.counter) != return_value:
                 continue
             # we are looking at the right message
@@ -396,8 +401,8 @@ class SwankClient:
             message_queue.message(return_message)
             break
         # send next message to swank if it exists
-        if len(self.message_queue) > 0:
-            next = self.message_queue[0]
+        if len(self.swank_send_queue) > 0:
+            next = self.swank_send_queue[0]
             self.swank_rex(next.cmd, next.counter, next.thread)
 
     def handle_message(self, swank_message):
