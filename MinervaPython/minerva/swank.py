@@ -288,12 +288,12 @@ class SwankClient:
         self.message_queue = []
         self.received_queue = []
         self.connected = False
-        self.listener_thread = None
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
         self.counter = 1
         self.sock = None
         self.connected = False
+        self.listener_thread = None
         self.listener_event = threading.Event()
         self.listener_queue = queue.LifoQueue()
         self.lisp_connect_thread = LispConnectThread()
@@ -309,12 +309,13 @@ class SwankClient:
         GLib.idle_add(check_queue, [self.lisp_connect_thread.queue, self.swank_server.queue])
 
     def got_lisp_connection(self, lisp_sock):
+        # called when we have started Lisp and have a sock connection
         self.sock = lisp_sock
         self.start_listener()
         self.connected = True
         # the lisp connect thread should have finished, but just check here
         self.lisp_connect_thread.stop()
-        message_queue.message(Message(Target.CONSOLE, 'lisp-connected'))
+        self.swank_init()
 
     def lisp_connection_failed(self, ex):
         logger.error('Could not connect to Lisp server: {ex}')
@@ -346,7 +347,9 @@ class SwankClient:
         l = "%06x" % len(str(text))
         t = l + text
         try:
-            self.sock.send(t.encode('utf-8'))
+            message = t.encode('utf-8')
+            logger.info(f'Sending: {message}')
+            self.sock.send(message)
         except socket.error:
             logger.error('* Socket error when sending: {ex}')
             raise EnvironmentError

@@ -63,7 +63,6 @@ class MinervaWindow(Gtk.Window):
         # self.buffers = Buffers()
         self.lisp_repl = SwankClient(ROOT_DIRECTORY, config.get('lisp_binary'))
         message_queue.set_resolver(self.resolver)
-        self.lisp_repl.swank_init()
         self.connect('key-press-event', self.key_pressed)
 
         # Note this size does NOT include window decorations
