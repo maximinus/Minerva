@@ -35,7 +35,7 @@ class Console:
 
     def setup_text_view(self, font):
         self.text_view.override_font(Pango.FontDescription(font))
-        self.buffer.set_text('* SBCL 2.1.11\n> ')
+        self.buffer.set_text('* SBCL 2.1.11')
         end_pos = self.buffer.get_end_iter()
         self.buffer.place_cursor(end_pos)
         # put a mark here for the start of the line
@@ -123,6 +123,10 @@ class Console:
         end_line_pos = self.buffer.get_end_iter()
         # grab the text between the iters
         line_text = self.buffer.get_slice(line_start_pos, end_line_pos, False)
+        # if the line is empty, just display it and be done
+        if len(line_text) == 0:
+            self.display_messages([''])
+            return
         if self.connected is True:
             self.process(line_text)
         else:
@@ -133,7 +137,10 @@ class Console:
         for line in messages:
             end_line_pos = self.buffer.get_end_iter()
             # insert new text to the end of the buffer, move the cursor and set the line start again
-            new_text = f'\n> {line}\n* '
+            if len(line) == 0:
+                new_text = '\n> '
+            else:
+                new_text = f'\n* {line}\n> '
             self.buffer.insert(end_line_pos, new_text)
         # reset marks etc...
         new_end = self.buffer.get_end_iter()

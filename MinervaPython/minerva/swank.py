@@ -98,6 +98,7 @@ def get_message(sock, timeout=0):
             all_data.append(chunk_data)
             length -= len(chunk_data)
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
+        print(f'Swank: {joined_data}')
         return SwankMessage(joined_data)
     except socket.error:
         # not always an error, since we poll most of the time anyway
@@ -410,7 +411,8 @@ class SwankClient:
             self.swank_rex(send_message.cmd, send_message.counter, send_message.thread)
 
     def handle_message(self, swank_message):
-        # what we get is the full message data. Decide what to do with it
+        # swank_message is a SwankMessage
+        logger.info(f'Swank reply: {swank_message.data.raw}')
         message_type = swank_message.data.message_type
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)
