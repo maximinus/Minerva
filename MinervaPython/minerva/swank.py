@@ -98,7 +98,6 @@ def get_message(sock, timeout=0):
             all_data.append(chunk_data)
             length -= len(chunk_data)
         joined_data = ''.join([x.decode('utf-8') for x in all_data])
-        print(f'Swank: {joined_data}')
         return SwankMessage(joined_data)
     except socket.error:
         # not always an error, since we poll most of the time anyway
@@ -375,7 +374,7 @@ class SwankClient:
         self.counter += 1
         if len(self.swank_send_queue) == 1:
             # it's the only message, so send it; all other messages need the current message to be complete
-            self.swank_rex(cmd, self.counter - 1, thread)
+            self.swank_rex(cmd, self.counter - 1, thread=thread)
 
     def eval(self, exp):
         # helper function for simple evaluations
@@ -408,16 +407,32 @@ class SwankClient:
         # finally, send next message to swank if it exists
         if len(self.swank_send_queue) > 0:
             send_message = self.swank_send_queue[0]
-            self.swank_rex(send_message.cmd, send_message.counter, send_message.thread)
+            self.swank_rex(send_message.cmd, send_message.counter, thread=send_message.thread)
+
+    def check_write_string(self, message):
+        # when we have the format "(:write-string x nil some_int)"
+        # swank is asking use to print the given text and then return a message
+        # (:write-done some_int)
+        # when this happens the ast looks like [Symbol, String, [], some_int]
+        # so we examine the last 2 (we already know it starts :write-string)
+        if len(message.data.ast) == 4:
+            if len(message.data.ast[2]) == 0 and isinstance(message.data.ast[3], int):
+                int_value = str(message.data.ast[3])
+                self.swank_send(f'(:write-done {message.data.ast[3]})')
+        # in all cases, add it to the list of messages to complete when done
+        self.received_queue.append(message)
 
     def handle_message(self, swank_message):
         # swank_message is a SwankMessage
         logger.info(f'Swank reply: {swank_message.data.raw}')
+        print(f'Swank reply: {swank_message.data.raw}')
         message_type = swank_message.data.message_type
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)
         elif message_type == SwankType.PING:
             self.return_ping(swank_message)
+        elif message_type == SwankType.WRITE_STRING:
+            self.check_write_string(swank_message)
         else:
             # save the message for later
             self.received_queue.append(swank_message)
