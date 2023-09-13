@@ -9,6 +9,7 @@ Version 0.2
     * Search and function exists (complete)
     * Simple code completion works
     * The REPL can handle exceptions
+        - Bug in console where writes are not handled correctly
         - All errors are handled in the console
         - Stop runaway processes
         - Check threads are closed when Minerva is closed
