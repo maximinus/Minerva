@@ -222,6 +222,7 @@ class SwankType(str, Enum):
     PRES_START = ':presentation-start'
     PRES_END = ':presentation-end'
     PING = ':ping'
+    DEBUG = ':debug'
 
 
 class SwankMessage:
@@ -238,6 +239,14 @@ class SwankMessage:
 
     def __repr__(self):
         return str(self.message_type)
+
+
+class SwankDebugOptions:
+    # has all the info for the debug options
+    def __init__(self, swank_message):
+        self.errors = swank_message.data.ast[3][:-1]
+        self.options = swank_message.data.ast[4]
+        self.stack_trace = swank_message.data.ast[4]
 
 
 def requote(s, line_end=False):
@@ -408,6 +417,10 @@ class SwankClient:
             send_message = self.swank_send_queue[0]
             self.swank_rex(send_message.cmd, send_message.counter, thread=send_message.thread)
 
+    def handle_debug(self, swank_message):
+        # send options to console and await reply
+        message_queue.message(Message(Target.CONSOLE, 'handle-debugging', SwankDebugOptions(swank_message)))
+
     def check_write_string(self, message):
         # when we have the format "(:write-string x nil some_int)"
         # swank is asking use to print the given text and then return a message
@@ -431,6 +444,8 @@ class SwankClient:
             self.return_ping(swank_message)
         elif message_type == SwankType.WRITE_STRING:
             self.check_write_string(swank_message)
+        elif message_type == SwankType.DEBUG:
+            self.handle_debug(swank_message)
         else:
             logger.info('Ignoring message')
 

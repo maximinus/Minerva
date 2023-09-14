@@ -173,6 +173,11 @@ class Console:
         self.text_view.grab_focus()
         return True
 
+    def debug_mode(debug_message):
+        # we get a SwankDebugOptions object as the message
+        # we need to do the following
+        pass
+
     def autoscroll(self, *args):
         # the text area size has got bigger (we added more text)
         # so make sure to scroll to the bottom
@@ -182,16 +187,18 @@ class Console:
     def message(self, message):
         # this is a message we need to handle
         match message.action:
-            case 'update_font':
-                self.update_font(message.data)
-            case 'update_binary':
-                pass
             case 'print-to-console':
                 self.write_to_console(message)
+            case 'handle-debugging':
+                self.debug_mode(message.data)
             case 'no-lisp-connection':
                 self.no_connection(message.data)
             case 'lisp-connected':
                 self.connected = True
                 self.display_messages(['Connected to Lisp instance'])
+            case 'update_font':
+                self.update_font(message.data)
+            case 'update_binary':
+                logger.debug('TODO: update_binary')
             case _:
                 logger.error(f'Console cannot understand action {message.action}')
