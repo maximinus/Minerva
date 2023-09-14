@@ -286,7 +286,6 @@ class SwankClient:
         # messages are sent one at a time, and we wait for the transaction
         # to finish before we send the next message
         self.swank_send_queue = []
-        self.received_queue = []
         self.connected = False
         self.binary_path = binary_path
         self.swank_server = LispRuntime(root_path, binary_path)
@@ -379,7 +378,7 @@ class SwankClient:
     def eval(self, exp):
         # helper function for simple evaluations
         cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
-        self.send_swank_message(cmd, Message(Target.CONSOLE, 'eval-return', []), thread=':repl-thread')
+        self.send_swank_message(cmd, None, thread=':repl-thread')
 
     def send_next_message(self, swank_message):
         # we finally have a "return" message, so we can close off a message
@@ -419,8 +418,8 @@ class SwankClient:
             if len(message.data.ast[2]) == 0 and isinstance(message.data.ast[3], int):
                 int_value = str(message.data.ast[3])
                 self.swank_send(f'(:write-done {message.data.ast[3]})')
-        # in all cases, add it to the list of messages to complete when done
-        self.received_queue.append(message)
+        # in all cases, we need to print the string, which is always the 2nd ast entry
+        message_queue.message(Message(Target.CONSOLE, 'print-to-console', message.data.ast[1]))
 
     def handle_message(self, swank_message):
         # swank_message is a SwankMessage
@@ -433,8 +432,7 @@ class SwankClient:
         elif message_type == SwankType.WRITE_STRING:
             self.check_write_string(swank_message)
         else:
-            # save the message for later
-            self.received_queue.append(swank_message)
+            logger.info('Ignoring message')
 
     def return_ping(self, message):
         response = f'(:EMACS-PONG {message.ast[1]} {message.ast[2]}'

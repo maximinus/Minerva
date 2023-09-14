@@ -8,18 +8,6 @@ from minerva.constants.keycodes import Keys
 from minerva.actions import Message, message_queue, Target
 
 
-def build_write_string(messages):
-    # given a repl reply, build up the text to reply
-    reply_string = []
-    for i in messages:
-        print(f'PRINT: {i.data.raw}')
-        # the ast list first entry must match "write string"
-        if str(i.data.ast[0]) == ':write-string':
-            reply_string.append(''.join([str(x) for x in i.data.ast[1:-1]]))
-    # split the string up into lines
-    return ''.join(reply_string).splitlines()
-
-
 class Console:
     def __init__(self, font):
         self.widget = Gtk.ScrolledWindow()
@@ -151,9 +139,11 @@ class Console:
         # and move it back to the where we are now
         self.buffer.add_mark(self.line_end, new_end)
 
-    def eval_results(self, message):
-        display_strings = build_write_string(message.data)
-        self.display_messages(display_strings)
+    def write_to_console(self, message):
+        if len(message.data) == 0 or message.data == '\n':
+            # don't print empty lines
+            return
+        self.display_messages([message.data])
 
     def no_connection(self, message):
         # connection failed. So don't handle any input events
@@ -196,8 +186,8 @@ class Console:
                 self.update_font(message.data)
             case 'update_binary':
                 pass
-            case 'eval-return':
-                self.eval_results(message)
+            case 'print-to-console':
+                self.write_to_console(message)
             case 'no-lisp-connection':
                 self.no_connection(message.data)
             case 'lisp-connected':
