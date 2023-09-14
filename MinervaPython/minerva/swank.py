@@ -425,7 +425,6 @@ class SwankClient:
     def handle_message(self, swank_message):
         # swank_message is a SwankMessage
         logger.info(f'Swank reply: {swank_message.data.raw}')
-        print(f'Swank reply: {swank_message.data.raw}')
         message_type = swank_message.data.message_type
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)

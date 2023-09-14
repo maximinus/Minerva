@@ -12,6 +12,7 @@ def build_write_string(messages):
     # given a repl reply, build up the text to reply
     reply_string = []
     for i in messages:
+        print(f'PRINT: {i.data.raw}')
         # the ast list first entry must match "write string"
         if str(i.data.ast[0]) == ':write-string':
             reply_string.append(''.join([str(x) for x in i.data.ast[1:-1]]))
