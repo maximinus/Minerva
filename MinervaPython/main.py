@@ -13,6 +13,7 @@ from minerva.about import AboutDialog
 from minerva.swank import SwankClient
 from minerva.preferences import config
 from minerva.tree_panel import SidePanel
+from minerva.debugger import Debugger
 from minerva.logs import logger, handler
 from minerva.projects import ProjectWindow
 from minerva.helpers.messagebox import messagebox
@@ -69,7 +70,7 @@ class MinervaWindow(Gtk.Window):
         win_size = config.get('window_size')
         self.set_default_size(win_size[0], win_size[1])
 
-        box = Gtk.Box(v)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
@@ -92,9 +93,11 @@ class MinervaWindow(Gtk.Window):
         self.panel.pack1(self.tree_panel, True, True)
 
         self.console = Console(config.get('repl_font'))
+        self.debugger = Debugger()
         # The console needs to be in a notebook as well
         self.bottom_notebook = Gtk.Notebook()
         self.bottom_notebook.append_page(self.console.widget, Gtk.Label(label='Lisp REPL'))
+        self.bottom_notebook.append_page(self.debugger, Gtk.Label(label='Debugger'))
         minimize = get_action_widget()
         # add the events now
         minimize.connect('button_press_event', self.minimize_clicked)

@@ -12,6 +12,7 @@ class Target(Enum):
     TREES = 5
     TOOLBAR = 6
     LOGS = 7
+    DEBUGGER = 8
 
 
 def get_named_action(name):
@@ -29,6 +30,8 @@ def get_named_action(name):
             return Target.TREES
         case 'toolbar':
             return Target.TOOLBAR
+        case 'debugger':
+            return Target.DEBUGGER
 
 
 class Message:

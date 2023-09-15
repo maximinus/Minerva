@@ -3,6 +3,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from minerva.logs import logger
 from minerva.helpers.images import get_image
 from minerva.actions import get_named_action, message_queue, Target, Message
 
@@ -20,13 +21,16 @@ EXAMPLE_BUTTONS = ['[CONTINUE] Retry using QWE.',
 class DebuggerOptions(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
-        self.pack_start(Gtk.Label(label='Lisp Debugger'), False, False, 0)
         self.error_label = Gtk.Label(label=EXAMPLE_ERROR)
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add_buttons(EXAMPLE_BUTTONS)
+        self.pack_start(Gtk.Label(label='Lisp Debugger'), False, False, 0)
+        self.pack_start(self.error_label, False, False, 0)
+        self.pack_start(self.button_box, False, False, 0)
+        self.pack_start(Gtk.Label(label='Please choose an option'), False, False, 0)
 
     def add_buttons(self, buttons):
-        for child in self.button_box.get_children()
+        for child in self.button_box.get_children():
             self.button_box.remove(child)
         # the buttons need to be the same size
         # they need an image on the left hand side
@@ -44,12 +48,19 @@ class DebuggerStack(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
 
-class Debugger(Gtk.Box):
+class Debugger(Gtk.ScrolledWindow):
     def __init__(self):
         super().__init__()
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         # consists of 2 things split by a pane; both are in a scrolled window
         # left side is a simple box with the options to select from
         # right side is a tree display of the stack trace: a box with a label
-        paned = Gtk.Paned()
-        left = DebuggerOptions()
-        right = DebuggerStack()
+        self.pack_start(DebuggerOptions(), False, False, 0)
+        self.pack_start(DebuggerStack(), True, True, 0)
+        self.add(box)
+
+    def message(self, message):
+        # this is a message we need to handle
+        match message.action:
+            case _:
+                logger.error(f'Debugger cannot understand action {message.action}')
