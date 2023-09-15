@@ -8,7 +8,7 @@ from minerva.helpers.images import get_image
 from minerva.actions import get_named_action, message_queue, Target, Message
 
 
-EXAMPLE_ERROR = 'The variable QWE is unbound.\n    [Condition of type UNBOUND-VARIABLE]'
+EXAMPLE_ERROR = '<b>The variable QWE is unbound.\n    [Condition of type UNBOUND-VARIABLE]</b>'
 
 EXAMPLE_BUTTONS = ['[CONTINUE] Retry using QWE.',
                    '[USE-VALUE] Use specified value.',
@@ -17,14 +17,19 @@ EXAMPLE_BUTTONS = ['[CONTINUE] Retry using QWE.',
                    "[*ABORT] Return to SLIME's top level.",
                    '[ABORT] abort thread (#<THREAD "repl-thread" RUNNING {1002A70913}>)']
 
+EXAMPLE_STACK = []
+
 
 class DebuggerOptions(Gtk.Box):
     def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)#
-        self.margin = 8
-        self.error_label = Gtk.Label(label=EXAMPLE_ERROR)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+        self.set_margin_left(16)
+        self.set_margin_right(16)
+        self.error_label = Gtk.Label()
+        self.error_label.set_use_markup(True)
+        self.error_label.set_label(EXAMPLE_ERROR)
         self.error_label.set_halign(Gtk.Align.START)
-        self.error_label.set_margin_top(8)
+        self.error_label.set_margin_top(16)
         self.error_label.set_margin_bottom(8)
         self.button_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add_buttons(EXAMPLE_BUTTONS)
@@ -48,10 +53,26 @@ class DebuggerOptions(Gtk.Box):
             self.button_box.pack_start(new_button, False, False, 0)
 
 
-class DebuggerStack(Gtk.Box):
+class DebuggerStack(Gtk.TreeView):
     def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
-        self.margin = 8
+        self.store = Gtk.TreeStore(str)
+        super().__init__(model=self.store)
+        # design the columns and add them
+        column = Gtk.TreeViewColumn('Stack Trace')
+        column.pack_start(Gtk.CellRendererText(), False)
+        self.append_column(column)
+        self.set_margin_top(16)
+        self.set_margin_left(16)
+        self.set_margin_right(16)
+        self.treeview.set_activate_on_single_click(False)
+        self.treeview.connect('row-activated', self.row_double_click)
+        self.treeview.connect('button-press-event', self.button_press)
+
+    def row_double_click(self):
+        pass
+
+    def button_press(self):
+        pass
 
 
 class Debugger(Gtk.ScrolledWindow):
