@@ -3,6 +3,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from minerva.helpers.images import get_image
 from minerva.actions import get_named_action, message_queue, Target, Message
 
 
@@ -25,16 +26,17 @@ class DebuggerOptions(Gtk.Box):
         self.add_buttons(EXAMPLE_BUTTONS)
 
     def add_buttons(self, buttons):
+        for child in self.button_box.get_children()
+            self.button_box.remove(child)
         # the buttons need to be the same size
         # they need an image on the left hand side
         # they should be left aligned
         for index, text in enumerate(buttons):
             new_button = Gtk.Button()
             new_button.set_label(text)
-            new_button.set_image()
+            new_button.set_image(get_image(f'debugger/button_{index+1}'))
             new_button.set_always_show_image()
-
-
+            self.button_box.pack_start(new_button, False, False)
 
 
 class DebuggerStack(Gtk.Box):
