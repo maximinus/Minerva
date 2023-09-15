@@ -99,6 +99,8 @@ class DebuggerStack(Gtk.TreeView):
         self.set_margin_top(16)
         self.set_margin_left(16)
         self.set_margin_right(16)
+        self.set_grid_lines(Gtk.TreeViewGridLines.HORIZONTAL)
+        self.set_hover_selection(True)
         self.set_activate_on_single_click(False)
         self.connect('row-activated', self.row_double_click)
         self.connect('button-press-event', self.button_press)
