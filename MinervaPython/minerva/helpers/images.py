@@ -20,8 +20,8 @@ def get_image(filename):
     # filename is added to root/gfx
     image_filepath = GFX_FOLDER / filename
     if not os.path.exists(image_filepath):
-        logger.error(f'Could not find image {image_filepath}')
+        logger.error(f'Could not find image {image_filepath}.png')
         image_filepath = ERROR_IMAGE
     image = Gtk.Image()
-    image.set_from_file(image_filepath)
+    image.set_from_file(str(image_filepath))
     return image
