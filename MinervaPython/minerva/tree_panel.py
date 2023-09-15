@@ -285,7 +285,7 @@ class LispTree(Gtk.ScrolledWindow):
         self.add(self.treeview)
 
     def row_double_click(self, _path, _column, _data):
-        print('Lisp view double-clicked')
+        print('Lisp view double-clicked - should goto the definition')
 
     def button_press(self, widget, event):
         widget.do_button_press_event(widget, event)

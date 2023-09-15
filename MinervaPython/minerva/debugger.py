@@ -105,10 +105,11 @@ class DebuggerStack(Gtk.TreeView):
         self.connect('row-activated', self.row_double_click)
         self.connect('button-press-event', self.button_press)
 
-    def row_double_click(self):
+    def row_double_click(self, _path, _column, _data):
         pass
 
     def button_press(self, _widget, _row):
+        # add a new row with the required data to the row: or, if open, close the row
         pass
 
 
@@ -122,6 +123,12 @@ class Debugger(Gtk.ScrolledWindow):
         box.pack_start(DebuggerOptions(), False, False, 0)
         box.pack_start(DebuggerStack(), True, True, 0)
         self.add(box)
+        self.connect('key-press-event', self.keypress)
+
+    def keypress(self, _widget, event):
+        # looking for keys 1-9
+        if event.keyval == Keys.RETURN.value:
+            logger.info('Enter pressed')
 
     def message(self, message):
         # this is a message we need to handle
