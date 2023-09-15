@@ -69,7 +69,7 @@ class MinervaWindow(Gtk.Window):
         win_size = config.get('window_size')
         self.set_default_size(win_size[0], win_size[1])
 
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box = Gtk.Box(v)
         self.accel_group = Gtk.AccelGroup()
         self.add_accel_group(self.accel_group)
         box.pack_start(get_menu_from_config(self.accel_group, action_router), False, False, 0)
