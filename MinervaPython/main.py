@@ -193,10 +193,16 @@ class MinervaWindow(Gtk.Window):
             self.panel.set_position(self.minimized)
             self.minimized = -1
 
+    def start_debugging(self, message_data):
+        self.bottom_notebook.set_current_page(1)
+        self.debugger.start_debugging(message_data)
+
     def message(self, message):
         match message.action:
             case 'close-notebook':
                 self.close_notebook(message.data)
+            case 'start-debugging':
+                self.start_debugging(message.data)
             case 'quit-minerva':
                 self.quit_minerva()
             case 'display':

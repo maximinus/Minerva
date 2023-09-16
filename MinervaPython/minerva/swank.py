@@ -430,7 +430,7 @@ class SwankClient:
 
     def handle_debug(self, swank_message):
         # send options to console and await reply
-        message_queue.message(Message(Target.CONSOLE, 'handle-debugging', SwankDebugOptions(swank_message)))
+        message_queue.message(Message(Target.WINDOW, 'start-debugging', SwankDebugOptions(swank_message)))
 
     def check_write_string(self, message):
         # when we have the format "(:write-string x nil some_int)"
@@ -458,7 +458,7 @@ class SwankClient:
         elif message_type == SwankType.DEBUG:
             self.handle_debug(swank_message)
         else:
-            logger.info('Ignoring unknown Swank message')
+            logger.info(f'Ignoring unknown Swank message: {swank_message.data.ast[0]}')
 
     def return_ping(self, message):
         response = f'(:EMACS-PONG {message.ast[1]} {message.ast[2]}'

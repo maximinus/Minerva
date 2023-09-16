@@ -173,11 +173,6 @@ class Console:
         self.text_view.grab_focus()
         return True
 
-    def debug_mode(debug_message):
-        # we get a SwankDebugOptions object as the message
-        # we need to do the following
-        pass
-
     def autoscroll(self, *args):
         # the text area size has got bigger (we added more text)
         # so make sure to scroll to the bottom
@@ -189,8 +184,6 @@ class Console:
         match message.action:
             case 'print-to-console':
                 self.write_to_console(message)
-            case 'handle-debugging':
-                self.debug_mode(message.data)
             case 'no-lisp-connection':
                 self.no_connection(message.data)
             case 'lisp-connected':

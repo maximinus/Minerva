@@ -128,14 +128,15 @@ class DebuggerStack(Gtk.TreeView):
                 self.collapse_row(tree_path)
             else:
                 # open
-                self.expand_and_update(tree_path, selection)
+                self.expand_row(tree_path, False)
+                self.update(tree_path, selection)
         else:
             # must be child, so close the parent
             tree_path.up()
             self.collapse_row(tree_path)
         return True
 
-    def expand_and_update(self, tree_path, selection):
+    def update(self, tree_path, selection):
         # the tree_path points to the root
         # if the string is "Loading" then we need to get the data
         row = self.store[selection]
@@ -148,6 +149,9 @@ class DebuggerStack(Gtk.TreeView):
 
     def update_stack(self, data):
         tree_path = data[0]
+        tree_iter = self.store.get_iter(tree_path)
+        # mark as done
+        self.store.set(tree_iter, 1, True)
         tree_path.down()
         tree_iter = self.store.get_iter(tree_path)
         self.store.set(tree_iter, 0, data[1])
@@ -171,6 +175,12 @@ class Debugger(Gtk.ScrolledWindow):
         # looking for keys 1-9
         if is_key_digit(event.keyval):
             print('Selected a digit')
+
+    def start_debugging(self, message_data):
+        # returned is a SwankDebugOptions object
+        self.options.error_label.set_text(message_data.errors)
+        self.options.add_buttons(message_data.options)
+        get_tree_view(self.stack_trace.store, message_data.stack_trace)
 
     def message(self, message):
         # this is a message we need to handle
