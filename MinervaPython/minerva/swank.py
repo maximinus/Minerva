@@ -246,7 +246,7 @@ class SwankDebugOptions:
     def __init__(self, swank_message):
         self.errors = swank_message.data.ast[3][:-1]
         self.options = swank_message.data.ast[4]
-        self.stack_trace = swank_message.data.ast[4]
+        self.stack_trace = swank_message.data.ast[5]
 
 
 def requote(s, line_end=False):

@@ -178,9 +178,24 @@ class Debugger(Gtk.ScrolledWindow):
 
     def start_debugging(self, message_data):
         # returned is a SwankDebugOptions object
-        self.options.error_label.set_text(message_data.errors)
-        self.options.add_buttons(message_data.options)
-        get_tree_view(self.stack_trace.store, message_data.stack_trace)
+        # join error lines
+        error_message = '\n'.join(message_data.errors)
+        self.options.error_label.set_text(error_message)
+        # options is a list of lists, so render down
+        options = [' '.join(x) for x in message_data.options]
+        self.options.add_buttons(options)
+        stack = []
+        # annoying, some og the items are lists of 1 item and not strings
+        # This is because swank is telling us more than we need for now, I think
+        for i in message_data.stack_trace:
+            all_strings = []
+            for j in i:
+                if isinstance(j, list):
+                    all_strings.append(str(j[0]))
+                else:
+                    all_strings.append(str(j))
+            stack.append(' '.join(all_strings))
+        get_tree_view(self.stack_trace.store, stack)
 
     def message(self, message):
         # this is a message we need to handle
