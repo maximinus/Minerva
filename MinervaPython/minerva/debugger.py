@@ -83,13 +83,13 @@ class DebuggerOptions(Gtk.Box):
 
 def get_tree_view(store, stack_trace):
     for i in stack_trace:
-        row = store.append(None, [i])
-        store.append(row, ['Loading...'])
+        row = store.append(None, [i, False])
+        store.append(row, ['Loading...', False])
 
 
 class DebuggerStack(Gtk.TreeView):
     def __init__(self):
-        self.store = Gtk.TreeStore(str)
+        self.store = Gtk.TreeStore(str, bool)
         super().__init__(model=self.store)
         # design the columns and add them
         column = Gtk.TreeViewColumn('Stack Trace')
@@ -108,6 +108,7 @@ class DebuggerStack(Gtk.TreeView):
         self.connect('button-press-event', self.button_press)
 
     def row_double_click(self, _path, _column, _data):
+        # prevent any moving in the scrolled window
         return True
 
     def button_press(self, _widget, event):
@@ -127,12 +128,29 @@ class DebuggerStack(Gtk.TreeView):
                 self.collapse_row(tree_path)
             else:
                 # open
-                self.expand_row(tree_path, False)
+                self.expand_and_update(tree_path, selection)
         else:
             # must be child, so close the parent
             tree_path.up()
             self.collapse_row(tree_path)
         return True
+
+    def expand_and_update(self, tree_path, selection):
+        # the tree_path points to the root
+        # if the string is "Loading" then we need to get the data
+        row = self.store[selection]
+        if row[1] is False:
+            # ask swank to tell us what the state of the locals
+            update_message = Message(Target.DEBUGGER, 'got-locals', tree_path)
+            # 0 is the index of the row: we need to get this
+            message_queue.message(Message(Target.SWANK, 'get-locals', [0, update_message]))
+        self.expand_row(tree_path, False)
+
+    def update_stack(self, data):
+        tree_path = data[0]
+        tree_path.down()
+        tree_iter = self.store.get_iter(tree_path)
+        self.store.set(tree_iter, 0, data[1])
 
 
 class Debugger(Gtk.ScrolledWindow):
@@ -142,8 +160,10 @@ class Debugger(Gtk.ScrolledWindow):
         # consists of 2 things split by a pane; both are in a scrolled window
         # left side is a simple box with the options to select from
         # right side is a tree display of the stack trace: a box with a label
-        box.pack_start(DebuggerOptions(), False, False, 0)
-        box.pack_start(DebuggerStack(), True, True, 0)
+        self.stack_trace = DebuggerStack()
+        self.options = DebuggerOptions()
+        box.pack_start(self.options, False, False, 0)
+        box.pack_start(self.stack_trace, True, True, 0)
         self.add(box)
         self.connect('key-press-event', self.keypress)
 
@@ -155,5 +175,7 @@ class Debugger(Gtk.ScrolledWindow):
     def message(self, message):
         # this is a message we need to handle
         match message.action:
+            case 'got-locals':
+                self.stack_trace.update_stack(message.data)
             case _:
                 logger.error(f'Debugger cannot understand action {message.action}')

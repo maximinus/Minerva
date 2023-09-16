@@ -151,6 +151,8 @@ class MinervaWindow(Gtk.Window):
                 self.side_panel.message(message)
             case Target.TOOLBAR:
                 self.toolbar.message(message)
+            case Target.DEBUGGER:
+                self.debugger.message(message)
             case Target.LOGS:
                 # dump into the logs
                 logger.info(message.data.strip())

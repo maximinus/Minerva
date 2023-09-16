@@ -359,7 +359,7 @@ class SwankClient:
         t = l + text
         try:
             message = t.encode('utf-8')
-            logger.info(f'Sending: {message}')
+            logger.debug(f'Sending: {message}')
             self.sock.send(message)
         except socket.error:
             logger.error('* Socket error when sending: {ex}')
@@ -388,6 +388,17 @@ class SwankClient:
         # helper function for simple evaluations
         cmd = f'(swank-repl:listener-eval {requote(exp, line_end=False)})'
         self.send_swank_message(cmd, None, thread=':repl-thread')
+
+    def get_locals(self, message):
+        # message is of the form
+        # [row_id, Message(Target.DEBUGGER, 'got-locals', tree_path)]
+        row_id = message[0]
+        message = message[1]
+        command = f'(swank:frame-locals-and-catch-tags {row_id})'
+        # send back a dummy message
+        message.data = [message.data, command]
+        message_queue.message(message)
+        #self.send_swank_message(command, message)
 
     def send_next_message(self, swank_message):
         # we finally have a "return" message, so we can close off a message
@@ -436,7 +447,7 @@ class SwankClient:
 
     def handle_message(self, swank_message):
         # swank_message is a SwankMessage
-        logger.info(f'Swank reply: {swank_message.data.raw}')
+        logger.debug(f'Swank reply: {swank_message.data.raw}')
         message_type = swank_message.data.message_type
         if message_type == SwankType.RETURN:
             self.send_next_message(swank_message)
@@ -447,7 +458,7 @@ class SwankClient:
         elif message_type == SwankType.DEBUG:
             self.handle_debug(swank_message)
         else:
-            logger.info('Ignoring message')
+            logger.info('Ignoring unknown Swank message')
 
     def return_ping(self, message):
         response = f'(:EMACS-PONG {message.ast[1]} {message.ast[2]}'
@@ -463,6 +474,8 @@ class SwankClient:
                 self.handle_message(message)
             case 'repl-cmd':
                 self.eval(message.data)
+            case 'get-locals':
+                self.get_locals(message.data)
             case 'lost-connection':
                 # error and restart lisp binary?
                 logger.error('Lost Lisp binary connection')
