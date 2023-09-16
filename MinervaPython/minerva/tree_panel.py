@@ -150,20 +150,19 @@ class FileTree(Gtk.ScrolledWindow):
         widget.do_button_press_event(widget, event)
         # was it a right click?
         if event.button == 3:
-            iter = self.treeview.get_selection().get_selected()[1]
-            if iter is None:
+            selection = self.treeview.get_selection().get_selected()[1]
+            if selection is None:
                 # nothing to select
                 return False
-            row = self.store[iter]
+            row = self.store[selection]
             filename = row[1]
             filepath = row[3]
-            print(row.parent)
             if row.parent is None:
                 # it's the root one only
                 options = ['New File', 'New Directory']
                 context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
                 context_menu.popup_at_pointer()
-            elif self.store[iter][2].startswith('d_'):
+            elif self.store[selection][2].startswith('d_'):
                 # These options
                 options = ['New File', 'New Directory', f'Rename {filename}', f'Delete {filename}']
                 context_menu = FileTreeContext(filepath, options, self.context_dir_selected)
@@ -172,7 +171,6 @@ class FileTree(Gtk.ScrolledWindow):
                 options = [f'Open {filename}', f'Rename {filename}', f'Delete {filename}']
                 context_menu = FileTreeContext(filepath, options, self.context_file_selected)
                 context_menu.popup_at_pointer()
-        # show the pop-up menu
         return True
 
     def context_dir_selected(self, _widget, data):

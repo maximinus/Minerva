@@ -4,6 +4,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from minerva.logs import logger
+from minerva.constants.keycodes import is_key_digit, Keys
 from minerva.helpers.images import get_image
 from minerva.actions import get_named_action, message_queue, Target, Message
 
@@ -82,7 +83,8 @@ class DebuggerOptions(Gtk.Box):
 
 def get_tree_view(store, stack_trace):
     for i in stack_trace:
-        store.append(None, [i])
+        row = store.append(None, [i])
+        store.append(row, ['Loading...'])
 
 
 class DebuggerStack(Gtk.TreeView):
@@ -106,11 +108,31 @@ class DebuggerStack(Gtk.TreeView):
         self.connect('button-press-event', self.button_press)
 
     def row_double_click(self, _path, _column, _data):
-        pass
+        return True
 
-    def button_press(self, _widget, _row):
+    def button_press(self, _widget, event):
         # add a new row with the required data to the row: or, if open, close the row
-        pass
+        # returns True to prevent scrolled window moving to target
+        if event.button != 1:
+            return True
+        selection = self.get_selection().get_selected()[1]
+        if selection is None:
+            # nothing to select
+            return True
+        row = self.store[selection]
+        tree_path = self.store.get_path(selection)
+        if row.parent is None:
+            if self.row_expanded(tree_path):
+                # close
+                self.collapse_row(tree_path)
+            else:
+                # open
+                self.expand_row(tree_path, False)
+        else:
+            # must be child, so close the parent
+            tree_path.up()
+            self.collapse_row(tree_path)
+        return True
 
 
 class Debugger(Gtk.ScrolledWindow):
@@ -127,8 +149,8 @@ class Debugger(Gtk.ScrolledWindow):
 
     def keypress(self, _widget, event):
         # looking for keys 1-9
-        if event.keyval == Keys.RETURN.value:
-            logger.info('Enter pressed')
+        if is_key_digit(event.keyval):
+            print('Selected a digit')
 
     def message(self, message):
         # this is a message we need to handle
