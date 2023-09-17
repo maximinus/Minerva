@@ -68,7 +68,7 @@ class DebuggerStack(Gtk.TreeView):
         self.connect('button-press-event', self.button_press)
 
     def row_double_click(self, _path, _column, _data):
-        # prevent any moving in the scrolled window
+        # prevent the scrolled window moving
         return True
 
     def button_press(self, _widget, event):

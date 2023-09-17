@@ -27,7 +27,7 @@ Version 0.5
 
 Version 0.6
 
-    * There is a simple debugger
+    * There is a simple debugger - needs to be single step or similar
     * There is a test runner
 
 Version 1.0
