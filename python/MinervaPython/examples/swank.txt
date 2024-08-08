@@ -1,0 +1,49 @@
+
+Entering the string (+ 1 qwe) raises the exception
+
+Swank returns a list of options and an exception list
+
+The variable QWE is unbound.
+   [Condition of type UNBOUND-VARIABLE]
+
+Restarts:
+ 0: [CONTINUE] Retry using QWE.
+ 1: [USE-VALUE] Use specified value.
+ 2: [STORE-VALUE] Set specified value and use it.
+ 3: [RETRY] Retry SLIME REPL evaluation request.
+ 4: [*ABORT] Return to SLIME's top level.
+ 5: [ABORT] abort thread (#<THREAD "repl-thread" RUNNING {1002A70913}>)
+
+Backtrace:
+  0: (SB-INT:SIMPLE-EVAL-IN-LEXENV QWE #<NULL-LEXENV>)
+  1: (SB-INT:SIMPLE-EVAL-IN-LEXENV (+ 1 QWE) #<NULL-LEXENV>)
+  2: (EVAL (+ 1 QWE))
+ --more--
+
+Pressing a button chooses the options:
+
+0: Will retry with the variable again which leads me back to the same screen
+1: Use a value: I need to enter a value for the variable
+2: Sets a value, i.e. creates the new variable and assigns it a value
+3: Retry the evaluation
+4: Exit the debugger and go back to the REPL
+5: Aborts and goes back to the debugger
+
+
+We need to:
+
+    * Display the options
+    * Display the stacktrace as a simple tree:
+        STACK-TRACE:
+            The Variables
+                The value of the variable
+    * Check for a keypress and perform the action
+    * If 2, ask for the value and send it
+
+Swank messages for the reply is of the form:
+
+    (:emacs-rex (swank:invoke-nth-restart-for-emacs 1 X) "COMMON-LISP-USER" 1 n)
+
+Where n is the message number and X is the value 0-5 for the above
+
+
