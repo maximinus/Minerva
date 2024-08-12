@@ -1,22 +1,22 @@
-;;;; Minerva.asd
+;;;; minerva.asd
 
-(asdf:defsystem :minerva
+(asdf:defsystem "minerva"
   :description "Minerva: The modern Lisp IDE"
   :author "Chris Handy <maximinus@gmail.com>"
-  :license  "GPL 3.0"
+  :license "GPL 3.0"
   :version "0.0.1"
   :serial t
-  :depends-on ("SLD2" "SDL2-TTF" "SLD2-IMAGE")
+  :depends-on (:sdl2 :sdl2-ttf :sdl2-image)
   :pathname "src/"
   :components ((:file "base")
-               (:file "containers")))
+	       (:file "containers")))
 
 (asdf:defsystem :minerva/tests
-  :description "Tests for Minerva IDS"
-  :author "Chris Handy"
+  :description "Tests for Minerva IDE"
+  :author "Chris Handy <maximinus@gmail.com>"
   :license "GPL 3.0"
   :serial t
   :depends-on (:fiveam :minerva)
-  :pathname "tests/"
-  :components ((:file "test-containers")))
-
+  :pathname "test/"
+  :components ((:file "test-base")
+	       (:file "test-containers")))

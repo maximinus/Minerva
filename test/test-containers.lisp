@@ -12,7 +12,7 @@
 (def-suite* test-expand :in container-tests)
 
 (test test-example
-  (is (minerva:test-example)))
+      (is (minerva:test-example)))
 
 (test expand-none-not-horizontal
       (is (not (expand-horizontal 'expand-none))))

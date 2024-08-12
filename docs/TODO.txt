@@ -1,10 +1,16 @@
 
-1: Load and display an image
-2: Catch the resize event
-3: Draw some text
-4: Flash a cursor
-5: Respond to keys
-6: Add resizeable item
-7: Pull from different file
-8: Build an exe
-9: Work out SDL restart mechanics
+* Load and display an image
+* Draw some text
+
+Edit EMACS options:
+     Cut and paste
+     Font selection
+Run a simple test
+Run an SDL test
+Catch the resize event
+Flash a cursor
+Respond to keys
+Add resizeable item
+Pull from different file
+Build an exe
+Work out SDL restart mechanics

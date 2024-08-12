@@ -28,14 +28,11 @@
 	  (make-instance 'Font :font loaded-font)))
       nil))
 
-
 (defmethod test-example ()
-  t)
-
+  "Chris")
 
 (defmethod get-texture ((font Font) text)
   (sdl2-ttf:render-text-blended (font font) text 0 0 0 0))
-
 
 (defun init-window ()
   (sdl2:init)
@@ -45,12 +42,10 @@
 		      :h 480
 		      :flags '(:shown)))
 
-
 (defun draw-color (display)
   (sdl2:fill-rect display
 		  nil
 		  (sdl2:map-rgb (sdl2:surface-format display) 255 0 0)))
-
 
 (defun wait-for-keypress ()
   (sdl2:with-event-loop (:method :poll)
@@ -59,13 +54,10 @@
     (:idle ()
 	   (sdl2:delay 100))))
 
-
 (defun load-image (filepath)
   (let ((image (sdl2-image:load-image filepath)))
-    (if (autowrap:wrapper-null-p image)
         (error "Cannot load image ~a (check that file exists)" filepath)
         image)))
-
 
 (defun test-window ()
   (let* ((window (init-window))
