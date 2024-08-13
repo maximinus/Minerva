@@ -1,16 +1,27 @@
 
 * Load and display an image
 * Draw some text
+* Edit EMACS options:
+*   Cut and paste
+*   Font selection
+* Run a simple test
 
-Edit EMACS options:
-     Cut and paste
-     Font selection
-Run a simple test
+Run a suite of tests
+Make it easy to do so
+Write a simple program that sets up the environment on startup
+Decide how to do Align and Expand as expected
+Add a colorrect
 Run an SDL test
-Catch the resize event
 Flash a cursor
 Respond to keys
 Add resizeable item
-Pull from different file
-Build an exe
+Build an executable
 Work out SDL restart mechanics
+With font, cursor and keyboard, write a REPL
+The REPL should work like a terminal, with up/down showing previous commands
+
+This is version 0.1:
+    It has unit tests
+    It has an executable
+    It has a REPL
+

@@ -1,17 +1,17 @@
 (defpackage :minerva/containers
   (:use :cl)
   (:shadow :Position)
-  (:export :expand-horizontal
-	   :expand-vertical))
+  (:export :horizontal-expandp
+	   :vertical-expandp))
 
 (in-package :minerva/containers)
 
 
-(defun expand-horizontal (expand)
-  (member expand '('expand-horizontal 'expand-both)))
+(defun horizontal-expandp (expand)
+  (member expand '(:expand-horizontal :expand-both)))
 
-(defun expand-vertical (expand)
-  (member expand '('expand-vertical 'expand-both)))
+(defun vertical-expandp (expand)
+  (member expand '(:expand-vertical :expand-both)))
 
 
 (defclass Size ()

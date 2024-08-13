@@ -57,7 +57,7 @@
 (defun load-image (filepath)
   (let ((image (sdl2-image:load-image filepath)))
         (error "Cannot load image ~a (check that file exists)" filepath)
-        image)))
+        image))
 
 (defun test-window ()
   (let* ((window (init-window))

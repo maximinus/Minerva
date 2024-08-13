@@ -1,39 +1,34 @@
 (defpackage :minerva-tests
-  (:use :cl
-	:minerva
-        :fiveam))
+  (:import-from :minerva/containers :horizontal-expandp :vertical-expandp)
+  (:use :fiveam))
 
 (in-package :minerva-tests)
-
 
 (def-suite container-tests
   :description "Tests expand symbols")
 
 (def-suite* test-expand :in container-tests)
 
-(test test-example
-      (is (minerva:test-example)))
-
 (test expand-none-not-horizontal
-      (is (not (expand-horizontal 'expand-none))))
+      (is (not (horizontal-expandp :expand-none))))
 
 (test expand-vertical-not-horizontal
-      (is (not (expand-horizontal 'expand-vertical))))
+      (is (not (horizontal-expandp :expand-vertical))))
 
 (test expand-horizontal-horizontal
-      (is (expand-horizontal 'expand-horizontal)))
+      (is (horizontal-expandp :expand-horizontal)))
 
 (test expand-both-horizontal
-      (is (expand-horizonatal 'expand-both)))
+      (is (horizontal-expandp :expand-both)))
 
 (test expand-none-not-vertical
-      (is (not (expand-horizontal 'expand-none))))
+      (is (not (vertical-expandp :expand-none))))
 
 (test expand-horizontal-not-vertical
-      (is (not (expand-vertical 'expand-horizontal))))
+      (is (not (vertical-expandp :expand-horizontal))))
 
 (test expand-vertical-vertical
-      (is (expand-vertical 'expand-vertical)))
+      (is (vertical-expandp :expand-vertical)))
 
 (test expand-both-vertical
-      (is (expand-vertical 'expand-both)))
+      (is (vertical-expandp :expand-both)))

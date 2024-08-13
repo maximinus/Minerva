@@ -4,3 +4,6 @@
 (ql:quickload "fiveam")
 (ql:quickload "minerva")
 (ql:quickload "minerva/tests")
+
+;; now you can run a test with this syntax
+;; (fiveam:run! 'minerva-tests::base-tests)
