@@ -28,10 +28,10 @@
 ;; expand-none, expand-both, expand-vertical and expand-horizontal
 ;; don't forget that they are namespaced to the mv package
 (defun horizontal-expandp (expand)
-  (member expand '(:expand-horizontal :expand-both)))
+  (member expand '(expand-horizontal expand-both)))
 
 (defun vertical-expandp (expand)
-  (member expand '(:expand-vertical :expand-both)))
+  (member expand '(expand-vertical expand-both)))
 
 
 (defclass Size ()
