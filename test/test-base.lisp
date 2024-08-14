@@ -29,3 +29,64 @@
 
 (test expand-both-vertical
       (is (minerva:vertical-expandp 'minerva:expand-both)))
+
+
+(def-suite* test-size :in base-tests)
+
+(test size-init-zero
+  (let ((w (make-instance 'minerva:Size)))
+    (is (and (equal (minerva::width w) 0)
+	     (equal (minerva::height w) 0)))))
+
+(test size-can-set
+  (let ((w (make-instance 'minerva:Size)))
+    (setf (minerva::width w) 100)
+    (setf (minerva::height w) 150)
+    (is (and (equal (minerva::width w) 100)
+	     (equal (minerva::height w) 150)))))
+
+(test size-initset
+  (let ((w (make-instance 'minerva:Size :width 100 :height 150)))
+    (is (and (equal (minerva::width w) 100)
+	     (equal (minerva::height w) 150)))))
+
+(test size-equal
+  (let ((foo (make-instance 'minerva:Size :width 50))
+	(bar (make-instance 'minerva:Size :width 50)))
+    (is (minerva:equal-size foo bar))))
+
+
+(def-suite* test-position :in base-tests)
+
+(test create-position
+  (let ((w (make-instance 'minerva:Position)))
+    (is (and (equal (minerva::x w) 0)
+	     (equal (minerva::y w) 0)))))
+
+(test update-position
+  (let ((w (make-instance 'minerva:Position)))
+    (setf (minerva::x w) 50)
+    (is (equal (minerva::x w) 50))))
+
+
+(def-suite* test-widget :in base-tests)
+
+(test widget-defaults
+  (let ((w (make-instance 'minerva:Widget)))
+    (is (and (equal (minerva::background w) nil)
+	     (equal (minerva::expand w) 'minerva:expand-none)
+	     (equal (minerva::parent w) nil)
+	     (equal (minerva::texture w) nil)
+	     (equal (minerva::container w) nil)))))
+
+(test default-no-parent
+  (let ((w (make-instance 'minerva:Widget)))
+    (is (equal (minerva::get-parent w) nil))))
+
+(test default-align-size
+  (let* ((w (make-instance 'minerva:Widget))
+	 (offset (minerva:get-align-offset w
+					   (make-instance 'minerva:Size :width 100 :height 100)
+					   (make-instance 'minerva:Size :width 200 :height 200))))
+    (is (and (equal (minerva::x offset) 0)
+	     (equal (minerva::y offset) 0)))))

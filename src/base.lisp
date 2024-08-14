@@ -24,6 +24,7 @@
 (defmethod get-texture ((font Font) text)
   (sdl2-ttf:render-text-blended (font font) text 0 0 0 0))
 
+
 ;; a widget can be set to expand or not, given the symbols
 ;; expand-none, expand-both, expand-vertical and expand-horizontal
 ;; don't forget that they are namespaced to the mv package
@@ -35,8 +36,8 @@
 
 
 (defclass Size ()
-  ((width :initarg width :accessor width)
-   (height :initarg height :accessor height))
+  ((width :initarg :width :accessor width)
+   (height :initarg :height :accessor height))
   (:default-initargs :width 0 :height 0))
 
 (defmethod equal-size ((size1 Size) (size2 Size))
@@ -45,11 +46,17 @@
 
 
 (defclass Position ()
-  ((x :initarg x
+  ((x :initarg :x
       :accessor x)
-   (y :initarg y
+   (y :initarg :y
       :accessor y))
   (:default-initargs :x 0 :y 0))
+
+
+(defclass Align ()
+  ((x :initarg :x :accessor x)
+   (y :initarg :y :accessor y))
+  (:default-initargs :x 'align-left :y 'align-top))
 
 
 (defclass Widget ()
@@ -105,4 +112,5 @@
 	  ((eq (align widget) 'align-center)
 	   (setf (y offset) (+ (y offset) (/ vertical-space 2))))
 	  ((eq (align widget) 'align-bottom)
-	   (setf (y offset) (+ (y offset) vertical-space)))))))
+	   (setf (y offset) (+ (y offset) vertical-space)))))
+    offset))
