@@ -5,11 +5,11 @@
 *   Cut and paste
 *   Font selection
 * Run a simple test
+* Run a suite of tests
+* Make it easy to do so
+* Write a simple program that sets up the environment on startup
+* Decide how to do Align and Expand as expected
 
-Run a suite of tests
-Make it easy to do so
-Write a simple program that sets up the environment on startup
-Decide how to do Align and Expand as expected
 Add a colorrect
 Run an SDL test
 Flash a cursor

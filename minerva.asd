@@ -1,4 +1,4 @@
-;;;; minerva.asd
+;;;; minerva.asd - define all systems here
 
 (asdf:defsystem "minerva"
   :description "Minerva: The modern Lisp IDE"
@@ -8,7 +8,8 @@
   :serial t
   :depends-on (:sdl2 :sdl2-ttf :sdl2-image)
   :pathname "src/"
-  :components ((:file "base")
+  :components ((:file "package")
+	       (:file "base")
 	       (:file "containers")))
 
 (asdf:defsystem :minerva/tests
@@ -18,5 +19,6 @@
   :serial t
   :depends-on (:fiveam :minerva)
   :pathname "test/"
-  :components ((:file "test-base")
+  :components ((:file "package")
+	       (:file "test-base")
 	       (:file "test-containers")))
