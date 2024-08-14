@@ -52,6 +52,23 @@
       :accessor y))
   (:default-initargs :x 0 :y 0))
 
+(defmethod add ((a Position) &rest b)
+  (let ((xpos (x a))
+	(ypos (y a)))
+    (dolist (pos b)
+      (incf xpos (x pos))
+      (incf ypos (y pos)))
+    (make-instance 'Position :x xpos :y ypos)))
+
+
+(defmethod sub ((a Position) &rest b)
+  (let ((xpos (x a))
+	(ypos (y a)))
+    (dolist (pos b)
+      (decf xpos (x pos))
+      (decf ypos (y pos)))
+    (make-instance 'Position :x xpos :y ypos)))
+
 
 (defclass Align ()
   ((x :initarg :x :accessor x)
@@ -65,7 +82,7 @@
    (parent :initarg :parent :accessor parent)
    (texture :initarg :texture :accessor texture)
    (background :initarg :background :accessor background)
-   (size :initarg :size :accessor size)
+   (current-size :initarg :size :accessor size)
    (offset :initarg :offset :accessor offset)
    (container :initarg :container :accessor container))
   (:default-initargs :background nil
@@ -73,12 +90,12 @@
 		     :align 'align-top-left
 		     :parent nil
 		     :texture nil
-		     :size nil
+		     :current_size nil
 		     :offset nil
 		     :container nil))
 
 (defmethod render ((widget Widget) size offset)
-  (if (not (equal-size size (size widget)))
+  (if (not (equal-size size (current-size widget)))
       (progn
 	(setf (offset widget) offset)
 	(draw widget size))))

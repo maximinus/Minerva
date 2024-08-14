@@ -68,6 +68,20 @@
     (setf (minerva::x w) 50)
     (is (equal (minerva::x w) 50))))
 
+(test add-position
+  (let* ((a (make-instance 'minerva:Position :x 10 :y 20))
+	 (b (make-instance 'minerva:Position :x 12 :y 15))
+	 (result (minerva::add a b)))
+    (is (and (equal (minerva::x result) 22)
+	     (equal (minerva::y result) 35)))))
+
+(test sub-position
+  (let* ((a (make-instance 'minerva:Position :x 20 :y 30))
+	 (b (make-instance 'minerva:Position :x 10 :y 18))
+	 (result (minerva::sub a b)))
+    (is (and (equal (minerva::x result) 10)
+	     (equal (minerva::y result) 12)))))
+
 
 (def-suite* test-widget :in base-tests)
 
