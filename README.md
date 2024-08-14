@@ -1,9 +1,9 @@
-# Minerva
-### _Your Name <your.name@example.com>_
+# Minerva Lisp IDE
 
-This is a project to do ... something.
+Minerva is aiming to be a modern Lisp IDE.
+It is written in Lisp and uses SDL2 as a rendering engine.
 
 ## License
 
-Specify license here
+GPL 3.0
 
