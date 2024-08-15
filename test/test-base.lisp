@@ -99,7 +99,7 @@
 
 (test default-align-size
   (let* ((w (make-instance 'minerva:Widget))
-	 (offset (minerva:get-align-offset w
+	 (offset (minerva::get-align-offset w
 					   (make-instance 'minerva:Size :width 100 :height 100)
 					   (make-instance 'minerva:Size :width 200 :height 200))))
     (is (and (equal (minerva::x offset) 0)

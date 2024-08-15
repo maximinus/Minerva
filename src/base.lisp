@@ -84,7 +84,8 @@
    (background :initarg :background :accessor background)
    (current-size :initarg :size :accessor size)
    (offset :initarg :offset :accessor offset)
-   (container :initarg :container :accessor container))
+   (container :initarg :container :accessor container)
+   (frame-offset :initarg frame-offset :accessor frame-offset))
   (:default-initargs :background nil
 		     :expand 'expand-none
 		     :align 'align-top-left
@@ -94,40 +95,44 @@
 		     :offset nil
 		     :container nil))
 
-(defmethod render ((widget Widget) size offset)
-  (if (not (equal-size size (current-size widget)))
-      (progn
-	(setf (offset widget) offset)
-	(draw widget size))))
+(defmethod min-size ((self Widget))
+  ;; on a raw widget, this is always (0, 0)
+  (make-instance 'Size :width 0 :height 0))
 
-(defmethod draw ((widget Widget) size)
-  (get-texture Widget size)
-  (if (not (eq (background Widget) nil))
-      (sdl2:fill-rect (texture widget) nil (background Widget)))
+(defmethod render ((self Widget) size offset)
+  (if (not (equal-size size (current-size self)))
+      (progn
+	(setf (offset self) offset)
+	(draw self size))))
+
+(defmethod draw ((self Widget) size)
+  (get-texture self size)
+  (if (not (eq (background self) nil))
+      (sdl2:fill-rect (texture self) nil (background Widget)))
   (setf (size widget) size))
 
-(defmethod get-texture ((widget Widget) size)
+(defmethod get-texture ((self Widget) size)
   ;depth is 24 but we should match the display surface really
-  (setf (texture Widget) (sdl2:create-rgb-surface (width size) (height size) 24)))
+  (setf (texture self) (sdl2:create-rgb-surface (width size) (height size) 24)))
 
-(defmethod get-parent ((widget Widget))
-  (if (not (eq (parent widget) nil))
-      (get-parent (parent widget))))
+(defmethod get-parent ((self Widget))
+  (if (not (eq (parent self) nil))
+      (get-parent (parent self))))
 
-(defmethod get-align-offset ((widget Widget) widget-size given-size)
+(defmethod get-align-offset ((self Widget) widget-size given-size)
   (let ((offset (make-instance 'Position :x 0 :y 0))
 	(horizontal-space (- (width given-size) (width widget-size)))
 	(vertical-space (- (height given-size) (height widget-size))))
     (if (> horizontal-space 0)
 	(cond
-	  ((eq (align widget) 'align-center)
+	  ((eq (align self) 'align-center)
 	   (setf (x offset) (+ (x offset) (/ horizontal-space 2))))
-	  ((eq (align widget) 'align-right)
+	  ((eq (align self) 'align-right)
 	   (setf (x offset) (+ (x offset) horizontal-space)))))
     (if (> vertical-space 0)
 	(cond
-	  ((eq (align widget) 'align-center)
+	  ((eq (align self) 'align-center)
 	   (setf (y offset) (+ (y offset) (/ vertical-space 2))))
-	  ((eq (align widget) 'align-bottom)
+	  ((eq (align self) 'align-bottom)
 	   (setf (y offset) (+ (y offset) vertical-space)))))
     offset))

@@ -10,11 +10,6 @@
    :align-left :align-right :align-top :align-bottom :align-center
    :Size :equal-size
    :Position
-   :Widget :render :draw :get-texture :get-parent :get-align-offset
+   :Widget
+   :Box
    :wait-for-keypress :init-window))
-
-
-(defpackage :minerva/containers
-  (:use :cl)
-  (:export
-   :Box :add-widget :expand-policy))
