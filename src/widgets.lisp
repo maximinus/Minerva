@@ -7,7 +7,7 @@
   ((size :initarg :size :accessor size)
    (color :initarg :color :accessor color)))
 
-(defmethod min-size ()
+(defmethod min-size ((self ColorRect))
   size)
 
 (defmethod draw ((self ColorRect) new-size)

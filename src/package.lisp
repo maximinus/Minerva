@@ -11,5 +11,6 @@
    :Size :equal-size
    :Position
    :Widget
+   :ColorRect
    :Box
    :wait-for-keypress :init-window))

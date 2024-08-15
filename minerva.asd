@@ -10,6 +10,7 @@
   :pathname "src/"
   :components ((:file "package")
 	       (:file "base")
+	       (:file "widgets")
 	       (:file "containers")))
 
 (asdf:defsystem :minerva/tests
