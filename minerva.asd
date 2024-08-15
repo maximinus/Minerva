@@ -22,4 +22,5 @@
   :pathname "test/"
   :components ((:file "package")
 	       (:file "test-base")
+	       (:file "test-widgets")
 	       (:file "test-containers")))
