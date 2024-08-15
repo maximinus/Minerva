@@ -6,8 +6,8 @@
 
 
 (defclass Font ()
-  ((sdl-font :initarg :font
-	     :reader font)
+  ((sdl-font :initarg :sdl-font
+	     :reader sdl-font)
    (color :initarg :color
 	  :accessor color))
   (:default-initargs :color '(0 0 0 0)))
@@ -18,11 +18,11 @@
   (if (probe-file font-name)
       (progn
 	(let ((loaded-font (sdl2-ttf:open-font font-name size)))
-	  (make-instance 'Font :font loaded-font)))
+	  (make-instance 'Font :sdl-font loaded-font)))
       nil))
 
-(defmethod get-texture ((font Font) text)
-  (sdl2-ttf:render-text-blended (font font) text 0 0 0 0))
+(defmethod get-texture ((self Font) text)
+  (sdl2-ttf:render-text-blended (sdl-font self) text 0 0 0 0))
 
 
 ;; a widget can be set to expand or not, given the symbols
@@ -60,7 +60,6 @@
       (incf ypos (y pos)))
     (make-instance 'Position :x xpos :y ypos)))
 
-
 (defmethod sub ((a Position) &rest b)
   (let ((xpos (x a))
 	(ypos (y a)))
@@ -82,7 +81,7 @@
    (parent :initarg :parent :accessor parent)
    (texture :initarg :texture :accessor texture)
    (background :initarg :background :accessor background)
-   (current-size :initarg :size :accessor size)
+   (current-size :initarg :current-size :accessor current-size)
    (offset :initarg :offset :accessor offset)
    (container :initarg :container :accessor container)
    (frame-offset :initarg frame-offset :accessor frame-offset))
@@ -91,7 +90,7 @@
 		     :align 'align-top-left
 		     :parent nil
 		     :texture nil
-		     :current_size nil
+		     :current-size nil
 		     :offset nil
 		     :container nil))
 
