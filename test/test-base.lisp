@@ -33,6 +33,9 @@
 
 (def-suite* test-size :in base-tests)
 
+(test size-constructor
+  (is (minerva::make-size 10 10)))
+
 (test size-init-zero
   (let ((w (make-instance 'minerva:Size)))
     (is (and (equal (minerva::width w) 0)
@@ -57,6 +60,9 @@
 
 
 (def-suite* test-position :in base-tests)
+
+(test position-constructor
+  (is (minerva::make-position 5 7)))
 
 (test create-position
   (let ((w (make-instance 'minerva:Position)))

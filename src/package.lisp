@@ -13,4 +13,5 @@
    :Widget
    :ColorRect
    :Box
+   :HBox
    :wait-for-keypress :init-window))

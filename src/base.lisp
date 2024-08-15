@@ -40,6 +40,9 @@
    (height :initarg :height :accessor height))
   (:default-initargs :width 0 :height 0))
 
+(defun make-size (w h)
+  (make-instance 'Size :width w :height h))
+
 (defmethod equal-size ((size1 Size) (size2 Size))
   (and (equal (width size1) (width size2))
        (equal (height size1) (height size2))))
@@ -51,6 +54,9 @@
    (y :initarg :y
       :accessor y))
   (:default-initargs :x 0 :y 0))
+
+(defun make-pos (x y)
+  (make-instance 'Position :x x :y y))
 
 (defmethod add ((a Position) &rest b)
   (let ((xpos (x a))

@@ -8,7 +8,7 @@
 
 (defmethod min-size ((self Box))
   (if (equal (widgets self) nil)
-      (make-instance 'Size :x 0 :y 0)
+      (make-instance 'Size :width 0 :height 0)
       (min-size (first (widgets self)))))
 
 (defmethod add-widget ((self Box) new-widget)
@@ -40,10 +40,11 @@
 (defclass HBox (Box) ())
 
 (defmethod min-size ((self HBox))
-  (let ((base-size (make-instance Size :width 0 :height 0)))
+  (let ((base-size (make-size 0 0)))
     (loop for widget in (widgets self) do
-      (incf (width base-size) (width widget))
-      (setf (height base-size) (max (height base-size) (height widget))))
+      (let ((widget-size (min-size widget)))
+	(incf (width base-size) (width widget-size))
+	(setf (height base-size) (max (height base-size) (height widget-size)))))
     base-size))
 
 (defmethod calculate-size ((self HBox) available-size)
