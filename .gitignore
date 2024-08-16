@@ -3,6 +3,9 @@ MinervaPython/
 .idea/
 __pycache__/
 
+# don't save compiled files
+*.fasl
+
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~

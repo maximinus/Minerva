@@ -55,7 +55,7 @@
 
 (defclass Margin (Box)
   ((margins :initarg :margins :accessor margins))
-    (:default-initarg margins (make-margin 0 0 0 0)))
+    (:default-initargs margins (make-margin 0 0 0 0)))
 
 (defun make-margin (margins &rest initargs)
   (let ((new-margin (apply 'make-instance 'Margin initargs)))
@@ -156,7 +156,7 @@
   ((frame-position :initarg :frame-position :accessor frame-position)
    (modal :initarg :modal :accessor modal)
    (widget :initarg :widget :accessor widget))
-  (:default-initargs :widget nil :modal: nil :container t))
+  (:default-initargs :widget nil :modal nil :container t))
 
 ;; frames are like a single box, however they never expand and have a fixed size
 ;; so current-size is always fixed

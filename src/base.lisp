@@ -51,7 +51,7 @@
 (defclass Margin ()
   ((left :initarg :left :accessor left)
    (right :initarg :right :accessor right)
-   (top :initarg :top accessor top)
+   (top :initarg :top :accessor top)
    (bottom :initarg :bottom :accessor bottom))
   (:default-initargs :left 0 :right 0 :top 0 :bottom 0))
 
@@ -139,14 +139,14 @@
   (if (not (equal-size size (current-size self)))
       (progn
 	(setf (offset self) offset)
-	(setf (current-size size))
+	(setf (current-size self) size)
 	(draw self size))))
 
 (defmethod draw ((self Widget) size)
   (get-texture self size)
   (if (not (eq (background self) nil))
-      (sdl2:fill-rect (texture self) nil (background Widget)))
-  (setf (size widget) size))
+      (sdl2:fill-rect (texture self) nil (background self)))
+  (setf (current-size self) size))
 
 (defmethod get-texture ((self Widget) size)
   ;depth is 24 but we should match the display surface really
