@@ -1,6 +1,13 @@
 (in-package :minerva)
 
 
+;; in addition to the base widgets, containers have the following additional properties
+;; widgets:     the widgets held by the container
+
+;; and the following methods
+;; add-widget:  adds the widget to the container and sets its parent
+
+
 (defclass Box (Widget)
   ;; box will display the first widget in it's widgets only
   ((widgets :initarg :widgets :accessor widgets))
@@ -12,8 +19,17 @@
       (min-size (first (widgets self)))))
 
 (defmethod add-widget ((self Box) new-widget)
-  ;nconc modifies the given list
+  (setf (parent new-widget) self)
   (setf (widgets self) (append (widgets self) (list new-widget))))
+
+(defmethod draw ((self Box) size)
+  ;; children are drawn on top of each other
+  (get-texture self size)
+  (if (not (equal (background self) nil))
+      (sdl2:fill-rect (texture self) nil (background self)))
+  (loop for widget in (widgets self) do
+    (render widget size (make-position 0 0))
+    (sdl2:blit-surface (texture widget) nil (texture self) nil)))
 
 (defmethod expand-policy ((self Box))
   ;; expanding depends on wether the children do or not
@@ -36,6 +52,36 @@
 	(return-from expand-policy 'expand-vertical))
     'expand-none))
 
+
+(defclass Margin (Box)
+  ((margins :initarg :margins :accessor margins))
+    (:default-initarg margins (make-margin 0 0 0 0)))
+
+(defun make-margin (margins &rest initargs)
+  (let ((new-margin (apply 'make-instance 'Margin initargs)))
+    (setf (margine new-margin) margins)))
+
+(defmethod min-size ((self Margin))
+  (let ((render-size (make-size 0 0)))
+    (loop for widget in (widgets self) do
+      (let ((widget-size (min-size widget)))
+	(setf (width render-size) (max (width render-size) (width widget-size)))
+	(setf (height render-size) (max (height render-size) (height widget-size)))))
+    (incf (width render-size) (+ (left self) (right self)))
+    (incf (height render-size) (+ (top self) (bottom self)))
+    render-size))
+
+(defmethod draw ((self Margin) size)
+  (get-texture self size)
+  (if (not (equal (background self) nil))
+      (sdl2:fill-rect (texture self) nil (background self)))
+  (decf (width size) (+ (left self) (right self)))
+  (decf (height size) (+ (top self) (bottom self)))
+  (let ((offset-position (make-position (left self) (top self))))
+    (loop for widget in (widgets self) do
+      (render widget size offset-position)
+      (sdl2:blit-surface (texture widget) nil (texture self) nil))))
+  
 
 (defclass HBox (Box) ())
 
@@ -104,3 +150,36 @@
 		(sdl2:blit-surface (texture widget) nil (texture self) (sdl2:make-rect xpos ypos (width widget-size) (height widget-size)))
 		(incf xpos (width widget-size))
 		(incf (x offset) (width widget-size))))))
+
+
+(defclass Frame (Widget)
+  ((frame-position :initarg :frame-position :accessor frame-position)
+   (modal :initarg :modal :accessor modal)
+   (widget :initarg :widget :accessor widget))
+  (:default-initargs :widget nil :modal: nil :container t))
+
+;; frames are like a single box, however they never expand and have a fixed size
+;; so current-size is always fixed
+;; 
+
+(defun make-frame (size pos widget &rest initargs)
+  ;; widgets must be a list
+  (let ((new-frame (apply 'make-instance 'Frame initargs)))
+    (setf (current-size new-frame) size)
+    (setf (frame-position new-frame) pos)
+    (setf (widgets new-frame) widget)
+    (get-texture new-frame size)
+    new-frame))
+
+(defmethod render-frame ((self Frame))
+  ;; render relies on a size being given, so we use a different function here
+  (loop for widget in (widgets self) do
+    (render widget (current-size self) (make-position 0 0))
+    ;; render the texture onto our texture
+    (sdl2:blit-surface (texture widget) nil (texture self) nil)))
+
+(defmethod get-render-rect ((self Frame))
+  (sdl2:make-rect (x (frame-position self))
+		  (y (frame-position self))
+		  (width (current-size self))
+		  (height (current-size self))))
