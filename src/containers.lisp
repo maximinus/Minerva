@@ -155,26 +155,26 @@
 (defclass Frame (Widget)
   ((frame-position :initarg :frame-position :accessor frame-position)
    (modal :initarg :modal :accessor modal)
-   (widget :initarg :widget :accessor widget))
-  (:default-initargs :widget nil :modal nil :container t))
+   (widgets :initarg :widgets :accessor widgets))
+  (:default-initargs :widgets nil :modal nil :container t))
 
 ;; frames are like a single box, however they never expand and have a fixed size
 ;; so current-size is always fixed
-;; 
+;; they may have >1 widget, extra widgets are drawn on top of the others
 
-(defun make-frame (size pos widget &rest initargs)
+(defun make-frame (size pos widgets &rest initargs)
   ;; widgets must be a list
   (let ((new-frame (apply 'make-instance 'Frame initargs)))
     (setf (current-size new-frame) size)
     (setf (frame-position new-frame) pos)
-    (setf (widgets new-frame) widget)
+    (setf (widgets new-frame) widgets)
     (get-texture new-frame size)
     new-frame))
 
 (defmethod render-frame ((self Frame))
   ;; render relies on a size being given, so we use a different function here
   (loop for widget in (widgets self) do
-    (render widget (current-size self) (make-position 0 0))
+    (render widget (current-size self) (make-pos 0 0))
     ;; render the texture onto our texture
     (sdl2:blit-surface (texture widget) nil (texture self) nil)))
 

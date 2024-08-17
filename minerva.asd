@@ -11,7 +11,8 @@
   :components ((:file "package")
 	       (:file "base")
 	       (:file "widgets")
-	       (:file "containers")))
+	       (:file "containers")
+	       (:file "main")))
 
 (asdf:defsystem :minerva/tests
   :description "Tests for Minerva IDE"

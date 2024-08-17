@@ -38,27 +38,28 @@
     (sdl2:quit)))
 
 
-(defclass Minerva ()
+(defclass MinervaApp ()
   ;; the base Minerva class, the start of it all
-  ((display :initargs :display :accessor display)
-   (frames: :initargs :frames :accessor frames))
+  ((display :initarg :display :accessor display)
+   (frames :initarg :frames :accessor frames))
   (:default-initargs :display nil :frames nil))
 
 (defun start-minerva (new-frames)
   (sdl2:init)
   (sdl2-ttf:init)
-  (let ((app (make-instance 'Minerva :frames new-frames)))
-    (setf (display app) (sdl2:create-window :title "Minerva IDE" :w 640 :h 480 :flags '(:shown)))
+  (let ((app (make-instance 'MinervaApp :frames new-frames))
+	(window (sdl2:create-window :title "Minerva IDE" :w 640 :h 480 :flags '(:shown))))
+    (setf (display app) (sdl2:get-window-surface window))
     (render-all app)
-    (sdl:update-window (display app))
+    (sdl2:update-window (display app))
     (event-loop app)))
 
-(defmethod render-all ((self Minerva))
+(defmethod render-all ((self MinervaApp))
   (loop for frame in (frames self) do
-    (frame-render frame)
+    (render-frame frame)
     (sdl2:blit-surface (texture frame) nil (display self) (get-render-rect frame))))
 
-(defmethod event-loop ((self Minerva))
+(defmethod event-loop ((self MinervaApp))
     (sdl2:with-event-loop (:method :poll)
     (:quit () t)
     (:keydown () t)

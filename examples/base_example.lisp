@@ -4,12 +4,11 @@
 (ql:quickload "sdl2-ttf")
 (ql:quickload "minerva")
 
-(in-package "minerva")
+(in-package :minerva)
 
 (defun single-colorrect-example ()
-  (let* ((example-frame (make-frame (make-size 256 256) (make-position 64 64)))
-	 (crect (make-instance 'ColorRect :size (make-size 256 256) :color '(255 0 0 0))))
-    (add-widget example-frame crect)
-    (start-minerva (list crect))))
+  (let* ((crect (make-instance 'ColorRect :size (make-size 256 256) :color '(255 0 0 0)))
+	 (example-frame (make-frame (make-size 256 256) (make-pos 64 64) (list crect))))
+    (start-minerva (list example-frame))))
 
 (single-colorrect-example)

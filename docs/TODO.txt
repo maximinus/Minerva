@@ -9,12 +9,18 @@
 * Make it easy to do so
 * Write a simple program that sets up the environment on startup
 * Decide how to do Align and Expand as expected
+* Add a colorrect
 
-Add a colorrect
+Debugging:
+    I must be able to debug tests, by viewing the code that generated the error
+    I must be able to step through some code
+    I need to be able to understand the stack trace, to a degree
+
 Run an SDL test
 Flash a cursor
 Respond to keys
-Add resizeable item
+Make the window resizeable
+Show a 2nd window, like a pop-up
 Build an executable
 Work out SDL restart mechanics
 With font, cursor and keyboard, write a REPL

@@ -15,5 +15,5 @@
   (get-texture self new-size)
   (if (not (equal (background self) nil))
       (sdl2:fill-rect (texture self) nil (sdl2:map-rgb (sdl2:surface-format (texture self) (background self)))))
-  (let ((draw-pos (get-align-offset self new-size)))
+  (let ((draw-pos (get-align-offset self (size self) new-size)))
     (sdl2:render-draw-rect (texture self) (sdl2:make-rect (x draw-pos) (y draw-pos) (width size) (height size)))))
