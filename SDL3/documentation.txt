@@ -1,0 +1,99 @@
+First step: make sure all the SDL libraries are installed:
+
+
+sudo apt-get install build-essential git make pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev libaudio-dev libjack-dev libsndio-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev fcitx-libs-dev^C
+
+
+Below is a step-by-step example of how to compile your C code (which depends on SDL) into a shared library, and then call its functions from SBCL using CFFI. Although SBCL does have its own foreign-function interface called SB-ALIEN, CFFI is more portable and is generally recommended these days.
+
+1. Write the C code
+-------------------
+
+Put your C code into a file, say sdl-wrapper.c:
+
+#include <SDL3/SDL.h>
+
+SDL_Window *setup(char* title, int width, int height) {
+    SDL_Window *window;
+    SDL_Init(SDL_INIT_VIDEO);
+    window = SDL_CreateWindow(title, width, height, SDL_WINDOW_OPENGL);
+    return window;
+}
+
+void cleanup(SDL_Window *window) {
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+void wait() {
+    SDL_Delay(3000);
+}
+
+(If you also need the main for testing in C alone, keep that in a separate .c file or remove it from here, because we only want to export these three functions in a library for CFFI.)
+
+
+To build the code without reference to Lisp, do the following:
+
+To build the libraries:
+    cmake -S . -B build
+
+Once that is done, you only need to run the following:
+    cmake --build build
+
+
+2. Compile and link to create a shared library
+----------------------------------------------
+
+You need SDL installed so that the compiler can find <SDL3/SDL.h>. On a typical Unix-like system (Linux, macOS, etc.), you might compile it into a shared library like so (adjust paths if necessary):
+
+cc -fPIC -shared -o libsdlwrapper.so sdl_wrapper.c -I/home/sparky/code/Minerva/sdl/SDL3-3.2.0/include -L/home/sparky/code/Minerva/sdl/build -lSDL3
+
+Notes:
+
+    -fPIC is often necessary for creating position-independent code for shared libraries.
+    -shared tells the compiler to produce a shared object (.so).
+
+
+If everything goes well, you should have libsdlwrapper.so (or .dylib/.dll) that exports the three C functions: setup, cleanup, and wait.
+
+
+3/4. Load the shared library in Lisp
+------------------------------------
+
+We need to tell SBCL where the "libSDL.so.0" library is:
+
+export LD_LIBRARY_PATH=/home/sparky/code/Minerva/sdl/build:$LD_LIBRARY_PATH
+
+
+In your Lisp code, you can tell CFFI to load your library. Create a file, say sdl-wrapper.lisp, with the following:
+
+;;; Ensure we load CFFI
+(ql:quickload :cffi)
+
+(cffi:define-foreign-library sdl-wrapper (t (:default "/home/sparky/code/Minerva/sdl/libsdlwrapper"))) 
+
+(cffi:use-foreign-library sdl-wrapper)
+
+;;; Now define the foreign functions
+(cffi:defcfun ("setup" setup) :pointer (title :string) (width :int) (height :int))
+(cffi:defcfun ("cleanup" cleanup) :void (window :pointer))
+(cffi:defcfun ("wait" wait) :void)
+
+
+5. Call the functions from Common Lisp
+
+Once you have loaded sdl-wrapper.lisp (which in turn loads libsdlwrapper.so), you can simply call the foreign functions as normal Lisp functions. For example:
+
+(let ((w (setup "SBCL + SDL Window" 640 480)))
+  (unless (cffi:null-pointer-p w)
+    (format t "Window created!~%")
+    (wait)
+    (cleanup w)
+    (format t "All done.~%")))
+
+This will:
+
+    Initialize SDL (via setup),
+    Create a 640×480 window,
+    Wait 3 seconds (via wait),
+    Destroy the window and quit SDL (via cleanup).

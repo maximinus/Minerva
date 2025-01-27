@@ -1,0 +1,32 @@
+
+TODO:
+
+In C world:
+
+    * Add a function to play music
+    * Add a function that extracts the events we want, which are:
+        * Keypresses
+        * SDL Exit
+        * Window resize
+        * Mouse click (left, right, middle)
+        Mouse scroll
+    * Add simple mechanism for handling images and fonts; the bulk of the work should be in Lisp
+    Add functions to do the following:
+        * Load an image
+        * Blit an image to the screen
+        Draw a colored rect to the screen
+        Create a font
+        * Draw some text to the screen
+        * Update the screen
+        * Draw a nine-patch to the screen
+        * Play some audio
+    * Investigate the widget library
+        Write our own, as Clay is only a layout library
+
+    Add build functions for all of this
+
+
+In Lisp world:
+    Put all the cffi stuff in it's own package
+    Define a widget that is a a colored rectangle
+    Add some way of easily visually checking results (i.e., run from the command line)
