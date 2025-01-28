@@ -93,10 +93,8 @@
 
 (test widget-defaults
   (let ((w (make-instance 'minerva:Widget)))
-    (is (and (equal (minerva::background w) nil)
-	     (equal (minerva::expand w) 'minerva:expand-none)
+    (is (and (equal (minerva::expand w) 'minerva:expand-none)
 	     (equal (minerva::parent w) nil)
-	     (equal (minerva::texture w) nil)
 	     (equal (minerva::container w) nil)))))
 
 (test default-no-parent

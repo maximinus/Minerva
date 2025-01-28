@@ -22,14 +22,12 @@
   (setf (parent new-widget) self)
   (setf (widgets self) (append (widgets self) (list new-widget))))
 
-(defmethod draw ((self Box) size)
+(defmethod render ((self Box) size offset screen)
   ;; children are drawn on top of each other
-  (get-texture self size)
   (if (not (equal (background self) nil))
-      (sdl2:fill-rect (texture self) nil (background self)))
+      (format t "Drawing background"))
   (loop for widget in (widgets self) do
-    (render widget size (make-position 0 0))
-    (sdl2:blit-surface (texture widget) nil (texture self) nil)))
+    (render widget size (make-position 0 0) screen)))
 
 (defmethod expand-policy ((self Box))
   ;; expanding depends on wether the children do or not
@@ -59,7 +57,7 @@
 
 (defun make-margin (margins &rest initargs)
   (let ((new-margin (apply 'make-instance 'Margin initargs)))
-    (setf (margine new-margin) margins)))
+    (setf (margin new-margin) margins)))
 
 (defmethod min-size ((self Margin))
   (let ((render-size (make-size 0 0)))
@@ -71,17 +69,16 @@
     (incf (height render-size) (+ (top self) (bottom self)))
     render-size))
 
-(defmethod draw ((self Margin) size)
+(defmethod render ((self Margin) size offset screen)
   (get-texture self size)
   (if (not (equal (background self) nil))
-      (sdl2:fill-rect (texture self) nil (background self)))
+      (format t "Filling color"))
   (decf (width size) (+ (left self) (right self)))
   (decf (height size) (+ (top self) (bottom self)))
   (let ((offset-position (make-position (left self) (top self))))
     (loop for widget in (widgets self) do
       (render widget size offset-position)
-      (sdl2:blit-surface (texture widget) nil (texture self) nil))))
-  
+      (format t "Rendering"))))
 
 (defclass HBox (Box) ())
 
@@ -116,9 +113,9 @@
 	(setf height (apply #'max (mapcar (lambda (x) (height (min-size x))) (widgets self)))))
     (loop for widget in (widgets self) do
       (if (vertical-expandp (expand widget))
-	  (setf height (height available-size)))
+	    (setf height (height available-size)))
       (if (vertical-expandp (expand widget))
-	  (progn
+   	  (progn
 	    ;; distribute the remaining width to ensure total width matches
 	    (if (> extra-width 0)
 		(progn
@@ -128,10 +125,9 @@
 	  (nconc final-widths (list (make-instance 'Size :width (width (min-size)) :height height)))))
     final-widths))
 
-(defmethod draw ((self HBox) new-size)
-  (get-texture new-size)
+(defmethod render ((self HBox) size offset screen)
   (if (not (equal (background self) nil))
-      (sdl2:fill-rect (texture self) nil (sdl2:map-rgb (sdl2:surface-format (texture self) (background self)))))
+      (format t "Render background"))
   (if (not equal (widgets self) nil)
       (let* ((all-sizes (calculate-size self))
 	     (max-height (apply #'max (mapcar (lambda (x) (height (min-size x)) all-sizes))))
@@ -147,7 +143,7 @@
 		(setf (height widget-size) max-height)
 		(render widget (make-instance 'Position :x (x offset) :y (y offset)))
 		;; blit the texture onto our texture
-		(sdl2:blit-surface (texture widget) nil (texture self) (sdl2:make-rect xpos ypos (width widget-size) (height widget-size)))
+		(format t "Blitting texture")
 		(incf xpos (width widget-size))
 		(incf (x offset) (width widget-size))))))
 
@@ -176,10 +172,5 @@
   (loop for widget in (widgets self) do
     (render widget (current-size self) (make-pos 0 0))
     ;; render the texture onto our texture
-    (sdl2:blit-surface (texture widget) nil (texture self) nil)))
+    (format t "Blitting frame")))
 
-(defmethod get-render-rect ((self Frame))
-  (sdl2:make-rect (x (frame-position self))
-		  (y (frame-position self))
-		  (width (current-size self))
-		  (height (current-size self))))

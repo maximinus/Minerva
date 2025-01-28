@@ -4,7 +4,6 @@
   (:use :cl)
   (:shadow :Position)
   (:export
-   :Font :load-font :get-texture
    :horizontal-expandp :vertical-expandp
    :expand-horizontal :expand-vertical :expand-none :expand-both
    :align-left :align-right :align-top :align-bottom :align-center
@@ -13,5 +12,4 @@
    :Widget
    :ColorRect
    :Box
-   :HBox
-   :wait-for-keypress :init-window))
+   :HBox))

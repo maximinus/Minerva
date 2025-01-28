@@ -10,10 +10,9 @@
 (defmethod min-size ((self ColorRect))
   (size self))
 
-(defmethod draw ((self ColorRect) new-size)
-  (setf (current-size self) new-size)
-  (get-texture self new-size)
+(defmethod render ((self ColorRect) size offset screen)
   (if (not (equal (background self) nil))
-      (sdl2:fill-rect (texture self) nil (sdl2:map-rgb (sdl2:surface-format (texture self) (background self)))))
-  (let ((draw-pos (get-align-offset self (size self) new-size)))
-    (sdl2:render-draw-rect (texture self) (sdl2:make-rect (x draw-pos) (y draw-pos) (width size) (height size)))))
+    ;; fill in the background
+    (format t "Drawing ColorRect")
+    (format t "Drawing ColorRect no color")))
+

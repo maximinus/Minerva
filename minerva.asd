@@ -6,7 +6,6 @@
   :license "GPL 3.0"
   :version "0.0.1"
   :serial t
-  :depends-on (:sdl2 :sdl2-ttf :sdl2-image)
   :pathname "src/"
   :components ((:file "package")
 	       (:file "base")
