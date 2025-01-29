@@ -12,7 +12,7 @@ add_subdirectory(SDL_ttf EXCLUDE_FROM_ALL)
 add_subdirectory(SDL_image EXCLUDE_FROM_ALL)
 
 # Create your game executable target as usual
-add_executable(hello WIN32 hello.c)
+add_executable(test WIN32 wrapper_test.c)
 
 # Link to the actual SDL3 library.
-target_link_libraries(hello PRIVATE SDL3_ttf::SDL3_ttf SDL3::SDL3 SDL3_image::SDL3_image)
+target_link_libraries(test PRIVATE SDL3_ttf::SDL3_ttf SDL3::SDL3 SDL3_image::SDL3_image)

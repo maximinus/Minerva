@@ -81,3 +81,16 @@ void cleanup(SDL_Window *window) {
     // Clean up
     SDL_Quit();
 }
+
+
+int main() {
+    SDL_Window* window = setup("SDL Hello", SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_Surface* screen = get_window_surface(window);
+    clear_screen(screen);
+    SDL_Rect* rect = get_rect(100, 100, 200, 200);
+    Uint32 color = get_color(screen, 252, 102, 0);
+    draw_rectangle(screen, rect, color);
+    update_window(window);
+    while(!quit_game()) {}
+    return 0;
+}

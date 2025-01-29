@@ -53,7 +53,7 @@ Once that is done, you only need to run the following:
 
 You need SDL installed so that the compiler can find <SDL3/SDL.h>. On a typical Unix-like system (Linux, macOS, etc.), you might compile it into a shared library like so (adjust paths if necessary):
 
-cc -fPIC -shared -o libsdlwrapper.so sdl_wrapper.c -I/home/sparky/code/Minerva/sdl/SDL3-3.2.0/include -L/home/sparky/code/Minerva/sdl/build -lSDL3
+cc -fPIC -shared -o libsdlwrapper.so sdl_wrapper.c -I/home/sparky/data/code/Minerva/SDL_LIB/SDL/include -L/home/sparky/data/code/Minerva/SDL_LIB/build -lSDL3
 
 Notes:
 
@@ -61,7 +61,7 @@ Notes:
     -shared tells the compiler to produce a shared object (.so).
 
 
-If everything goes well, you should have libsdlwrapper.so (or .dylib/.dll) that exports the three C functions: setup, cleanup, and wait.
+If everything goes well, you should have libsdlwrapper.so (or .dylib/.dll) that exports the C functions.
 
 
 3/4. Load the shared library in Lisp
