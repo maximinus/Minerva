@@ -1,6 +1,7 @@
 ;;;; minerva.lisp
 
-(asdf:load-asd #P"/home/sparky/data/code/Minerva/minerva.asd")
+(ql:quickload :uiop)
+(asdf:load-asd (merge-pathnames "minerva.asd" (uiop:getcwd)))
 (ql:quickload "minerva")
 (ql:quickload "minerva/tests")
 
@@ -9,7 +10,8 @@
 
 ;; load the SDL wrapper
 (ql:quickload :cffi)
-(cffi:define-foreign-library sdl-wrapper (t (:default "/home/sparky/data/code/Minerva/SDL_LIB/libsdlwrapper")))
+(cffi:define-foreign-library sdl-wrapper (t 
+    (:default #.(uiop:native-namestring (merge-pathnames "SDL_LIB/libsdlwrapper" (uiop:getcwd))))))
 (cffi:use-foreign-library sdl-wrapper)
 
 ;; define the functions we want to use
