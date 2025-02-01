@@ -2,11 +2,9 @@
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 
-// we want some simple things
-// a function to get a window
-// a function to cleanup
-// a function that returns true if "q" is pressed
-// a function that draw a colored rectangle to the screen
+#define SDL_HINT_RENDER_VSYNC "SDL_RENDER_VSYNC" 1
+
+// first update: ue a renderer
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -72,6 +70,11 @@ bool quit_game() {
         }
     }
     return false;
+}
+
+
+void add_frame_event() {
+    // add a special event that is 
 }
 
 

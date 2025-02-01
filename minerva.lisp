@@ -3,7 +3,6 @@
 (ql:quickload :uiop)
 (asdf:load-asd (merge-pathnames "minerva.asd" (uiop:getcwd)))
 (ql:quickload "minerva")
-(ql:quickload "minerva/tests")
 
 ;; now you can run a test with this syntax
 ;; (fiveam:run! 'minerva/tests::base-tests)
@@ -28,6 +27,12 @@
 (cffi:defcfun ("quit_game" quit_game) :int)
 (cffi:defcfun ("cleanup" cleanup) :void (window :pointer))
 
+
+;; instead of this test window, we actually need to do the following:
+;; open window and then pump the event queue
+;; we need to add a new event, which is the frame rate; set this at 60 FPS
+
+
 (defun test-window ()
     (let* ((window (setup "Minerva v0.01" 640 480))
            (screen (get_window_surface window))
@@ -39,4 +44,7 @@
             (update_window window)
             (loop while (eql (quit_game) 0))
             (cleanup window))))
+
+(test-window)
+(exit)
 

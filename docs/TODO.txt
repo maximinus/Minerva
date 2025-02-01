@@ -1,33 +1,57 @@
 
-* Load and display an image
-* Draw some text
-* Edit EMACS options:
-*   Cut and paste
-*   Font selection
-* Run a simple test
-* Run a suite of tests
-* Make it easy to do so
-* Write a simple program that sets up the environment on startup
-* Decide how to do Align and Expand as expected
-* Add a colorrect
+Lisp Immediate GUI
 
-Debugging:
-    I must be able to debug tests, by viewing the code that generated the error
-    I must be able to step through some code
-    I need to be able to understand the stack trace, to a degree
 
-Run an SDL test
-Flash a cursor
-Respond to keys
-Make the window resizeable
-Show a 2nd window, like a pop-up
-Build an executable
-Work out SDL restart mechanics
-With font, cursor and keyboard, write a REPL
-The REPL should work like a terminal, with up/down showing previous commands
+Work out how to draw with a renderer
+Export functions to:
+    draw colored rectangles
+    the event library takes in a "Input" struct and updates it
 
-This is version 0.1:
-    It has unit tests
-    It has an executable
-    It has a REPL
+Lisp:
+    Has a concept of a layer
+    Has a VBox
+    VBox has 2 rects
+    Draws to screen
+
+
+
+We need base SDL capability, but not much of it
+
+We render the GUI in layers. If we imagine a list of layers:
+
+    [a, b, c]
+
+Then they will drawn in the order a -> b -> c, but mouse checks will perform in the other direction
+
+Because of this,the method of execution in a frame is:
+
+    Build the sizes of the widgets for each layer
+        This can be avoided by caching the result, but then we need to suggest we have changed
+
+    Check where the mouse is over now and adjust
+        Set UI items active or elsewise; because we are immediate some status checks not required
+    
+    Render the widgets
+        Which COULD also be cached, but be a lot more wary here maybe.
+
+The layout engine needs to do 2 things to start with:
+    A text area
+    A menubar
+
+Let's start with that, let's not build ColoredRects, build what we need.
+
+
+MenuBar:
+    Long rectangle with text in a line. Each text line is different
+    When the mouse is over the text, a whole box changes background color
+   
+MenuText:
+    The piece of text on the menubar
+    When clicked, it creates a new layer with an item on it - the menu
+    For a menu it is on it's own layer and is in focus; it will get all mouse events
+        When clicked it maninly has to delete itself; the redraw wll correct the menubar
+        When an item is selected it must call some code but that is nothing to do with rendering
+
+
+when it is clicked "outside"
 

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-rm hello
+rm test
 cmake --build build
-mv build/Debug/hello .
-./hello
+mv build/test .
+./test
