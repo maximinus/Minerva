@@ -2,6 +2,8 @@
 Lisp Immediate GUI
 
 
+* Add new event system
+* Make window resizeable
 Work out how to draw with a renderer
 Export functions to:
     draw colored rectangles

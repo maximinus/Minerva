@@ -54,6 +54,7 @@ Once that is done, you only need to run the following:
 You need SDL installed so that the compiler can find <SDL3/SDL.h>. On a typical Unix-like system (Linux, macOS, etc.), you might compile it into a shared library like so (adjust paths if necessary):
 
 cc -fPIC -shared -o libsdlwrapper.so sdl_wrapper.c -I/home/sparky/data/code/Minerva/SDL_LIB/SDL/include -L/home/sparky/data/code/Minerva/SDL_LIB/build -lSDL3
+cc -fPIC -shared -o libsdlwrapper.so sdl_wrapper.c -I/home/sparky/code/Minerva/SDL_LIB/SDL/include -L/home/sparky/code/Minerva/SDL_LIB/build -lSDL3
 
 Notes:
 
@@ -70,6 +71,7 @@ If everything goes well, you should have libsdlwrapper.so (or .dylib/.dll) that 
 We need to tell SBCL where the "libSDL.so.0" library is:
 
 export LD_LIBRARY_PATH=/home/sparky/data/code/Minerva/SDL3/build/Debug:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/sparky/code/Minerva/SDL_LIB/build:$LD_LIBRARY_PATH
 
 
 In your Lisp code, you can tell CFFI to load your library. Create a file, say sdl-wrapper.lisp, with the following:

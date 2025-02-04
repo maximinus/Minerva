@@ -1,79 +1,109 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <SDL3/SDL.h>
-
-// we want some simple things
-// a function to get a window
-// a function to cleanup
-// a function that returns true if "q" is pressed
-// a function that draw a colored rectangle to the screen
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 
-SDL_Window *setup(char* title, int width, int height) {
-    SDL_Window *window;
+typedef struct {
+    int mousex;
+    int mousey;
+    bool mouse_left_down;
+    bool mouse_right_down;
+    bool exit;
+} FrameInput;
+
+
+typedef struct {
+    unsigned int r;
+    unsigned int g;
+    unsigned int b;
+    unsigned int alpha;
+} Color;
+
+
+typedef struct {
+    int xpos;
+    int ypos;
+    int width;
+    int height;
+} Rect;
+
+
+typedef struct {
+    SDL_Window* window;
+    SDL_Renderer* render;
+} Engine;
+
+void set_sdl_rect(Rect *rect, SDL_FRect* sdl_rect) {
+    sdl_rect->x = (float)rect->xpos;
+    sdl_rect->y = (float)rect->ypos;
+    sdl_rect->w = (float)rect->width;
+    sdl_rect->h = (float)rect->height;
+}
+
+void set_color_from_html(const char* html_color, Color* color) {
+    sscanf(html_color, "#%2x%2x%2x", &color->r, &color->g, &color->b);
+    color->alpha = 255; // Default alpha value.
+}
+
+void init_engine(Engine* engine, const char* title, int width, int height) {
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow(title, width, height, SDL_WINDOW_OPENGL);
-    return window;
+    engine->window = SDL_CreateWindow(title, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    engine->render = SDL_CreateRenderer(engine->window, NULL);
+    SDL_SetRenderVSync(engine->render, 1);
 }
 
-
-SDL_Surface* get_window_surface(SDL_Window* window) {
-    return SDL_GetWindowSurface(window);
+void draw_rectangle(SDL_Renderer* render, Rect *rect, const char *html_color) {
+    Color color;
+    SDL_FRect sdl_rect;
+    set_sdl_rect(rect, &sdl_rect);
+    set_color_from_html(html_color, &color);
+    SDL_SetRenderDrawColor(render, color.r, color.g, color.g, color.alpha);
+    SDL_RenderFillRect(render, &sdl_rect);
 }
 
+void process_events(FrameInput *input) {
+    // returns true if we need to quuit
 
-Uint32 get_color(SDL_Surface *screen, Uint8 red, Uint8 green, Uint8 blue) {
-    return SDL_MapSurfaceRGB(screen, red, green, blue);
-}
+    SDL_Event event;
+    SDL_MouseButtonFlags mouse_buttons;
+    float xpos, ypos;
 
+    mouse_buttons = SDL_GetMouseState(&xpos, &ypos);
+    input->mousex = (int)xpos;
+    input->mousey = (int)ypos;
+    input->mouse_left_down = mouse_buttons & SDL_BUTTON_LEFT;
+    input->mouse_right_down = mouse_buttons & SDL_BUTTON_RIGHT;
 
-SDL_Rect* get_rect(int xpos, int ypos, int width, int height) {
-    SDL_Rect* rect = (SDL_Rect*)malloc(sizeof(SDL_Rect));
-    if(!rect) return NULL;
-    rect->x = xpos;
-    rect->y = ypos;
-    rect->w = width;
-    rect->h = height;
-    return rect;
-}
-
-
-void free_memory(void* data) {
-    free(data);
-}
-
-
-void draw_rectangle(SDL_Surface *screen, SDL_Rect *area, Uint32 color) {
-    SDL_FillSurfaceRect(screen, area, color);
-}
-
-
-void clear_screen(SDL_Surface* screen) {
-    SDL_FillSurfaceRect(screen, NULL, UINT32_MAX);
-}
-
-
-void update_window(SDL_Window *window) {
-    SDL_UpdateWindowSurface(window);
-}
-
-
-bool quit_game() {
-    SDL_Event test_event;
-
-    SDL_WaitEvent(&test_event);
-    if(test_event.type == SDL_EVENT_KEY_DOWN) {
-        if(test_event.key.key == SDLK_Q) {
-            return true;
+    // process all events
+    while(SDL_PollEvent(&event)) {
+        switch(event.type) {
+            case SDL_EVENT_KEY_DOWN:
+                if(event.key.key == SDLK_Q) {
+                    input->exit = true;
+                    return;
+                }
+                break;
+            case SDL_EVENT_QUIT:
+                input->exit = true;
+                return;
         }
     }
-    return false;
 }
 
+void clear_screen(Engine* engine) {
+    SDL_SetRenderDrawColor(engine->render, 255, 255, 255, 255);
+    SDL_RenderClear(engine->render);
+}
+
+void update_screen(Engine *engine) {
+    SDL_RenderPresent(engine->render);
+}
 
 void cleanup(SDL_Window *window) {
     // Close and destroy the window
@@ -81,3 +111,4 @@ void cleanup(SDL_Window *window) {
     // Clean up
     SDL_Quit();
 }
+
