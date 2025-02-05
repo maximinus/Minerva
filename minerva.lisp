@@ -31,7 +31,6 @@
     (render (:pointer :void)))
 
 
-
 ;; create the CLOS objects to handle these
 (cobj:define-cobject-class (rect (:struct rect)))
 (cobj:define-cobject-class (frame-input (:struct frame-input)))
@@ -39,30 +38,68 @@
 
 
 ;; define the functions we want to use
-(cffi:defcfun ("init_engine" init_engine) :void (engine :pointer) (title :string) (width :int) (height :int))
-(cffi:defcfun ("process_events" process_events) :void (input :pointer))
-(cffi:defcfun ("clear_screen" clear_screen) :void (engine :pointer))
-(cffi:defcfun ("draw_rectangle" draw_rectangle) :void (render :pointer) (rect :pointer) (html_color :string))
-(cffi:defcfun ("update_screen" update_screen) :void (engine :pointer))
-(cffi:defcfun ("cleanup" cleanup) :void (engine :pointer))
+(cffi:defcfun ("init_engine" c_init_engine) :void (engine :pointer) (title :string) (width :int) (height :int))
+(cffi:defcfun ("process_events" c_process_events) :void (input :pointer))
+(cffi:defcfun ("clear_screen" c_clear_screen) :void (engine :pointer))
+(cffi:defcfun ("draw_rectangle" c_draw_rectangle) :void (engine :pointer) (rect :pointer) (html_color :string))
+(cffi:defcfun ("update_screen" c_update_screen) :void (engine :pointer))
+(cffi:defcfun ("cleanup" c_cleanup) :void (engine :pointer))
+
+
+;; so what we want to define is just the functions for the drawing / updating and so on
+;; this way, none of the Lisp code will see a raw pointer. To do this, we define some functions
 
 (defmacro c-ptr (input)
     ;; having cobj:cobject-pointer in front of everything gets old
     `(cobj:cobject-pointer ,input))
 
+
+;; define a global sdl-interface with all sdl functions
+(defclass sdl-interface ()
+    ((engine :accessor engine)
+     (input :accessor input)))
+
+(defmethod initialize-instance :after ((self sdl-interface) &key)
+    (setf (engine self) (make-engine))
+    (setf (input self) (make-frame-input :exit nil)))
+
+
+(defmethod init ((self sdl-interface) title width height)
+    (c_init_engine (c-ptr (engine self)) title width height))
+
+(defmethod clear-screen ((self sdl-interface))
+    (c_clear_screen (c-ptr (engine self))))
+
+(defmethod update-screen ((self sdl-interface))
+    (c_update_screen (c-ptr (engine self))))
+
+(defmethod cleanup-sdl ((self sdl-interface))
+    (c_cleanup (c-ptr (engine self))))
+
+(defmethod draw-rectangle ((self sdl-interface) area color)
+    (c_draw_rectangle (c-ptr (engine self)) (c-ptr area) color))
+
+(defmethod process-events ((self sdl-interface))
+    (c_process_events (c-ptr (input self))))
+
+
+;; create an instance of this sdl interface
+(defparameter sdl
+  (make-instance 'sdl-interface))
+
+
+;; now the code is much simpler, and no c-pointers!
 (defun minerva-ide ()
-    (let* ((engine (make-engine))
-           (my-rect (make-rect :xpos 100 :ypos 100 :width 200 :height 200))
-           (input (make-frame-input :exit nil)))
+    (let ((my-rect (make-rect :xpos 100 :ypos 100 :width 200 :height 200)))
         (progn
-            (init_engine (c-ptr engine) "Minerva IDE" 640 480)
-            (loop while (not (frame-input-exit input)) do
+            (init sdl "Minerva IDE" 640 480)
+            (loop while  (not (frame-input-exit (input sdl))) do
                 (progn
-                    (process_events (c-ptr input))
-                    (clear_screen (c-ptr engine))
-                    (draw_rectangle (c-ptr (engine-render engine)) (c-ptr my-rect) "#FF7F00")
-                    (update_screen (c-ptr engine))))
-                (cleanup (c-ptr (engine-window engine))))))
+                    (process-events sdl)
+                    (clear-screen sdl)
+                    (draw-rectangle sdl my-rect "#FF7F00")
+                    (update-screen sdl)))
+                (cleanup-sdl sdl))))
 
 (minerva-ide)
 (exit)

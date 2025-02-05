@@ -34,9 +34,12 @@ typedef struct {
 
 
 typedef struct {
+    // this is the main data point passed to SDL calls
+    // we never pass the window or the render
     SDL_Window* window;
     SDL_Renderer* render;
 } Engine;
+
 
 void set_sdl_rect(Rect *rect, SDL_FRect* sdl_rect) {
     sdl_rect->x = (float)rect->xpos;
@@ -58,13 +61,13 @@ void init_engine(Engine* engine, const char* title, int width, int height) {
     SDL_SetRenderVSync(engine->render, 1);
 }
 
-void draw_rectangle(SDL_Renderer* render, Rect *rect, const char *html_color) {
+void draw_rectangle(Engine* engine, Rect *rect, const char *html_color) {
     Color color;
     SDL_FRect sdl_rect;
     set_sdl_rect(rect, &sdl_rect);
     set_color_from_html(html_color, &color);
-    SDL_SetRenderDrawColor(render, color.r, color.g, color.g, color.alpha);
-    SDL_RenderFillRect(render, &sdl_rect);
+    SDL_SetRenderDrawColor(engine->render, color.r, color.g, color.g, color.alpha);
+    SDL_RenderFillRect(engine->render, &sdl_rect);
 }
 
 void process_events(FrameInput *input) {
@@ -105,9 +108,9 @@ void update_screen(Engine *engine) {
     SDL_RenderPresent(engine->render);
 }
 
-void cleanup(SDL_Window *window) {
+void cleanup(Engine *engine) {
     // Close and destroy the window
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(engine->window);
     // Clean up
     SDL_Quit();
 }
