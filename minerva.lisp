@@ -101,6 +101,11 @@
                     (update-screen sdl)))
                 (cleanup-sdl sdl))))
 
+;; what we really want to do:
+;; 1: Create a frame
+;; 2: Add an HBox with 2 color rectc
+;; 3: One color rect consumes all space
+
 (minerva-ide)
 (exit)
 

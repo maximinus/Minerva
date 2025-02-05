@@ -77,10 +77,14 @@
   ;; on a raw widget, this is always (0, 0)
   (make-instance 'Size :width 0 :height 0))
 
+
+;; a widget needs to really just do 2 things:
+;; 1: Render itself to the screen
+;; 2: Respond to some message
 (defmethod render ((self Widget) size offset screen)
   ;; size is the size of the area we need draw to
   ;; offset is the position to draw to
-  ;; screen is where to draw to
+  ;; screen is where to draw to, which is an SDL surface
   )
 
 (defmethod get-parent ((self Widget))
@@ -104,3 +108,4 @@
 	  ((eq (align self) 'align-bottom)
 	   (setf (y offset) (+ (y offset) vertical-space)))))
     offset))
+

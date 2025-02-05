@@ -9,65 +9,67 @@
 
 
 (defclass Box (Widget)
-  ;; box will display the first widget in it's widgets only
-  ((widgets :initarg :widgets :accessor widgets))
-  (:default-initargs :widgets nil :container t))
+    ;; box will display the first widget in it's widgets only
+    ((widgets :initarg :widgets :accessor widgets))
+    (:default-initargs :widgets nil :container t))
 
 (defmethod min-size ((self Box))
-  (if (equal (widgets self) nil)
-      (make-instance 'Size :width 0 :height 0)
-      (min-size (first (widgets self)))))
+    (if (equal (widgets self) nil)
+        (make-instance 'Size :width 0 :height 0)
+        (min-size (first (widgets self)))))
 
 (defmethod add-widget ((self Box) new-widget)
-  (setf (parent new-widget) self)
-  (setf (widgets self) (append (widgets self) (list new-widget))))
+    (setf (parent new-widget) self)
+    (setf (widgets self) (append (widgets self) (list new-widget))))
 
 (defmethod render ((self Box) size offset screen)
-  ;; children are drawn on top of each other
-  (if (not (equal (background self) nil))
-      (format t "Drawing background"))
-  (loop for widget in (widgets self) do
-    (render widget size (make-position 0 0) screen)))
+    ;; children are drawn on top of each other
+    (if (not (equal (background self) nil))
+        (format t "Drawing background"))
+    (loop for widget in (widgets self) do
+        (render widget size (make-position 0 0) screen)))
 
 (defmethod expand-policy ((self Box))
-  ;; expanding depends on wether the children do or not
-  (let ((x-expand nil)
-	(y-expand nil))
+    ;; expanding depends on whether the children do or not
+    (let ((x-expand nil)
+	    (y-expand nil))
     (loop for widget in (widgets self)
-	  do (if (not (eq (expand self) 'expand-none))
-		 (progn
-		   (if (eq (expand self) 'expand-both)
-		       (return-from expand-policy 'expand-both))
-		   (if (eq (expand self) 'expand-horizontal)
-		       (setf x-expand t))
-		   (if (eq (expand self) 'expand-vertical)
-		       (setf y-expand t))))
-	     (if (and x-expand y-expand)
-		 (return-from expand-policy 'expand-both)))
+	    do (if (not (eq (expand self) 'expand-none))
+            (progn
+		        (if (eq (expand self) 'expand-both)
+		            (return-from expand-policy 'expand-both))
+		        (if (eq (expand self) 'expand-horizontal)
+		            (setf x-expand t))
+		        (if (eq (expand self) 'expand-vertical)
+		            (setf y-expand t))))
+	            (if (and x-expand y-expand)
+		            (return-from expand-policy 'expand-both)))
     (if x-expand
-	(return-from expand-policy 'expand-horizontal))
+	    (return-from expand-policy 'expand-horizontal))
     (if y-expand
-	(return-from expand-policy 'expand-vertical))
+	    (return-from expand-policy 'expand-vertical))
+    ;; nothing matched, so return the minimum
     'expand-none))
 
 
 (defclass Margin (Box)
-  ((margins :initarg :margins :accessor margins))
-    (:default-initargs margins (make-margin 0 0 0 0)))
+    ;; a margin should only have one child
+    ((margins :initarg :margins :accessor margins))
+        (:default-initargs margins (make-margin 0 0 0 0)))
 
 (defun make-margin (margins &rest initargs)
-  (let ((new-margin (apply 'make-instance 'Margin initargs)))
-    (setf (margin new-margin) margins)))
+    (let ((new-margin (apply 'make-instance 'Margin initargs)))
+        (setf (margin new-margin) margins)))
 
 (defmethod min-size ((self Margin))
-  (let ((render-size (make-size 0 0)))
-    (loop for widget in (widgets self) do
-      (let ((widget-size (min-size widget)))
-	(setf (width render-size) (max (width render-size) (width widget-size)))
-	(setf (height render-size) (max (height render-size) (height widget-size)))))
-    (incf (width render-size) (+ (left self) (right self)))
-    (incf (height render-size) (+ (top self) (bottom self)))
-    render-size))
+  (let ((render-size (make-size (+ (left self) (right self)) (+ (top self) (bottom self)))))
+    ;; we only check for a single child
+    (if (eq (list-length (widgets self) 0))
+        render-size
+        (let ((widget-size (min-size widget)))
+            (incf (width render-size) (width widget-size))
+            (incf (height render-size) (height widget-size))
+            render-size))))
 
 (defmethod render ((self Margin) size offset screen)
   (get-texture self size)
@@ -77,8 +79,7 @@
   (decf (height size) (+ (top self) (bottom self)))
   (let ((offset-position (make-position (left self) (top self))))
     (loop for widget in (widgets self) do
-      (render widget size offset-position)
-      (format t "Rendering"))))
+      (render widget size offset-position))))
 
 (defclass HBox (Box) ())
 
