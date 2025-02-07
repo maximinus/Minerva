@@ -27,7 +27,7 @@
     (exit :bool))
 
 (cffi:defcstruct engine
-    (window (:pointer :void))
+    (window (:pointer :void))-
     (render (:pointer :void)))
 
 
@@ -101,11 +101,33 @@
                     (update-screen sdl)))
                 (cleanup-sdl sdl))))
 
-;; what we really want to do:
-;; 1: Create a frame
-;; 2: Add an HBox with 2 color rectc
-;; 3: One color rect consumes all space
 
-(minerva-ide)
+(defclass window ()
+  ((layers :initarg :layers :accessor layers)
+   (size :initarg :size :accessor size))
+  (:default-initargs :layers nil :size (make-size 640 480)))
+
+(defmethod render ((self window) engine)
+    ;; go through the layers and render in reverse order
+    (dolist (layer (reverse (layers self)))
+        (render layer)))
+
+(defmethod main-loop ((self window) size)
+    (init sdl "Minerva IDE" (width size) (height size))
+    (loop while (not (frame-input-exit (input sdl)))
+        (process-events sdl)
+        (render self)
+        (update-screen sdl))
+    (cleanup-sdl sdl))
+
+;; code starts here
+(let* ((minerva-window (make-window (make-size 640 480)))
+       (box (make-hbox)))
+    (setf (widgets box) (append (widgets box)
+        (make-colorrect :expand :expand-horizontal :size (make-size 0 32))))
+    (setf (widgets box) (append (widgets box) 
+        (make colorrect :expand :expand-both))))
+    (main-loop minerva-window)
+
 (exit)
 

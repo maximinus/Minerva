@@ -4,8 +4,10 @@
 (in-package :minerva)
 
 (defclass ColorRect (Widget)
-  ((size :initarg :size :accessor size)
-   (color :initarg :color :accessor color)))
+    ((size :initarg :size :accessor size)
+     (color :initarg :color :accessor color))
+    (:default-initargs :size (make-size 0 0)))
+
 
 (defmethod min-size ((self ColorRect))
   (size self))

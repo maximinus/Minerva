@@ -32,7 +32,7 @@
 (defmethod expand-policy ((self Box))
     ;; expanding depends on whether the children do or not
     (let ((x-expand nil)
-	    (y-expand nil))
+	      (y-expand nil))
     (loop for widget in (widgets self)
 	    do (if (not (eq (expand self) 'expand-none))
             (progn
@@ -80,6 +80,60 @@
   (let ((offset-position (make-position (left self) (top self))))
     (loop for widget in (widgets self) do
       (render widget size offset-position))))
+
+
+(defclass VBox (Box) ())
+
+(defmethod min-size ((self VBox))
+    (let ((base-size (make-size 0 0)))
+        (loop for widget in (widgets self) do
+            (let ((widget-size (min-size widget)))
+                (incf (height base-size) (height widget-size))
+                (setf (width base-size( (max (width base-size) (width widget-size)))))))
+        base-size))
+
+(defmethod calculate-size ((self HBox) available-size)
+  (let ((fixed-height 0)
+	(expandable-count 0)
+	(remaining-height 0)
+	(expand-height 0)
+	(extra-height 0)
+	(final-heights nil)
+	(height 0))
+    (loop for widget in (widgets self) do
+      (if (vertical-expandp (expand widget))
+	  (incf expandable-count 1))
+      (incf fixed-height (height (min-size widget))))
+    (setf remaining-height (- (height available-size) fixed-height))
+    (setf remaining-height (max 0 remaining-height))
+    (if (> expandable-count 0)
+	(progn
+	  (setf expand-height (floor remaining-height expandable-count))
+	  (setf extra-height (mod remaining-height expandable-count))))
+    ;; note that the width for each widget should be the same as the highest width, else the widget cannot center
+    (if (not (equal (widgets self) nil))
+	(setf width (apply #'max (mapcar (lambda (x) (width (min-size x))) (widgets self)))))
+    (loop for widget in (widgets self) do
+      (if (horizontal-expandp (expand widget))
+	    (setf width (width available-size)))
+      (if (horizontal-expandp (expand widget))
+   	  (progn
+	    ;; distribute the remaining width to ensure total width matches
+	    (if (> extra-height 0)
+		(progn
+		  (nconc final-heights (list (make-instance 'Size :width width :height (+ (height (min-size widget)) expand-height 1))))
+		  (decf extra-height))
+		(nconc final-heights (list (make-instance 'Size :width width :height (+ (height (min-size widget)) expand-height))))))
+	  (nconc final-height (list (make-instance 'Size :width width :height (height (min-size)))))))
+    final-heights))
+
+(defmethod render ((self VBox) size offset screen)
+    ;; get a new surface
+    ;; draw things onto it
+    ;; render to the screen
+    ;; throw the surface away
+    (format t "Rendering"))
+
 
 (defclass HBox (Box) ())
 
@@ -157,7 +211,6 @@
 
 ;; frames are like a single box, however they never expand and have a fixed size
 ;; so current-size is always fixed
-;; they may have >1 widget, extra widgets are drawn on top of the others
 
 (defun make-frame (size pos widgets &rest initargs)
   ;; widgets must be a list
