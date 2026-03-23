@@ -19,3 +19,17 @@ cmake --build build/native
 ./build/native/minerva_native_smoke
 ```
 
+## Lisp demo (Milestone 1 Phase 2+3)
+
+Requirements:
+- SBCL (tested with v2.1)
+
+Run the Lisp blue-rectangle demo:
+
+```bash
+cmake --build build/native
+sbcl --script src/blue-rectangle-demo.lisp
+```
+
+This loads the native bridge through SBCL FFI and shows a black window with a blue rectangle.
+
