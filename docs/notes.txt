@@ -1,3 +1,0 @@
-To load an asd file:
-
-   (asdf:load-asd "path_to_file/file.asd")
