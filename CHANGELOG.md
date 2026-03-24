@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.04] - 23 March 2026
+
+### Added
+- Added project ASDF definition at `minerva.asd` with:
+  - `minerva` system loading `src/minerva/gui/core.lisp`
+  - `minerva/tests` system loading `tests/minerva/gui/tests.lisp`
+  - `asdf:test-op` hook invoking `minerva.gui:run-gui-layout-tests`
+- Added root test folder structure mirroring source layout:
+  - `tests/minerva/gui/tests.lisp`
+
+### Changed
+- GUI layout tests now run through ASDF instead of script-relative file loading.
+- Root `README.md` now includes a "How to run tests" section with the SBCL/ASDF command.
+
+### Removed
+- Removed old test location at `src/minerva/gui/tests.lisp`.
+
 ## [0.03] - 23 March 2026
 
 ### Changed
