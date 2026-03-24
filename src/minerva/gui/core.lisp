@@ -16,6 +16,7 @@
    :size-request-expand-y
    :widget
    :widget-layout-rect
+  :widget-content-alignment
    :measure
    :layout
    :render
@@ -50,6 +51,17 @@
    :filler-min-height
    :filler-expand-x
    :filler-expand-y
+  :image
+  :image-surface
+  :image-draw-rect
+  :nine-patch
+  :nine-patch-surface
+  :nine-patch-border-left
+  :nine-patch-border-right
+  :nine-patch-border-top
+  :nine-patch-border-bottom
+  :nine-patch-child
+  :nine-patch-content-rect
    :measure-min-width
    :measure-min-height
    :measure-expand-x
@@ -71,7 +83,10 @@
 
 (defclass widget ()
   ((layout-rect :initform (make-rect)
-                :accessor widget-layout-rect)))
+                :accessor widget-layout-rect)
+   (content-alignment :initarg :alignment
+                      :initform :top-left
+                      :accessor widget-content-alignment)))
 
 (defgeneric measure (widget))
 (defgeneric layout (widget rect))
@@ -98,6 +113,20 @@
     (:center (+ start (floor (- available-size child-size) 2)))
     (:end (+ start (- available-size child-size)))
     (otherwise (error "Invalid alignment value ~S" align))))
+
+(defun %alignment-x (alignment)
+  (case alignment
+    ((:top-left :left :bottom-left) :start)
+    ((:center :top-center :bottom-center) :center)
+    ((:top-right :right :bottom-right) :end)
+    (otherwise (error "Invalid combined alignment value ~S" alignment))))
+
+(defun %alignment-y (alignment)
+  (case alignment
+    ((:top-left :top :top-center :top-right) :start)
+    ((:center :left :right) :center)
+    ((:bottom-left :bottom :bottom-center :bottom-right) :end)
+    (otherwise (error "Invalid combined alignment value ~S" alignment))))
 
 (defun %spacing-total (count spacing)
   (if (<= count 1)
@@ -137,6 +166,44 @@
                (rect-height rect)
                r g b a))))
 
+(defun %gfx-function (name)
+  (let* ((gfx-package (find-package :minerva.gfx))
+         (symbol (and gfx-package (find-symbol name gfx-package))))
+    (and symbol (fboundp symbol) (symbol-function symbol))))
+
+(defun %call-draw-surface-rect (backend-window surface source-rect dest-x dest-y)
+  (let ((draw-fn (%gfx-function "DRAW-SURFACE-RECT"))
+        (make-pos-fn (%gfx-function "MAKE-POSITION")))
+    (unless (and draw-fn make-pos-fn)
+      (error "minerva.gfx surface draw functions are unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+    (funcall draw-fn
+             backend-window
+             surface
+             source-rect
+             (funcall make-pos-fn :x dest-x :y dest-y))))
+
+(defun %call-draw-surface-rect-scaled (backend-window surface source-rect dest-rect)
+  (let ((draw-fn (%gfx-function "DRAW-SURFACE-RECT-SCALED")))
+    (unless draw-fn
+      (error "minerva.gfx:draw-surface-rect-scaled is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+    (funcall draw-fn backend-window surface source-rect dest-rect)))
+
+(defun %surface-width (surface)
+  (let ((fn (%gfx-function "SURFACE-WIDTH")))
+    (cond
+      ((null surface) 0)
+      ((and (listp surface) (getf surface :width)) (max 0 (truncate (getf surface :width))))
+      (fn (or (ignore-errors (funcall fn surface)) 0))
+      (t 0))))
+
+(defun %surface-height (surface)
+  (let ((fn (%gfx-function "SURFACE-HEIGHT")))
+    (cond
+      ((null surface) 0)
+      ((and (listp surface) (getf surface :height)) (max 0 (truncate (getf surface :height))))
+      (fn (or (ignore-errors (funcall fn surface)) 0))
+      (t 0))))
+
 (defclass window (widget)
   ((width :initarg :width :accessor window-width :initform 0)
    (height :initarg :height :accessor window-height :initform 0)
@@ -170,8 +237,10 @@
     (let* ((request (measure child))
            (root-width (%non-negative-int (window-width w)))
            (root-height (%non-negative-int (window-height w)))
-           (container-child-p (or (typep child 'hbox)
-                                  (typep child 'vbox)))
+          (hbox-class (find-class 'hbox nil))
+          (vbox-class (find-class 'vbox nil))
+          (container-child-p (or (and hbox-class (typep child hbox-class))
+                         (and vbox-class (typep child vbox-class))))
            (child-width (if (or container-child-p
                                (size-request-expand-x request))
                             root-width
@@ -402,3 +471,166 @@
 (defmethod render ((space filler) backend-window)
   (declare (ignore backend-window))
   space)
+
+(defclass image (widget)
+  ((surface :initarg :surface :accessor image-surface :initform nil)
+   (draw-rect :accessor image-draw-rect :initform (make-rect))))
+
+(defun %image-placement (widget)
+  (let* ((layout-rect (widget-layout-rect widget))
+         (image-width (%surface-width (image-surface widget)))
+         (image-height (%surface-height (image-surface widget)))
+         (allocated-x (rect-x layout-rect))
+         (allocated-y (rect-y layout-rect))
+         (allocated-width (rect-width layout-rect))
+         (allocated-height (rect-height layout-rect))
+         (dest-x (%align-position allocated-x allocated-width image-width (%alignment-x (widget-content-alignment widget))))
+         (dest-y (%align-position allocated-y allocated-height image-height (%alignment-y (widget-content-alignment widget))))
+         (clip-left (max allocated-x dest-x))
+         (clip-top (max allocated-y dest-y))
+         (clip-right (min (+ allocated-x allocated-width) (+ dest-x image-width)))
+         (clip-bottom (min (+ allocated-y allocated-height) (+ dest-y image-height)))
+         (draw-width (max 0 (- clip-right clip-left)))
+         (draw-height (max 0 (- clip-bottom clip-top))))
+    (values (make-rect :x clip-left :y clip-top :width draw-width :height draw-height)
+            (make-rect :x (max 0 (- clip-left dest-x))
+                       :y (max 0 (- clip-top dest-y))
+                       :width draw-width
+                       :height draw-height))))
+
+(defmethod measure ((img image))
+  (make-size-request
+   :min-width (%surface-width (image-surface img))
+   :min-height (%surface-height (image-surface img))
+   :expand-x nil
+   :expand-y nil))
+
+(defmethod layout ((img image) rect)
+  (setf (widget-layout-rect img) rect)
+  (multiple-value-bind (dest-rect source-rect)
+      (%image-placement img)
+    (declare (ignore source-rect))
+    (setf (image-draw-rect img) dest-rect))
+  img)
+
+(defmethod render ((img image) backend-window)
+  (let ((surface (image-surface img)))
+    (when surface
+      (multiple-value-bind (dest-rect source-rect)
+          (%image-placement img)
+        (setf (image-draw-rect img) dest-rect)
+        (when (and (> (rect-width dest-rect) 0)
+                   (> (rect-height dest-rect) 0))
+          (%call-draw-surface-rect backend-window
+                                   surface
+                                   source-rect
+                                   (rect-x dest-rect)
+                                   (rect-y dest-rect))))))
+  img)
+
+(defclass nine-patch (widget)
+  ((surface :initarg :surface :accessor nine-patch-surface :initform nil)
+   (border-left :initarg :border-left :accessor nine-patch-border-left :initform 0)
+   (border-right :initarg :border-right :accessor nine-patch-border-right :initform 0)
+   (border-top :initarg :border-top :accessor nine-patch-border-top :initform 0)
+   (border-bottom :initarg :border-bottom :accessor nine-patch-border-bottom :initform 0)
+   (child :initarg :child :accessor nine-patch-child :initform nil)
+   (content-rect :accessor nine-patch-content-rect :initform (make-rect))))
+
+(defun %non-negative-border (value)
+  (%non-negative-int value))
+
+(defun %patch-segment (total start-size end-size)
+  (let* ((start (min (%non-negative-int start-size) (%non-negative-int total)))
+         (remaining (max 0 (- (%non-negative-int total) start)))
+         (end (min (%non-negative-int end-size) remaining))
+         (center (max 0 (- (%non-negative-int total) start end))))
+    (values start center end)))
+
+(defmethod measure ((panel nine-patch))
+  (let* ((child (nine-patch-child panel))
+         (child-request (if child (measure child) (make-size-request)))
+         (left (%non-negative-border (nine-patch-border-left panel)))
+         (right (%non-negative-border (nine-patch-border-right panel)))
+         (top (%non-negative-border (nine-patch-border-top panel)))
+         (bottom (%non-negative-border (nine-patch-border-bottom panel))))
+    (make-size-request
+     :min-width (+ left right (size-request-min-width child-request))
+     :min-height (+ top bottom (size-request-min-height child-request))
+     :expand-x (if child (size-request-expand-x child-request) nil)
+     :expand-y (if child (size-request-expand-y child-request) nil))))
+
+(defmethod layout ((panel nine-patch) rect)
+  (setf (widget-layout-rect panel) rect)
+  (let* ((left (%non-negative-border (nine-patch-border-left panel)))
+         (right (%non-negative-border (nine-patch-border-right panel)))
+         (top (%non-negative-border (nine-patch-border-top panel)))
+         (bottom (%non-negative-border (nine-patch-border-bottom panel)))
+         (content (%compute-inner-rect rect left right top bottom))
+         (child (nine-patch-child panel)))
+    (setf (nine-patch-content-rect panel) content)
+    (when child
+      (layout child content)))
+  panel)
+
+(defun %render-nine-patch-part (backend-window surface src-x src-y src-w src-h dst-x dst-y dst-w dst-h)
+  (when (and (> src-w 0) (> src-h 0) (> dst-w 0) (> dst-h 0))
+    (%call-draw-surface-rect-scaled
+     backend-window
+     surface
+     (make-rect :x src-x :y src-y :width src-w :height src-h)
+     (make-rect :x dst-x :y dst-y :width dst-w :height dst-h))))
+
+(defmethod render ((panel nine-patch) backend-window)
+  (let* ((surface (nine-patch-surface panel))
+         (outer (widget-layout-rect panel))
+         (child (nine-patch-child panel)))
+    (when surface
+      (let* ((src-width (%surface-width surface))
+             (src-height (%surface-height surface))
+             (dst-width (rect-width outer))
+             (dst-height (rect-height outer))
+             (src-x-segments (multiple-value-list
+                              (%patch-segment src-width
+                                              (%non-negative-border (nine-patch-border-left panel))
+                                              (%non-negative-border (nine-patch-border-right panel)))))
+             (src-y-segments (multiple-value-list
+                              (%patch-segment src-height
+                                              (%non-negative-border (nine-patch-border-top panel))
+                                              (%non-negative-border (nine-patch-border-bottom panel)))))
+             (dst-x-segments (multiple-value-list
+                              (%patch-segment dst-width
+                                              (%non-negative-border (nine-patch-border-left panel))
+                                              (%non-negative-border (nine-patch-border-right panel)))))
+             (dst-y-segments (multiple-value-list
+                              (%patch-segment dst-height
+                                              (%non-negative-border (nine-patch-border-top panel))
+                                              (%non-negative-border (nine-patch-border-bottom panel))))))
+        (destructuring-bind (src-left src-center src-right) src-x-segments
+          (destructuring-bind (src-top src-middle src-bottom) src-y-segments
+            (destructuring-bind (dst-left dst-center dst-right) dst-x-segments
+              (destructuring-bind (dst-top dst-middle dst-bottom) dst-y-segments
+                (let* ((sx0 0)
+                       (sx1 src-left)
+                       (sx2 (+ src-left src-center))
+                       (sy0 0)
+                       (sy1 src-top)
+                       (sy2 (+ src-top src-middle))
+                       (dx0 (rect-x outer))
+                       (dx1 (+ (rect-x outer) dst-left))
+                       (dx2 (+ (rect-x outer) dst-left dst-center))
+                       (dy0 (rect-y outer))
+                       (dy1 (+ (rect-y outer) dst-top))
+                       (dy2 (+ (rect-y outer) dst-top dst-middle)))
+                  (%render-nine-patch-part backend-window surface sx0 sy0 src-left src-top dx0 dy0 dst-left dst-top)
+                  (%render-nine-patch-part backend-window surface sx1 sy0 src-center src-top dx1 dy0 dst-center dst-top)
+                  (%render-nine-patch-part backend-window surface sx2 sy0 src-right src-top dx2 dy0 dst-right dst-top)
+                  (%render-nine-patch-part backend-window surface sx0 sy1 src-left src-middle dx0 dy1 dst-left dst-middle)
+                  (%render-nine-patch-part backend-window surface sx1 sy1 src-center src-middle dx1 dy1 dst-center dst-middle)
+                  (%render-nine-patch-part backend-window surface sx2 sy1 src-right src-middle dx2 dy1 dst-right dst-middle)
+                  (%render-nine-patch-part backend-window surface sx0 sy2 src-left src-bottom dx0 dy2 dst-left dst-bottom)
+                  (%render-nine-patch-part backend-window surface sx1 sy2 src-center src-bottom dx1 dy2 dst-center dst-bottom)
+                  (%render-nine-patch-part backend-window surface sx2 sy2 src-right src-bottom dx2 dy2 dst-right dst-bottom))))))))
+    (when child
+      (render child backend-window))
+    panel))

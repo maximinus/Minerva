@@ -424,6 +424,55 @@
                               (%rect-list left) (%rect-list fill) (%rect-list right)))
     (%assert-equal first-layout second-layout "deterministic layout")))
 
+(%deftest test-31-image-min-size-from-surface
+  (let ((img (make-instance 'image :surface '(:width 64 :height 48))))
+    (%assert-min-size img 64 48 "image min-size from surface")))
+
+(%deftest test-32-image-alignment-and-clipping
+  (let* ((img (make-instance 'image
+                             :surface '(:width 80 :height 40)
+                             :alignment :center))
+         (root (make-instance 'window :width 120 :height 60 :child img)))
+    (layout root (make-rect :x 0 :y 0 :width 120 :height 60))
+    (%assert-rect img 0 0 80 40 "image widget layout rect")
+    (%assert-equal (let ((r (image-draw-rect img)))
+             (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
+                   '(0 0 80 40)
+                   "image draw rect equals native size when no clipping")
+    (layout img (make-rect :x 0 :y 0 :width 30 :height 20))
+    (%assert-equal (let ((r (image-draw-rect img)))
+             (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
+                   '(0 0 30 20)
+                   "image draw rect clipped when allocated smaller")))
+
+(%deftest test-33-nine-patch-min-size-includes-child-and-borders
+  (let* ((child (make-instance 'color-rect :min-width 50 :min-height 20))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 100 :height 100)
+                               :border-left 4
+                               :border-right 6
+                               :border-top 8
+                               :border-bottom 10
+                               :child child)))
+    (%assert-min-size panel 60 38 "nine-patch min-size")))
+
+(%deftest test-34-nine-patch-child-layout-uses-center-rect
+  (let* ((child (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x t :expand-y t))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 90 :height 90)
+                               :border-left 5
+                               :border-right 7
+                               :border-top 11
+                               :border-bottom 13
+                               :child child))
+         (root (make-instance 'window :width 100 :height 80 :child panel)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 80))
+    (%assert-equal (let ((r (nine-patch-content-rect panel)))
+             (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
+                   '(5 11 88 56)
+                   "nine-patch content rect")
+    (%assert-rect child 5 11 88 56 "nine-patch child laid out in center")))
+
 (defun run-gui-layout-tests ()
   (setf *test-count* 0
         *test-failures* 0)
@@ -456,7 +505,11 @@
                          test-27-cross-axis-expansion-not-in-main-measure
                          test-28-main-axis-expansion-not-in-cross-measure
                          test-29-valid-layout-has-non-negative-rectangles
-                         test-30-layout-deterministic))
+                         test-30-layout-deterministic
+                         test-31-image-min-size-from-surface
+                         test-32-image-alignment-and-clipping
+                         test-33-nine-patch-min-size-includes-child-and-borders
+                         test-34-nine-patch-child-layout-uses-center-rect))
     (%run-test-case test-symbol))
   (format t "~%Executed ~D assertions.~%" *test-count*)
   (if (zerop *test-failures*)

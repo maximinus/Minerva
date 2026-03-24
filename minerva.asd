@@ -3,7 +3,9 @@
   :version "0.1.0"
   :serial t
   :components
-  ((:file "src/minerva/gui/core")))
+  ((:file "src/minerva/gfx/ffi")
+   (:file "src/minerva/gfx/backend")
+   (:file "src/minerva/gui/core")))
 
 (asdf:defsystem "minerva/tests"
   :description "Minerva GUI layout tests"

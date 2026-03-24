@@ -10,6 +10,8 @@
    :event-mouse-button-up
    :event-mouse-move
    :c-window
+  :c-surface
+  :c-font
    :c-event
    :ensure-native-library-loaded
    :%init
@@ -25,6 +27,21 @@
    :%clear
    :%fill-rect
    :%end-frame
+  :%surface-create-blank
+  :%surface-load-file
+  :%surface-destroy
+  :%surface-width
+  :%surface-height
+  :%surface-blit
+  :%surface-blit-rect
+  :%surface-blit-rect-scaled
+  :%window-draw-surface
+  :%window-draw-surface-rect
+  :%window-draw-surface-rect-scaled
+  :%font-get
+  :%font-destroy
+  :%font-measure-text
+  :%font-render-text
    :%ticks-ms
    :%sleep-ms))
 
@@ -65,6 +82,8 @@
       (setf *native-library-loaded* t))))
 
 (define-alien-type c-window (* t))
+(define-alien-type c-surface (* t))
+(define-alien-type c-font (* t))
 
 (define-alien-type c-event
   (struct c-event
@@ -123,6 +142,99 @@
 
 (define-alien-routine ("end_frame" %end-frame) void
   (window c-window))
+
+(define-alien-routine ("surface_create_blank" %surface-create-blank) c-surface
+  (width int)
+  (height int))
+
+(define-alien-routine ("surface_load_file" %surface-load-file) c-surface
+  (path c-string))
+
+(define-alien-routine ("surface_destroy" %surface-destroy) void
+  (surface c-surface))
+
+(define-alien-routine ("surface_width" %surface-width) int
+  (surface c-surface))
+
+(define-alien-routine ("surface_height" %surface-height) int
+  (surface c-surface))
+
+(define-alien-routine ("surface_blit" %surface-blit) int
+  (src c-surface)
+  (dst c-surface)
+  (dst-x int)
+  (dst-y int))
+
+(define-alien-routine ("surface_blit_rect" %surface-blit-rect) int
+  (src c-surface)
+  (src-x int)
+  (src-y int)
+  (src-width int)
+  (src-height int)
+  (dst c-surface)
+  (dst-x int)
+  (dst-y int))
+
+(define-alien-routine ("surface_blit_rect_scaled" %surface-blit-rect-scaled) int
+  (src c-surface)
+  (src-x int)
+  (src-y int)
+  (src-width int)
+  (src-height int)
+  (dst c-surface)
+  (dst-x int)
+  (dst-y int)
+  (dst-width int)
+  (dst-height int))
+
+(define-alien-routine ("window_draw_surface" %window-draw-surface) int
+  (window c-window)
+  (surface c-surface)
+  (dst-x int)
+  (dst-y int))
+
+(define-alien-routine ("window_draw_surface_rect" %window-draw-surface-rect) int
+  (window c-window)
+  (surface c-surface)
+  (src-x int)
+  (src-y int)
+  (src-width int)
+  (src-height int)
+  (dst-x int)
+  (dst-y int))
+
+(define-alien-routine ("window_draw_surface_rect_scaled" %window-draw-surface-rect-scaled) int
+  (window c-window)
+  (surface c-surface)
+  (src-x int)
+  (src-y int)
+  (src-width int)
+  (src-height int)
+  (dst-x int)
+  (dst-y int)
+  (dst-width int)
+  (dst-height int))
+
+(define-alien-routine ("font_get" %font-get) c-font
+  (name-or-path c-string)
+  (size int))
+
+(define-alien-routine ("font_destroy" %font-destroy) void
+  (font c-font))
+
+(define-alien-routine ("font_measure_text" %font-measure-text) int
+  (font c-font)
+  (text c-string)
+  (width (* int))
+  (height (* int)))
+
+(define-alien-routine ("font_render_text" %font-render-text) c-surface
+  (font c-font)
+  (text c-string)
+  (r unsigned-char)
+  (g unsigned-char)
+  (b unsigned-char)
+  (a unsigned-char))
 
 (define-alien-routine ("ticks_ms" %ticks-ms) unsigned-long-long)
 
