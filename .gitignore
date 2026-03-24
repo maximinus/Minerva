@@ -12,6 +12,12 @@ SDL_ttf/
 build/
 .logs/
 
+# docs stuff
+docs/_build/
+docs/_static/
+docs/_templates/
+venv/
+
 
 # don't save compiled files
 *.fasl
