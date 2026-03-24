@@ -47,6 +47,9 @@
   (let ((r (widget-layout-rect widget)))
     (list (rect-x r) (rect-y r) (rect-width r) (rect-height r))))
 
+(defun %rect-value-list (r)
+  (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
+
 (defun %run-test-case (test-symbol)
   (let ((failures-before *test-failures*)
         (*current-test-name* test-symbol))
@@ -478,6 +481,312 @@
                    "nine-patch content rect")
     (%assert-rect child 5 11 88 56 "nine-patch child laid out in center")))
 
+(%deftest test-35-image-clips-when-smaller-than-surface
+  (let ((img (make-instance 'image :surface '(:width 20 :height 20))))
+    (layout img (make-rect :x 0 :y 0 :width 5 :height 5))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(0 0 5 5) "image clipped draw rect")))
+
+(%deftest test-36-image-default-alignment-top-left
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10))))
+    (layout img (make-rect :x 100 :y 50 :width 100 :height 100))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(100 50 20 10) "default top-left alignment")))
+
+(%deftest test-37-image-center-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :center)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(40 25 20 10) "center alignment")))
+
+(%deftest test-38-image-top-right-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :top-right)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(80 0 20 10) "top-right alignment")))
+
+(%deftest test-39-image-bottom-left-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :bottom-left)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(0 50 20 10) "bottom-left alignment")))
+
+(%deftest test-40-image-bottom-right-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :bottom-right)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(80 50 20 10) "bottom-right alignment")))
+
+(%deftest test-41-nine-patch-min-size-no-child-borders-only
+  (let ((panel (make-instance 'nine-patch
+                              :surface '(:width 20 :height 20)
+                              :border-left 3 :border-right 4 :border-top 5 :border-bottom 6)))
+    (%assert-min-size panel 7 11 "nine-patch no child min-size")))
+
+(%deftest test-42-nine-patch-min-size-includes-child
+  (let* ((child (make-instance 'color-rect :min-width 100 :min-height 50))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 20 :height 20)
+                               :border-left 3 :border-right 4 :border-top 5 :border-bottom 6
+                               :child child)))
+    (%assert-min-size panel 107 61 "nine-patch with child min-size")))
+
+(%deftest test-43-nine-patch-min-size-updates-with-child-change
+  (let* ((small (make-instance 'color-rect :min-width 10 :min-height 10))
+         (large (make-instance 'color-rect :min-width 30 :min-height 40))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 20 :height 20)
+                               :border-left 2 :border-right 3 :border-top 4 :border-bottom 5
+                               :child small)))
+    (%assert-min-size panel 15 19 "nine-patch with small child")
+    (setf (nine-patch-child panel) large)
+    (%assert-min-size panel 35 49 "nine-patch with large child")))
+
+(%deftest test-44-nine-patch-child-layout-center-area
+  (let* ((child (make-instance 'color-rect :min-width 1 :min-height 1 :expand-x t :expand-y t))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 20 :height 20)
+                               :border-left 10 :border-right 20 :border-top 5 :border-bottom 15
+                               :child child)))
+    (layout panel (make-rect :x 100 :y 50 :width 200 :height 100))
+    (%assert-rect child 110 55 170 80 "nine-patch child center layout")))
+
+(%deftest test-45-nine-patch-no-child-layout-safe
+  (let ((panel (make-instance 'nine-patch
+                              :surface '(:width 20 :height 20)
+                              :border-left 2 :border-right 2 :border-top 2 :border-bottom 2)))
+    (layout panel (make-rect :x 0 :y 0 :width 40 :height 30))
+    (%assert-equal (%rect-value-list (nine-patch-content-rect panel)) '(2 2 36 26) "nine-patch no child content rect")))
+
+(%deftest test-46-nine-patch-nested-child-layout
+  (let* ((a (make-instance 'color-rect :min-width 10 :min-height 10))
+         (b (make-instance 'color-rect :min-width 10 :min-height 10))
+         (inner (make-instance 'vbox :children (list a b) :spacing 5))
+         (panel (make-instance 'nine-patch
+                               :surface '(:width 50 :height 50)
+                               :border-left 3 :border-right 4 :border-top 5 :border-bottom 6
+                               :child inner)))
+    (layout panel (make-rect :x 10 :y 20 :width 100 :height 60))
+    (%assert-rect inner 13 25 93 49 "nested vbox receives center area")
+    (%assert-equal (rect-x (widget-layout-rect a)) 13 "nested child A x")
+    (%assert-equal (rect-y (widget-layout-rect a)) 25 "nested child A y")))
+
+(%deftest test-47-nine-patch-corners-fixed-size
+  (let ((calls '())
+        (panel (make-instance 'nine-patch
+                              :surface '(:width 20 :height 20)
+                              :border-left 2 :border-right 3 :border-top 4 :border-bottom 5)))
+    (let ((old (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)))
+      (unwind-protect
+           (progn
+             (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                   (lambda (backend-window surface source-rect dest-rect)
+                     (declare (ignore backend-window surface))
+                     (push (list (%rect-value-list source-rect) (%rect-value-list dest-rect)) calls)))
+             (layout panel (make-rect :x 0 :y 0 :width 80 :height 70))
+             (render panel nil))
+        (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old)))
+    (%assert-equal (length calls) 9 "nine patches draw count")
+      (let* ((dest-rects (mapcar #'second calls))
+           (top-left (find-if (lambda (r) (and (= (first r) 0) (= (second r) 0))) dest-rects))
+           (top-right (find-if (lambda (r) (and (= (first r) 77) (= (second r) 0))) dest-rects))
+           (bottom-left (find-if (lambda (r) (and (= (first r) 0) (= (second r) 65))) dest-rects))
+           (bottom-right (find-if (lambda (r) (and (= (first r) 77) (= (second r) 65))) dest-rects)))
+      (%assert-equal (third top-left) 2 "top-left width fixed")
+      (%assert-equal (fourth top-left) 4 "top-left height fixed")
+      (%assert-equal (third top-right) 3 "top-right width fixed")
+      (%assert-equal (fourth bottom-left) 5 "bottom-left height fixed")
+      (%assert-equal (third bottom-right) 3 "bottom-right width fixed"))))
+
+(%deftest test-48-nine-patch-top-bottom-edges-stretch-horizontally
+  (let ((calls '())
+        (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                              :border-left 2 :border-right 3 :border-top 4 :border-bottom 5)))
+    (let ((old (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)))
+      (unwind-protect
+           (progn
+             (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                   (lambda (backend-window surface source-rect dest-rect)
+                     (declare (ignore backend-window surface source-rect))
+                     (push (%rect-value-list dest-rect) calls)))
+             (layout panel (make-rect :x 0 :y 0 :width 80 :height 70))
+             (render panel nil))
+        (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old)))
+      (let* ((top-edge (find-if (lambda (r) (and (= (second r) 0) (> (third r) 2))) calls))
+           (bottom-edge (find-if (lambda (r) (and (= (second r) 65) (> (third r) 2))) calls)))
+        (%assert-equal (> (third top-edge) 2) t "top edge stretched horizontally")
+        (%assert-equal (> (third bottom-edge) 2) t "bottom edge stretched horizontally")
+      (%assert-equal (fourth top-edge) 4 "top edge fixed thickness")
+      (%assert-equal (fourth bottom-edge) 5 "bottom edge fixed thickness"))))
+
+(%deftest test-49-nine-patch-left-right-edges-stretch-vertically
+  (let ((calls '())
+        (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                              :border-left 2 :border-right 3 :border-top 4 :border-bottom 5)))
+    (let ((old (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)))
+      (unwind-protect
+           (progn
+             (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                   (lambda (backend-window surface source-rect dest-rect)
+                     (declare (ignore backend-window surface source-rect))
+                     (push (%rect-value-list dest-rect) calls)))
+             (layout panel (make-rect :x 0 :y 0 :width 80 :height 70))
+             (render panel nil))
+        (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old)))
+      (let* ((left-edge (find-if (lambda (r) (and (= (first r) 0) (> (fourth r) 4))) calls))
+           (right-edge (find-if (lambda (r) (and (= (first r) 77) (> (fourth r) 4))) calls)))
+      (%assert-equal (third left-edge) 2 "left edge fixed width")
+      (%assert-equal (third right-edge) 3 "right edge fixed width")
+        (%assert-equal (> (fourth left-edge) 4) t "left edge stretched vertically")
+        (%assert-equal (> (fourth right-edge) 4) t "right edge stretched vertically"))))
+
+(%deftest test-50-nine-patch-center-stretches
+  (let ((calls '())
+        (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                              :border-left 2 :border-right 3 :border-top 4 :border-bottom 5)))
+    (let ((old (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)))
+      (unwind-protect
+           (progn
+             (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                   (lambda (backend-window surface source-rect dest-rect)
+                     (declare (ignore backend-window surface source-rect))
+                     (push (%rect-value-list dest-rect) calls)))
+             (layout panel (make-rect :x 0 :y 0 :width 80 :height 70))
+             (render panel nil))
+        (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old)))
+    (let ((center (find-if (lambda (r) (and (> (third r) 10) (> (fourth r) 10)
+                                            (/= (first r) 0) (/= (second r) 0)))
+                           calls)))
+      (%assert-equal (> (third center) 10) t "center stretched width")
+      (%assert-equal (> (fourth center) 10) t "center stretched height"))))
+
+(%deftest test-51-nine-patch-small-output-clips-safely
+  (let ((panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                              :border-left 10 :border-right 10 :border-top 10 :border-bottom 10)))
+    (layout panel (make-rect :x 0 :y 0 :width 5 :height 5))
+    (%assert-equal (%rect-value-list (nine-patch-content-rect panel)) '(10 10 0 0) "small output clipped content area")))
+
+(%deftest test-52-nine-patch-renders-before-child
+  (let* ((events '())
+         (child (make-instance 'color-rect :min-width 10 :min-height 10 :color '(1 2 3 255)))
+         (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                               :border-left 2 :border-right 2 :border-top 2 :border-bottom 2
+                               :child child))
+         (old-draw (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled))
+         (old-fill (symbol-function 'minerva.gui::%call-fill-rect)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (push :nine-patch events)))
+           (setf (symbol-function 'minerva.gui::%call-fill-rect)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (push :child events)))
+           (layout panel (make-rect :x 0 :y 0 :width 30 :height 30))
+           (render panel nil))
+      (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old-draw)
+      (setf (symbol-function 'minerva.gui::%call-fill-rect) old-fill))
+    (%assert-equal (car (last events)) :nine-patch "first render action is nine-patch")
+    (%assert-equal (car events) :child "last render action is child")))
+
+(%deftest test-53-child-confined-to-content-area
+  (let* ((child (make-instance 'color-rect :min-width 100 :min-height 100 :expand-x t :expand-y t))
+         (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                               :border-left 4 :border-right 4 :border-top 3 :border-bottom 3
+                               :child child)))
+    (layout panel (make-rect :x 10 :y 10 :width 30 :height 20))
+    (%assert-equal (%rect-value-list (widget-layout-rect child)) '(14 13 22 14) "child confined to center rect")))
+
+(%deftest test-54-image-inside-nine-patch-min-size
+  (let* ((img (make-instance 'image :surface '(:width 20 :height 10)))
+         (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                               :border-left 3 :border-right 4 :border-top 5 :border-bottom 6
+                               :child img)))
+    (%assert-min-size panel 27 21 "image + borders minimum size")))
+
+(%deftest test-55-rendered-text-surface-wraps-in-image-widget
+  (let* ((gfx-pkg (find-package :minerva.gfx))
+         (init (and gfx-pkg (find-symbol "INIT-BACKEND" gfx-pkg)))
+         (shutdown (and gfx-pkg (find-symbol "SHUTDOWN-BACKEND" gfx-pkg)))
+         (get-font (and gfx-pkg (find-symbol "GET-FONT" gfx-pkg)))
+         (destroy-font (and gfx-pkg (find-symbol "DESTROY-FONT" gfx-pkg)))
+         (measure-text (and gfx-pkg (find-symbol "MEASURE-TEXT" gfx-pkg)))
+         (render-text (and gfx-pkg (find-symbol "RENDER-TEXT-TO-SURFACE" gfx-pkg)))
+         (make-color-gfx (and gfx-pkg (find-symbol "MAKE-COLOR" gfx-pkg)))
+         (font nil)
+         (surface nil))
+    (unless (and init shutdown get-font destroy-font measure-text render-text make-color-gfx)
+      (error "Required minerva.gfx API not available for integration test"))
+    (unwind-protect
+         (progn
+           (funcall (symbol-function init))
+           (setf font (funcall (symbol-function get-font)
+                               (namestring (merge-pathnames "assets/fonts/inconsolata.ttf" (truename "./")))
+                               16))
+           (multiple-value-bind (w h) (funcall (symbol-function measure-text) font "Hello")
+             (setf surface (funcall (symbol-function render-text) font "Hello"
+                                    (funcall (symbol-function make-color-gfx) :r 255 :g 255 :b 255 :a 255)))
+             (let ((img (make-instance 'image :surface surface)))
+               (%assert-min-size img w h "image min-size matches rendered text"))))
+      (when font
+        (ignore-errors (funcall (symbol-function destroy-font) font)))
+      (when (and shutdown (symbol-function shutdown))
+        (ignore-errors (funcall (symbol-function shutdown)))))))
+
+(%deftest test-56-nine-patch-containing-text-image-layout
+  (let ((img (make-instance 'image :surface '(:width 40 :height 12)))
+        (panel nil))
+    (setf panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                               :border-left 3 :border-right 3 :border-top 3 :border-bottom 3
+                               :child img))
+    (layout panel (make-rect :x 0 :y 0 :width 80 :height 40))
+    (%assert-equal (%rect-value-list (widget-layout-rect img)) '(3 3 74 34) "text-image child center placement")))
+
+(%deftest test-57-hbox-with-images-and-filler
+  (let* ((left (make-instance 'image :surface '(:width 20 :height 10)))
+         (fill (make-instance 'filler :min-width 0 :min-height 0 :expand-x t :expand-y nil))
+         (right (make-instance 'image :surface '(:width 30 :height 10)))
+         (row (make-instance 'hbox :children (list left fill right) :spacing 0))
+         (root (make-instance 'window :width 200 :height 40 :child row)))
+    (layout root (make-rect :x 0 :y 0 :width 200 :height 40))
+    (%assert-equal (rect-width (widget-layout-rect left)) 20 "left image keeps native width")
+    (%assert-equal (rect-width (widget-layout-rect right)) 30 "right image keeps native width")
+    (%assert-equal (rect-width (widget-layout-rect fill)) 150 "filler absorbs extra width")))
+
+(%deftest test-63-nine-patch-layout-deterministic
+  (let* ((child (make-instance 'color-rect :min-width 10 :min-height 10 :expand-x t :expand-y t))
+         (panel (make-instance 'nine-patch :surface '(:width 20 :height 20)
+                               :border-left 2 :border-right 3 :border-top 4 :border-bottom 5
+                               :child child))
+         first
+         second)
+    (layout panel (make-rect :x 10 :y 20 :width 70 :height 60))
+    (setf first (list (%rect-value-list (widget-layout-rect panel))
+                      (%rect-value-list (nine-patch-content-rect panel))
+                      (%rect-value-list (widget-layout-rect child))))
+    (layout panel (make-rect :x 10 :y 20 :width 70 :height 60))
+    (setf second (list (%rect-value-list (widget-layout-rect panel))
+                       (%rect-value-list (nine-patch-content-rect panel))
+                       (%rect-value-list (widget-layout-rect child))))
+    (%assert-equal first second "nine-patch layout deterministic")))
+
+(%deftest test-64-image-render-deterministic
+  (let* ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :center))
+         (calls-a '())
+         (calls-b '())
+         (old (symbol-function 'minerva.gui::%call-draw-surface-rect)))
+    (unwind-protect
+         (progn
+           (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect)
+                 (lambda (backend-window surface source-rect dest-x dest-y)
+                   (declare (ignore backend-window surface))
+                   (push (list (%rect-value-list source-rect) dest-x dest-y) calls-a)))
+           (render img nil)
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect)
+                 (lambda (backend-window surface source-rect dest-x dest-y)
+                   (declare (ignore backend-window surface))
+                   (push (list (%rect-value-list source-rect) dest-x dest-y) calls-b)))
+           (render img nil))
+      (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old))
+    (%assert-equal calls-a calls-b "image render deterministic draw calls")))
+
 (defun run-gui-layout-tests ()
   (setf *test-count* 0
         *test-failures* 0)
@@ -514,7 +823,32 @@
                          test-31-image-min-size-from-surface
                          test-32-image-alignment-and-clipping
                          test-33-nine-patch-min-size-includes-child-and-borders
-                         test-34-nine-patch-child-layout-uses-center-rect))
+                         test-34-nine-patch-child-layout-uses-center-rect
+                         test-35-image-clips-when-smaller-than-surface
+                         test-36-image-default-alignment-top-left
+                         test-37-image-center-alignment
+                         test-38-image-top-right-alignment
+                         test-39-image-bottom-left-alignment
+                         test-40-image-bottom-right-alignment
+                         test-41-nine-patch-min-size-no-child-borders-only
+                         test-42-nine-patch-min-size-includes-child
+                         test-43-nine-patch-min-size-updates-with-child-change
+                         test-44-nine-patch-child-layout-center-area
+                         test-45-nine-patch-no-child-layout-safe
+                         test-46-nine-patch-nested-child-layout
+                         test-47-nine-patch-corners-fixed-size
+                         test-48-nine-patch-top-bottom-edges-stretch-horizontally
+                         test-49-nine-patch-left-right-edges-stretch-vertically
+                         test-50-nine-patch-center-stretches
+                         test-51-nine-patch-small-output-clips-safely
+                         test-52-nine-patch-renders-before-child
+                         test-53-child-confined-to-content-area
+                         test-54-image-inside-nine-patch-min-size
+                         test-55-rendered-text-surface-wraps-in-image-widget
+                         test-56-nine-patch-containing-text-image-layout
+                         test-57-hbox-with-images-and-filler
+                         test-63-nine-patch-layout-deterministic
+                         test-64-image-render-deterministic))
     (%run-test-case test-symbol))
   (format t "~%Executed ~D assertions.~%" *test-count*)
   (if (zerop *test-failures*)

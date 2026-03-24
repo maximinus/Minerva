@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -398,6 +399,72 @@ int surface_height(Surface *surface) {
     return surface->surface->h;
 }
 
+int surface_is_rgba32(Surface *surface) {
+    if (surface == NULL || surface->surface == NULL) {
+        return 0;
+    }
+    return surface->surface->format == SDL_PIXELFORMAT_RGBA32 ? 1 : 0;
+}
+
+int surface_fill_rect(Surface *surface, int x, int y, int width, int height,
+                      unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+    if (surface == NULL || surface->surface == NULL) {
+        set_last_error_literal("surface is null");
+        return 0;
+    }
+    if (width <= 0 || height <= 0) {
+        return 1;
+    }
+
+    SDL_Rect rect = { x, y, width, height };
+    Uint32 pixel = SDL_MapSurfaceRGBA(surface->surface, r, g, b, a);
+    if (!SDL_FillSurfaceRect(surface->surface, &rect, pixel)) {
+        set_last_error_from_sdl();
+        return 0;
+    }
+    return 1;
+}
+
+int surface_read_pixel(Surface *surface, int x, int y,
+                       unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a) {
+    if (surface == NULL || surface->surface == NULL) {
+        set_last_error_literal("surface is null");
+        return 0;
+    }
+    if (x < 0 || y < 0 || x >= surface->surface->w || y >= surface->surface->h) {
+        set_last_error_literal("pixel coordinates out of bounds");
+        return 0;
+    }
+
+    if (!SDL_LockSurface(surface->surface)) {
+        set_last_error_from_sdl();
+        return 0;
+    }
+
+    Uint8 *base = (Uint8 *)surface->surface->pixels;
+    int pitch = surface->surface->pitch;
+    Uint32 *row = (Uint32 *)(base + (y * pitch));
+    Uint32 pixel = row[x];
+
+    SDL_UnlockSurface(surface->surface);
+
+    const SDL_PixelFormatDetails *format_details = SDL_GetPixelFormatDetails(surface->surface->format);
+    if (format_details == NULL) {
+        set_last_error_from_sdl();
+        return 0;
+    }
+
+    Uint8 pr = 0, pg = 0, pb = 0, pa = 0;
+    SDL_GetRGBA(pixel, format_details, NULL, &pr, &pg, &pb, &pa);
+
+    if (r != NULL) *r = pr;
+    if (g != NULL) *g = pg;
+    if (b != NULL) *b = pb;
+    if (a != NULL) *a = pa;
+
+    return 1;
+}
+
 int surface_blit(Surface *src, Surface *dst, int dst_x, int dst_y) {
     if (src == NULL || src->surface == NULL || dst == NULL || dst->surface == NULL) {
         set_last_error_literal("source or destination surface is null");
@@ -549,6 +616,15 @@ Font *font_get(const char *name_or_path, int size) {
     }
 
     const char *resolved_name = (name_or_path != NULL && *name_or_path != '\0') ? name_or_path : "default";
+    if (SDL_strcmp(resolved_name, "default") != 0) {
+        FILE *font_file = fopen(resolved_name, "rb");
+        if (font_file == NULL) {
+            set_last_error_literal("font file not found");
+            SDL_free(font);
+            return NULL;
+        }
+        fclose(font_file);
+    }
     font->name_or_path = SDL_strdup(resolved_name);
     if (font->name_or_path == NULL) {
         set_last_error_from_sdl();

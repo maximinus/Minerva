@@ -53,15 +53,18 @@
           value)))))
 
 (defun %current-test-name ()
-  (let* ((pkg (find-package :minerva.gui))
-         (fn-sym (and pkg (find-symbol "CURRENT-TEST-NAME" pkg)))
-         (var-sym (and pkg (find-symbol "*CURRENT-TEST-NAME*" pkg))))
-    (cond
-      ((and fn-sym (fboundp fn-sym))
-       (ignore-errors (funcall (symbol-function fn-sym))))
-      ((and var-sym (boundp var-sym))
-       (symbol-value var-sym))
-      (t nil))))
+  (labels ((lookup-in-package (package-name)
+             (let* ((pkg (find-package package-name))
+                    (fn-sym (and pkg (find-symbol "CURRENT-TEST-NAME" pkg)))
+                    (var-sym (and pkg (find-symbol "*CURRENT-TEST-NAME*" pkg))))
+               (cond
+                 ((and fn-sym (fboundp fn-sym))
+                  (ignore-errors (funcall (symbol-function fn-sym))))
+                 ((and var-sym (boundp var-sym))
+                  (symbol-value var-sym))
+                 (t nil)))))
+    (or (lookup-in-package :minerva.gfx.tests)
+        (lookup-in-package :minerva.gui))))
 
 (defun %classify-condition (condition default-exit)
   (cond

@@ -32,6 +32,9 @@
   :%surface-destroy
   :%surface-width
   :%surface-height
+  :%surface-is-rgba32
+  :%surface-fill-rect
+  :%surface-read-pixel
   :%surface-blit
   :%surface-blit-rect
   :%surface-blit-rect-scaled
@@ -72,8 +75,18 @@
 (defun ensure-native-library-loaded ()
   (unless *native-library-loaded*
     (let* ((root (%repo-root))
+           (workspace-root (ignore-errors (truename "./")))
            (sdl-path (merge-pathnames "build/native/_deps/sdl3-build/libSDL3.so" root))
-           (native-path (merge-pathnames "build/native/libminerva_native.so" root)))
+           (native-path (merge-pathnames "build/native/libminerva_native.so" root))
+           (fallback-sdl-path (and workspace-root
+                                   (merge-pathnames "build/native/_deps/sdl3-build/libSDL3.so" workspace-root)))
+           (fallback-native-path (and workspace-root
+                                      (merge-pathnames "build/native/libminerva_native.so" workspace-root))))
+      (unless (probe-file native-path)
+        (when (and fallback-native-path (probe-file fallback-native-path))
+          (setf native-path fallback-native-path))
+        (when (and fallback-sdl-path (probe-file fallback-sdl-path))
+          (setf sdl-path fallback-sdl-path)))
       (when (probe-file sdl-path)
         (load-shared-object (namestring sdl-path)))
       (unless (probe-file native-path)
@@ -158,6 +171,29 @@
 
 (define-alien-routine ("surface_height" %surface-height) int
   (surface c-surface))
+
+(define-alien-routine ("surface_is_rgba32" %surface-is-rgba32) int
+  (surface c-surface))
+
+(define-alien-routine ("surface_fill_rect" %surface-fill-rect) int
+  (surface c-surface)
+  (x int)
+  (y int)
+  (width int)
+  (height int)
+  (r unsigned-char)
+  (g unsigned-char)
+  (b unsigned-char)
+  (a unsigned-char))
+
+(define-alien-routine ("surface_read_pixel" %surface-read-pixel) int
+  (surface c-surface)
+  (x int)
+  (y int)
+  (r (* unsigned-char))
+  (g (* unsigned-char))
+  (b (* unsigned-char))
+  (a (* unsigned-char)))
 
 (define-alien-routine ("surface_blit" %surface-blit) int
   (src c-surface)

@@ -1,9 +1,9 @@
-(let ((source-file (or *load-truename* *load-pathname*)))
-  (unless source-file
-    (error "Cannot determine script location"))
-  (let ((source-dir (make-pathname :name nil :type nil :defaults source-file)))
-    (load (merge-pathnames "minerva/gfx/ffi.lisp" source-dir))
-    (load (merge-pathnames "minerva/gfx/backend.lisp" source-dir))))
+;; Run from project root with: sbcl --script demos/blue-rectangle-demo.lisp
+
+(load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
+                       (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
+
+(minerva.tooling.demo-bootstrap:load-minerva)
 
 (defun run-blue-rectangle-demo (&key (title "Minerva") (width 800) (height 600) (max-runtime-ms 3000))
   (minerva.gfx:init-backend)

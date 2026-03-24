@@ -51,6 +51,12 @@ Surface *surface_load_file(const char *path);
 void surface_destroy(Surface *surface);
 int surface_width(Surface *surface);
 int surface_height(Surface *surface);
+int surface_is_rgba32(Surface *surface);
+
+int surface_fill_rect(Surface *surface, int x, int y, int width, int height,
+                      unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+int surface_read_pixel(Surface *surface, int x, int y,
+                       unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a);
 
 int surface_blit(Surface *src, Surface *dst, int dst_x, int dst_y);
 int surface_blit_rect(Surface *src, int src_x, int src_y, int src_width, int src_height,

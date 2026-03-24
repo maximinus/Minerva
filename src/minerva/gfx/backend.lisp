@@ -34,6 +34,9 @@
                 :%surface-destroy
                 :%surface-width
                 :%surface-height
+                :%surface-is-rgba32
+                :%surface-fill-rect
+                :%surface-read-pixel
                 :%surface-blit
                 :%surface-blit-rect
                 :%surface-blit-rect-scaled
@@ -84,6 +87,9 @@
   :destroy-surface
   :surface-width
   :surface-height
+  :surface-rgba32-p
+  :fill-surface-rect
+  :read-surface-pixel
   :blit-surface
   :blit-surface-rect
   :blit-surface-rect-scaled
@@ -254,6 +260,37 @@
 
 (defun surface-height (surface)
   (%surface-height (pointer surface)))
+
+(defun surface-rgba32-p (surface)
+  (= 1 (%surface-is-rgba32 (pointer surface))))
+
+(defun fill-surface-rect (surface rect color)
+  (unless (= 1 (%surface-fill-rect (pointer surface)
+                                   (rect-x rect)
+                                   (rect-y rect)
+                                   (rect-width rect)
+                                   (rect-height rect)
+                                   (color-r color)
+                                   (color-g color)
+                                   (color-b color)
+                                   (color-a color)))
+    (%signal-ffi-error "surface_fill_rect" "surface_fill_rect failed"))
+  t)
+
+(defun read-surface-pixel (surface position)
+  (with-alien ((r unsigned-char)
+               (g unsigned-char)
+               (b unsigned-char)
+               (a unsigned-char))
+    (unless (= 1 (%surface-read-pixel (pointer surface)
+                                      (position-x position)
+                                      (position-y position)
+                                      (addr r)
+                                      (addr g)
+                                      (addr b)
+                                      (addr a)))
+      (%signal-ffi-error "surface_read_pixel" "surface_read_pixel failed"))
+    (make-color :r r :g g :b b :a a)))
 
 (defun %ensure-blit-success (result operation)
   (unless (= 1 result)
