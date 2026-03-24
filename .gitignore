@@ -8,8 +8,10 @@ SDL/
 SDL_image/
 SDL_ttf/
 
-# build files
+# build files and logs
 build/
+.logs/
+
 
 # don't save compiled files
 *.fasl

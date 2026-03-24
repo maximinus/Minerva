@@ -3,7 +3,8 @@
   :version "0.1.0"
   :serial t
   :components
-  ((:file "src/minerva/gfx/ffi")
+  ((:file "src/minerva/conditions")
+   (:file "src/minerva/gfx/ffi")
    (:file "src/minerva/gfx/backend")
    (:file "src/minerva/gui/core")))
 

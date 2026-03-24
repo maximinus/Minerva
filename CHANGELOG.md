@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.05] - 24 March 2026
+
+### Added
+- Milestone 3 graphics/resource API across native + Lisp layers:
+  - surface creation/loading/query/destroy
+  - surface blit variants (full, source-rect, source-rect scaled)
+  - window surface draw variants needed by widgets and 9-patch rendering
+  - font resource handle API with text measurement and text-to-surface rendering
+- Lisp-side geometry/resource value types in `minerva.gfx`:
+  - `position`, `rect`, `color`
+  - `backend-surface`, `backend-font` wrappers
+- New GUI widgets in `src/minerva/gui/core.lisp`:
+  - `image` (native-size draw, alignment, clipping, no scaling)
+  - `nine-patch` (single-child container with border-defined content region and 9-slice rendering)
+- New tooling/automation layer for reliable non-interactive workflows:
+  - `check_load.sh`, `run_tests.sh`, `run_smoke.sh` (tool mode)
+  - `debug_tests.sh` (interactive debugger mode)
+  - Lisp tooling entry points under `tools/`
+  - VS Code tasks at `.vscode/tasks.json`
+- Project condition hierarchy in `src/minerva/conditions.lisp`.
+- Agent quick-reference file at project root: `AGENTS.md`.
+
+### Changed
+- `minerva.asd` now loads:
+  - `src/minerva/conditions.lisp`
+  - `src/minerva/gfx/ffi.lisp`
+  - `src/minerva/gfx/backend.lisp`
+  - `src/minerva/gui/core.lisp`
+- FFI wrapper boundary (`src/minerva/gfx/backend.lisp`) now raises project-specific conditions for FFI/resource failures.
+- Test harness tracks current test symbol for improved crash-context reporting in tool mode.
+- `README.md` updated with tool vs interactive execution modes and new scripts.
+
+### Verified
+- `./check_load.sh` succeeds in tool mode.
+- `./run_tests.sh` succeeds with all GUI tests passing (`124 assertions`).
+
 ## [0.04] - 23 March 2026
 
 ### Added

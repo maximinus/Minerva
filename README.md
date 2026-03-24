@@ -14,14 +14,39 @@ The GUI model is tree-based. Widgets are arranged in containers such as horizont
 
 In the long run, the aim is not just to make a GUI toolkit, but to create a practical Lisp-based editor environment that can be extended step by step without losing control of the architecture.
 
+## Tooling modes
+
+Minerva now supports two execution modes:
+
+- Tool mode (default for scripts/tasks): non-interactive, debugger disabled, reliable exit codes.
+- Interactive mode (manual debugging): debugger enabled with full restarts/backtraces.
+
 ## How to run tests
 
 Minerva uses ASDF systems for loading and test execution.
 
-From a terminal in the project root:
+From a terminal in the project root (tool mode):
 
 ```bash
 ./run_tests.sh
+```
+
+Interactive debug mode:
+
+```bash
+./debug_tests.sh
+```
+
+Fast load/syntax check (recommended before full tests):
+
+```bash
+./check_load.sh
+```
+
+Optional native smoke check:
+
+```bash
+./run_smoke.sh
 ```
 
 If you need the equivalent manual command:
@@ -33,11 +58,13 @@ sbcl --eval '(require :asdf)' \
      --quit
 ```
 
-This runs the layout-engine unit tests in `tests/minerva/gui/tests.lisp`.
+Logs for tool mode are written under `.logs/`.
+
+`run_tests.sh` currently runs the layout-engine unit tests in `tests/minerva/gui/tests.lisp`.
 
 A successful run ends with:
 
 ```text
-Executed 115 assertions.
+Executed 124 assertions.
 All GUI layout tests passed.
 ```

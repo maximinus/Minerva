@@ -2,6 +2,10 @@
 
 (defvar *test-count* 0)
 (defvar *test-failures* 0)
+(defvar *current-test-name* nil)
+
+(defun current-test-name ()
+  *current-test-name*)
 
 (defmacro %deftest (name &body body)
   `(defun ,name ()
@@ -44,7 +48,8 @@
     (list (rect-x r) (rect-y r) (rect-width r) (rect-height r))))
 
 (defun %run-test-case (test-symbol)
-  (let ((failures-before *test-failures*))
+  (let ((failures-before *test-failures*)
+        (*current-test-name* test-symbol))
     (handler-case
         (progn
           (funcall (symbol-function test-symbol))

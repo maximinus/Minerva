@@ -133,10 +133,26 @@
 (defun backend-last-error ()
   (or (%last-error) ""))
 
+(defun %signal-ffi-error (operation &optional details)
+  (error 'minerva.conditions:minerva-ffi-error
+         :phase :ffi
+         :message (or details (backend-last-error))
+         :operation operation
+         :native-error (backend-last-error)
+         :details details))
+
+(defun %signal-resource-error (operation &optional details)
+  (error 'minerva.conditions:minerva-resource-error
+         :phase :resource
+         :message (or details (backend-last-error))
+         :operation operation
+         :native-error (backend-last-error)
+         :details details))
+
 (defun init-backend ()
   (ensure-native-library-loaded)
   (unless (= 1 (%init))
-    (error "Backend init failed: ~A" (backend-last-error)))
+    (%signal-ffi-error "init" "Backend init failed"))
   t)
 
 (defun shutdown-backend ()
@@ -146,7 +162,7 @@
 (defun create-window (&key (title "Minerva") (width 800) (height 600))
   (let ((ptr (%window-create title width height)))
     (when (%null-pointer-p ptr)
-      (error "window_create failed: ~A" (backend-last-error)))
+      (%signal-ffi-error "window_create" (format nil "window_create failed for title=~S" title)))
     (make-instance 'backend-window :pointer ptr)))
 
 (defun destroy-window (window)
@@ -212,14 +228,16 @@
   (ensure-native-library-loaded)
   (let ((ptr (%surface-create-blank width height)))
     (when (%null-pointer-p ptr)
-      (error "surface_create_blank failed: ~A" (backend-last-error)))
+      (%signal-resource-error "surface_create_blank"
+                              (format nil "surface_create_blank failed width=~S height=~S" width height)))
     (make-instance 'backend-surface :pointer ptr)))
 
 (defun load-surface (path)
   (ensure-native-library-loaded)
   (let ((ptr (%surface-load-file path)))
     (when (%null-pointer-p ptr)
-      (error "surface_load_file failed for ~S: ~A" path (backend-last-error)))
+      (%signal-resource-error "surface_load_file"
+                              (format nil "surface_load_file failed path=~S" path)))
     (make-instance 'backend-surface :pointer ptr)))
 
 (defun destroy-surface (surface)
@@ -239,7 +257,7 @@
 
 (defun %ensure-blit-success (result operation)
   (unless (= 1 result)
-    (error "~A failed: ~A" operation (backend-last-error)))
+    (%signal-ffi-error operation (format nil "~A failed" operation)))
   t)
 
 (defun blit-surface (source destination dest-position)
@@ -314,7 +332,8 @@
   (ensure-native-library-loaded)
   (let ((ptr (%font-get name-or-path size)))
     (when (%null-pointer-p ptr)
-      (error "font_get failed: ~A" (backend-last-error)))
+      (%signal-resource-error "font_get"
+                              (format nil "font_get failed name-or-path=~S size=~S" name-or-path size)))
     (make-instance 'backend-font
                    :pointer ptr
                    :name (or name-or-path "default")
@@ -348,7 +367,8 @@
                                 (color-b color)
                                 (color-a color))))
     (when (%null-pointer-p ptr)
-      (error "font_render_text failed: ~A" (backend-last-error)))
+      (%signal-resource-error "font_render_text"
+                              (format nil "font_render_text failed text-length=~S" (length (or text "")))))
     (make-instance 'backend-surface :pointer ptr)))
 
 (defun ticks-ms ()
