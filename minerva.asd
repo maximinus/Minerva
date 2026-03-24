@@ -1,28 +1,27 @@
-;;;; minerva.asd - define all systems here
-
 (asdf:defsystem "minerva"
-  :description "Minerva: The modern Lisp IDE"
-  :author "Chris Handy <maximinus@gmail.com>"
-  :license "GPL 3.0"
-  :version "0.0.1"
+  :description "Minerva Lisp IDE core systems"
+  :version "0.1.0"
   :serial t
-  :depends-on (:sdl2 :sdl2-ttf :sdl2-image)
-  :pathname "src/"
-  :components ((:file "package")
-	       (:file "base")
-	       (:file "widgets")
-	       (:file "containers")
-	       (:file "main")))
+  :components
+  ((:file "src/minerva/conditions")
+   (:file "src/minerva/gfx/ffi")
+   (:file "src/minerva/gfx/backend")
+   (:file "src/minerva/gui/core")))
 
-(asdf:defsystem :minerva/tests
-  :description "Tests for Minerva IDE"
-  :author "Chris Handy <maximinus@gmail.com>"
-  :license "GPL 3.0"
+(asdf:defsystem "minerva/tests"
+  :description "Minerva GUI and graphics tests"
+  :depends-on ("minerva")
   :serial t
-  :depends-on (:fiveam :minerva)
-  :pathname "test/"
-  :components ((:file "package")
-	       (:file "test-base")
-	       (:file "test-widgets")
-	       (:file "test-containers")))
-
+  :components
+  ((:file "tests/minerva/gui/tests")
+   (:file "tests/minerva/gfx/tests"))
+  :perform (asdf:test-op (op component)
+             (declare (ignore op component))
+             (let ((run-gui-fn (find-symbol "RUN-GUI-LAYOUT-TESTS" :minerva.gui))
+                   (run-gfx-fn (find-symbol "RUN-GFX-RESOURCE-TESTS" :minerva.gfx.tests)))
+               (unless (and run-gui-fn (fboundp run-gui-fn))
+                 (error "RUN-GUI-LAYOUT-TESTS not found in MINERVA.GUI"))
+               (unless (and run-gfx-fn (fboundp run-gfx-fn))
+                 (error "RUN-GFX-RESOURCE-TESTS not found in MINERVA.GFX.TESTS"))
+               (funcall run-gui-fn)
+               (funcall run-gfx-fn))))

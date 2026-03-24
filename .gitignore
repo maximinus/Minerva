@@ -3,6 +3,16 @@ MinervaPython/
 .idea/
 __pycache__/
 
+# SDL libs
+SDL/
+SDL_image/
+SDL_ttf/
+
+# build files and logs
+build/
+.logs/
+
+
 # don't save compiled files
 *.fasl
 

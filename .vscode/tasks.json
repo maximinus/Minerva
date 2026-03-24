@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Check Lisp loads",
+            "type": "shell",
+            "command": "./check_load.sh",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run all tests",
+            "type": "shell",
+            "command": "./run_tests.sh",
+            "group": "test",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run layout tests",
+            "type": "shell",
+            "command": "./run_tests.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run resource tests",
+            "type": "shell",
+            "command": "./run_tests.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "Debug tests",
+            "type": "shell",
+            "command": "./debug_tests.sh",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run smoke",
+            "type": "shell",
+            "command": "./run_smoke.sh",
+            "problemMatcher": []
+        }
+    ]
+}
