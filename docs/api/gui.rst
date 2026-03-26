@@ -31,6 +31,8 @@ Widget protocol
 - ``widget-layout-rect``
 - ``widget-content-alignment`` (combined alignment keyword such as
   ``:top-left``, ``:center``, ``:bottom-right``)
+- ``widget-margin-left``, ``widget-margin-right``,
+  ``widget-margin-top``, ``widget-margin-bottom``
 
 Generic functions:
 
@@ -71,12 +73,10 @@ Containers
 Slots/accessors:
 
 - ``hbox-children``
-- ``hbox-padding-left``, ``hbox-padding-right``,
-  ``hbox-padding-top``, ``hbox-padding-bottom``
 - ``hbox-spacing``
 - ``hbox-align-y`` (``:start``, ``:center``, ``:end``)
 
-Behavior: horizontal packing with spacing/padding and extra-width split among
+Behavior: horizontal packing with spacing and extra-width split among
 children whose ``measure`` has ``expand-x`` true.
 
 ``vbox`` class
@@ -84,12 +84,10 @@ children whose ``measure`` has ``expand-x`` true.
 Slots/accessors:
 
 - ``vbox-children``
-- ``vbox-padding-left``, ``vbox-padding-right``,
-  ``vbox-padding-top``, ``vbox-padding-bottom``
 - ``vbox-spacing``
 - ``vbox-align-x`` (``:start``, ``:center``, ``:end``)
 
-Behavior: vertical packing with spacing/padding and extra-height split among
+Behavior: vertical packing with spacing and extra-height split among
 children whose ``measure`` has ``expand-y`` true.
 
 Leaf widgets

@@ -1,4 +1,5 @@
 ;; Run from project root with: sbcl --script demos/centered-image-demo.lisp
+;; draws a image centered in a window
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))

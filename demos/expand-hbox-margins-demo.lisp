@@ -1,4 +1,5 @@
 ;; Run from project root with: sbcl --script demos/expand-hbox-margins-demo.lisp
+;; draws 3 color-rects in with differing margins
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))

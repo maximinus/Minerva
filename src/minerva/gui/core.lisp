@@ -37,18 +37,10 @@
    :window-child
    :hbox
    :hbox-children
-   :hbox-padding-left
-   :hbox-padding-right
-   :hbox-padding-top
-   :hbox-padding-bottom
    :hbox-spacing
    :hbox-align-y
    :vbox
    :vbox-children
-   :vbox-padding-left
-   :vbox-padding-right
-   :vbox-padding-top
-   :vbox-padding-bottom
    :vbox-spacing
    :vbox-align-x
    :color-rect
@@ -314,10 +306,6 @@
 
 (defclass hbox (widget)
   ((children :initarg :children :accessor hbox-children :initform nil)
-   (padding-left :initarg :padding-left :accessor hbox-padding-left :initform 0)
-   (padding-right :initarg :padding-right :accessor hbox-padding-right :initform 0)
-   (padding-top :initarg :padding-top :accessor hbox-padding-top :initform 0)
-   (padding-bottom :initarg :padding-bottom :accessor hbox-padding-bottom :initform 0)
    (spacing :initarg :spacing :accessor hbox-spacing :initform 0)
    (align-y :initarg :align-y :accessor hbox-align-y :initform :start)))
 
@@ -336,24 +324,16 @@
     (%apply-widget-margins-to-size-request
      box
      (make-size-request
-      :min-width (+ (hbox-padding-left box)
-                    (hbox-padding-right box)
-                    (%spacing-total (length children) (hbox-spacing box))
+      :min-width (+ (%spacing-total (length children) (hbox-spacing box))
                     total-min-width)
-      :min-height (+ (hbox-padding-top box)
-                     (hbox-padding-bottom box)
-                     max-min-height)
+      :min-height max-min-height
       :expand-x expand-x
       :expand-y expand-y))))
 
 (defmethod layout ((box hbox) rect)
   (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))
   (let* ((children (hbox-children box))
-         (inner (%compute-inner-rect (widget-layout-rect box)
-                                    (hbox-padding-left box)
-                                    (hbox-padding-right box)
-                                    (hbox-padding-top box)
-                                    (hbox-padding-bottom box)))
+         (inner (widget-layout-rect box))
          (child-requests (mapcar #'measure children))
          (child-count (length children))
          (spacing-total (%spacing-total child-count (hbox-spacing box)))
@@ -400,10 +380,6 @@
 
 (defclass vbox (widget)
   ((children :initarg :children :accessor vbox-children :initform nil)
-   (padding-left :initarg :padding-left :accessor vbox-padding-left :initform 0)
-   (padding-right :initarg :padding-right :accessor vbox-padding-right :initform 0)
-   (padding-top :initarg :padding-top :accessor vbox-padding-top :initform 0)
-   (padding-bottom :initarg :padding-bottom :accessor vbox-padding-bottom :initform 0)
    (spacing :initarg :spacing :accessor vbox-spacing :initform 0)
    (align-x :initarg :align-x :accessor vbox-align-x :initform :start)))
 
@@ -422,12 +398,8 @@
     (%apply-widget-margins-to-size-request
      box
      (make-size-request
-      :min-width (+ (vbox-padding-left box)
-                    (vbox-padding-right box)
-                    max-min-width)
-      :min-height (+ (vbox-padding-top box)
-                     (vbox-padding-bottom box)
-                     (%spacing-total (length children) (vbox-spacing box))
+      :min-width max-min-width
+      :min-height (+ (%spacing-total (length children) (vbox-spacing box))
                      total-min-height)
       :expand-x expand-x
       :expand-y expand-y))))
@@ -435,11 +407,7 @@
 (defmethod layout ((box vbox) rect)
   (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))
   (let* ((children (vbox-children box))
-         (inner (%compute-inner-rect (widget-layout-rect box)
-                                    (vbox-padding-left box)
-                                    (vbox-padding-right box)
-                                    (vbox-padding-top box)
-                                    (vbox-padding-bottom box)))
+         (inner (widget-layout-rect box))
          (child-requests (mapcar #'measure children))
          (child-count (length children))
          (spacing-total (%spacing-total child-count (vbox-spacing box)))
