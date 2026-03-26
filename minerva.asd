@@ -4,6 +4,7 @@
   :serial t
   :components
   ((:file "src/minerva/conditions")
+   (:file "src/minerva/common")
    (:file "src/minerva/gfx/ffi")
    (:file "src/minerva/gfx/backend")
    (:file "src/minerva/gui/core")))

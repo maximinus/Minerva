@@ -50,6 +50,13 @@
 (defun %rect-value-list (r)
   (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
 
+(defun %project-root ()
+  (or (ignore-errors (asdf:system-source-directory "minerva"))
+      (truename "./")))
+
+(defun %font-path ()
+  (namestring (merge-pathnames "minerva/assets/fonts/inconsolata.ttf" (%project-root))))
+
 (defun %run-test-case (test-symbol)
   (let ((failures-before *test-failures*)
         (*current-test-name* test-symbol))
@@ -442,10 +449,10 @@
                              :alignment :center))
          (root (make-instance 'window :width 120 :height 60 :child img)))
     (layout root (make-rect :x 0 :y 0 :width 120 :height 60))
-    (%assert-rect img 0 0 80 40 "image widget layout rect")
+    (%assert-rect img 20 10 80 40 "image widget layout rect")
     (%assert-equal (let ((r (image-draw-rect img)))
              (list (rect-x r) (rect-y r) (rect-width r) (rect-height r)))
-                   '(0 0 80 40)
+                   '(20 10 80 40)
                    "image draw rect equals native size when no clipping")
     (layout img (make-rect :x 0 :y 0 :width 30 :height 20))
     (%assert-equal (let ((r (image-draw-rect img)))
@@ -510,6 +517,121 @@
   (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :bottom-right)))
     (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
     (%assert-equal (%rect-value-list (image-draw-rect img)) '(80 50 20 10) "bottom-right alignment")))
+
+(%deftest test-68-image-top-center-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :top-center)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(40 0 20 10) "top-center alignment")))
+
+(%deftest test-69-image-bottom-center-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :bottom-center)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(40 50 20 10) "bottom-center alignment")))
+
+(%deftest test-70-image-left-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :left)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(0 25 20 10) "left alignment")))
+
+(%deftest test-71-image-right-alignment
+  (let ((img (make-instance 'image :surface '(:width 20 :height 10) :alignment :right)))
+    (layout img (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img)) '(80 25 20 10) "right alignment")))
+
+(%deftest test-72-widget-margins-affect-min-size-and-layout
+  (let* ((child (make-instance 'color-rect
+                               :min-width 50
+                               :min-height 30
+                               :margin-left 10
+                               :margin-right 20
+                               :margin-top 5
+                               :margin-bottom 7))
+         (box (make-instance 'hbox :children (list child) :spacing 0 :align-y :start))
+         (root (make-instance 'window :width 120 :height 80 :child box)))
+    (%assert-min-size child 80 42 "leaf margin min-size")
+    (%assert-min-size box 80 42 "hbox includes child margin min-size")
+    (layout root (make-rect :x 0 :y 0 :width 120 :height 80))
+    (%assert-rect child 10 5 50 30 "leaf margin shrinks allocated rect")))
+
+(%deftest test-73-container-margins-affect-min-size-and-child-placement
+  (let* ((child (make-instance 'color-rect :min-width 20 :min-height 10))
+         (box (make-instance 'vbox
+                             :children (list child)
+                             :padding-left 1 :padding-right 2
+                             :padding-top 3 :padding-bottom 4
+                             :margin-left 6 :margin-right 7
+                             :margin-top 8 :margin-bottom 9
+                             :spacing 0
+                             :align-x :start))
+         (root (make-instance 'window :width 100 :height 100 :child box)))
+    (%assert-min-size box 36 34 "container margin + padding min-size")
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 100))
+    (%assert-rect box 6 8 87 83 "container margin applied to own layout")
+    (%assert-rect child 7 11 20 10 "container margin and padding offset child")))
+
+(%deftest test-75-hbox-expanding-wrappers-equal-space-with-different-padding
+  (let* ((leaf-a (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (leaf-b (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (leaf-c (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (wrap-a (make-instance 'vbox
+                                :children (list leaf-a)
+                                :padding-left 0 :padding-right 0
+                                :padding-top 0 :padding-bottom 0
+                                :spacing 0
+                                :align-x :start))
+         (wrap-b (make-instance 'vbox
+                                :children (list leaf-b)
+                                :padding-left 25 :padding-right 25
+                                :padding-top 25 :padding-bottom 25
+                                :spacing 0
+                                :align-x :start))
+         (wrap-c (make-instance 'vbox
+                                :children (list leaf-c)
+                                :padding-left 50 :padding-right 50
+                                :padding-top 50 :padding-bottom 50
+                                :spacing 0
+                                :align-x :start))
+         (row (make-instance 'hbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-y :start))
+         (root (make-instance 'window :width 900 :height 300 :child row)))
+    (layout root (make-rect :x 0 :y 0 :width 900 :height 300))
+    (%assert-rect wrap-a 0 0 250 300 "hbox padded wrappers A min-size + equal extra")
+    (%assert-rect wrap-b 250 0 300 300 "hbox padded wrappers B min-size + equal extra")
+    (%assert-rect wrap-c 550 0 350 300 "hbox padded wrappers C min-size + equal extra")
+    (%assert-rect leaf-a 0 0 250 300 "hbox padded leaf A visible rect")
+    (%assert-rect leaf-b 275 25 250 250 "hbox padded leaf B visible rect")
+    (%assert-rect leaf-c 600 50 250 200 "hbox padded leaf C visible rect")))
+
+(%deftest test-76-vbox-expanding-wrappers-equal-space-with-different-padding
+  (let* ((leaf-a (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (leaf-b (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (leaf-c (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
+         (wrap-a (make-instance 'hbox
+                                :children (list leaf-a)
+                                :padding-left 0 :padding-right 0
+                                :padding-top 0 :padding-bottom 0
+                                :spacing 0
+                                :align-y :start))
+         (wrap-b (make-instance 'hbox
+                                :children (list leaf-b)
+                                :padding-left 25 :padding-right 25
+                                :padding-top 25 :padding-bottom 25
+                                :spacing 0
+                                :align-y :start))
+         (wrap-c (make-instance 'hbox
+                                :children (list leaf-c)
+                                :padding-left 50 :padding-right 50
+                                :padding-top 50 :padding-bottom 50
+                                :spacing 0
+                                :align-y :start))
+         (column (make-instance 'vbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-x :start))
+         (root (make-instance 'window :width 300 :height 900 :child column)))
+    (layout root (make-rect :x 0 :y 0 :width 300 :height 900))
+    (%assert-rect wrap-a 0 0 300 250 "vbox padded wrappers A min-size + equal extra")
+    (%assert-rect wrap-b 0 250 300 300 "vbox padded wrappers B min-size + equal extra")
+    (%assert-rect wrap-c 0 550 300 350 "vbox padded wrappers C min-size + equal extra")
+    (%assert-rect leaf-a 0 0 300 250 "vbox padded leaf A visible rect")
+    (%assert-rect leaf-b 25 275 250 250 "vbox padded leaf B visible rect")
+    (%assert-rect leaf-c 50 600 200 250 "vbox padded leaf C visible rect")))
 
 (%deftest test-41-nine-patch-min-size-no-child-borders-only
   (let ((panel (make-instance 'nine-patch
@@ -700,6 +822,14 @@
                                :child img)))
     (%assert-min-size panel 27 21 "image + borders minimum size")))
 
+(%deftest test-74-nine-patch-256-image-min-size-is-288
+  (let* ((img (make-instance 'image :surface '(:width 256 :height 256)))
+         (panel (make-instance 'nine-patch :surface '(:width 48 :height 48)
+                               :border-left 16 :border-right 16
+                               :border-top 16 :border-bottom 16
+                               :child img)))
+    (%assert-min-size panel 288 288 "nine-patch + 256 image min-size")))
+
 (%deftest test-55-rendered-text-surface-wraps-in-image-widget
   (let* ((gfx-pkg (find-package :minerva.gfx))
          (init (and gfx-pkg (find-symbol "INIT-BACKEND" gfx-pkg)))
@@ -717,7 +847,7 @@
          (progn
            (funcall (symbol-function init))
            (setf font (funcall (symbol-function get-font)
-                               (namestring (merge-pathnames "assets/fonts/inconsolata.ttf" (truename "./")))
+                               (%font-path)
                                16))
            (multiple-value-bind (w h) (funcall (symbol-function measure-text) font "Hello")
              (setf surface (funcall (symbol-function render-text) font "Hello"
@@ -748,6 +878,71 @@
     (%assert-equal (rect-width (widget-layout-rect left)) 20 "left image keeps native width")
     (%assert-equal (rect-width (widget-layout-rect right)) 30 "right image keeps native width")
     (%assert-equal (rect-width (widget-layout-rect fill)) 150 "filler absorbs extra width")))
+
+(%deftest test-58-window-centers-image-child
+  (let* ((img (make-instance 'image
+                             :surface '(:width 20 :height 10)
+                             :alignment :center))
+         (root (make-instance 'window :width 100 :height 60 :child img)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img))
+                   '(40 25 20 10)
+                   "window child image draw rect is centered")))
+
+(%deftest test-59-window-centers-color-rect-child
+  (let* ((child (make-instance 'color-rect
+                               :min-width 20
+                               :min-height 10
+                               :expand-x nil
+                               :expand-y nil
+                               :alignment :center))
+         (root (make-instance 'window :width 100 :height 60 :child child)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-rect child 40 25 20 10 "window child color-rect is centered")))
+
+(%deftest test-60-window-hbox-image-centers-like-direct-image
+  (let* ((img (make-instance 'image
+                             :surface '(:width 20 :height 10)
+                             :alignment :center))
+         (row (make-instance 'hbox
+                             :children (list img)
+                             :alignment :center))
+         (root (make-instance 'window :width 100 :height 60 :child row)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 60))
+    (%assert-equal (%rect-value-list (image-draw-rect img))
+                   '(40 25 20 10)
+                   "window->hbox->image is centered in same location")))
+
+(%deftest test-65-expand-does-not-change-min-size
+  (let* ((fixed (make-instance 'color-rect :min-width 40 :min-height 10 :expand-x nil :expand-y nil))
+         (expanding (make-instance 'color-rect :min-width 40 :min-height 10 :expand-x t :expand-y nil))
+         (fixed-box (make-instance 'hbox :children (list fixed)))
+         (expanding-box (make-instance 'hbox :children (list expanding))))
+    (%assert-min-size fixed-box 40 10 "fixed child min-size")
+    (%assert-min-size expanding-box 40 10 "expanding child same min-size")
+    (%assert-expand-flags fixed-box nil nil "fixed child does not propagate expand")
+    (%assert-expand-flags expanding-box t nil "expanding child propagates eligibility only")))
+
+(%deftest test-66-expand-does-not-force-upward-through-window
+  (let* ((child (make-instance 'color-rect :min-width 30 :min-height 12 :expand-x t :expand-y t))
+         (root (make-instance 'window :width 200 :height 100 :child child))
+         (request (measure root)))
+    (%assert-equal (size-request-min-width request) 30 "window min-width unchanged by child expand")
+    (%assert-equal (size-request-min-height request) 12 "window min-height unchanged by child expand")
+    (%assert-equal (size-request-expand-x request) nil "window does not force expand upward x")
+    (%assert-equal (size-request-expand-y request) nil "window does not force expand upward y")))
+
+(%deftest test-67-container-expand-is-parent-level-eligibility
+  (let* ((left-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x nil :expand-y nil))
+         (right-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x t :expand-y nil))
+         (left-box (make-instance 'hbox :children (list left-leaf)))
+         (right-box (make-instance 'hbox :children (list right-leaf)))
+         (parent (make-instance 'hbox :children (list left-box right-box) :spacing 0))
+         (root (make-instance 'window :width 100 :height 20 :child parent)))
+    (%assert-min-size parent 40 10 "parent min-size from children mins only")
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 20))
+    (%assert-rect left-box 0 0 20 10 "non-expanding container keeps min width")
+    (%assert-rect right-box 20 0 80 10 "expanding container receives parent leftover")))
 
 (%deftest test-63-nine-patch-layout-deterministic
   (let* ((child (make-instance 'color-rect :min-width 10 :min-height 10 :expand-x t :expand-y t))
@@ -830,6 +1025,14 @@
                          test-38-image-top-right-alignment
                          test-39-image-bottom-left-alignment
                          test-40-image-bottom-right-alignment
+                         test-68-image-top-center-alignment
+                         test-69-image-bottom-center-alignment
+                         test-70-image-left-alignment
+                         test-71-image-right-alignment
+                         test-72-widget-margins-affect-min-size-and-layout
+                         test-73-container-margins-affect-min-size-and-child-placement
+                         test-75-hbox-expanding-wrappers-equal-space-with-different-padding
+                         test-76-vbox-expanding-wrappers-equal-space-with-different-padding
                          test-41-nine-patch-min-size-no-child-borders-only
                          test-42-nine-patch-min-size-includes-child
                          test-43-nine-patch-min-size-updates-with-child-change
@@ -844,9 +1047,16 @@
                          test-52-nine-patch-renders-before-child
                          test-53-child-confined-to-content-area
                          test-54-image-inside-nine-patch-min-size
+                         test-74-nine-patch-256-image-min-size-is-288
                          test-55-rendered-text-surface-wraps-in-image-widget
                          test-56-nine-patch-containing-text-image-layout
                          test-57-hbox-with-images-and-filler
+                         test-58-window-centers-image-child
+                         test-59-window-centers-color-rect-child
+                         test-60-window-hbox-image-centers-like-direct-image
+                         test-65-expand-does-not-change-min-size
+                         test-66-expand-does-not-force-upward-through-window
+                         test-67-container-expand-is-parent-level-eligibility
                          test-63-nine-patch-layout-deterministic
                          test-64-image-render-deterministic))
     (%run-test-case test-symbol))

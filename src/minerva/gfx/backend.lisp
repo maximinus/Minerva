@@ -1,7 +1,24 @@
 (defpackage :minerva.gfx
   (:nicknames :minerva-gfx)
   (:use :cl :sb-alien)
-  (:shadow :position)
+  (:shadowing-import-from :minerva.common
+                          :position
+                          :make-position
+                          :position-x
+                          :position-y)
+  (:import-from :minerva.common
+                :rect
+                :make-rect
+                :rect-x
+                :rect-y
+                :rect-width
+                :rect-height
+                :color
+                :make-color
+                :color-r
+                :color-g
+                :color-b
+                :color-a)
   (:import-from :minerva.gfx.ffi
                 :event-none
                 :event-quit
@@ -116,22 +133,6 @@
   ((pointer :initarg :pointer :accessor pointer)
    (name :initarg :name :accessor font-name :initform "default")
    (size :initarg :size :accessor font-size :initform 12)))
-
-(defstruct position
-  (x 0 :type integer)
-  (y 0 :type integer))
-
-(defstruct rect
-  (x 0 :type integer)
-  (y 0 :type integer)
-  (width 0 :type integer)
-  (height 0 :type integer))
-
-(defstruct color
-  (r 0 :type integer)
-  (g 0 :type integer)
-  (b 0 :type integer)
-  (a 255 :type integer))
 
 (defun %null-pointer-p (ptr)
   (sb-alien:null-alien ptr))

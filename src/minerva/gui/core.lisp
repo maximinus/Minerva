@@ -1,6 +1,13 @@
 (defpackage :minerva.gui
   (:nicknames :minerva-gui)
   (:use :cl)
+  (:import-from :minerva.common
+                :rect
+                :make-rect
+                :rect-x
+                :rect-y
+                :rect-width
+                :rect-height)
   (:export
    :rect
    :make-rect
@@ -17,6 +24,10 @@
    :widget
    :widget-layout-rect
   :widget-content-alignment
+  :widget-margin-left
+  :widget-margin-right
+  :widget-margin-top
+  :widget-margin-bottom
    :measure
    :layout
    :render
@@ -69,12 +80,6 @@
 
 (in-package :minerva.gui)
 
-(defstruct rect
-  (x 0 :type integer)
-  (y 0 :type integer)
-  (width 0 :type integer)
-  (height 0 :type integer))
-
 (defstruct size-request
   (min-width 0 :type integer)
   (min-height 0 :type integer)
@@ -86,7 +91,19 @@
                 :accessor widget-layout-rect)
    (content-alignment :initarg :alignment
                       :initform :top-left
-                      :accessor widget-content-alignment)))
+                      :accessor widget-content-alignment)
+   (margin-left :initarg :margin-left
+                :initform 0
+                :accessor widget-margin-left)
+   (margin-right :initarg :margin-right
+                 :initform 0
+                 :accessor widget-margin-right)
+   (margin-top :initarg :margin-top
+               :initform 0
+               :accessor widget-margin-top)
+   (margin-bottom :initarg :margin-bottom
+                  :initform 0
+                  :accessor widget-margin-bottom)))
 
 (defgeneric measure (widget))
 (defgeneric layout (widget rect))
@@ -106,6 +123,26 @@
 
 (defun %non-negative-int (value)
   (max 0 (truncate value)))
+
+(defun %widget-margin-values (widget)
+  (values (%non-negative-int (widget-margin-left widget))
+          (%non-negative-int (widget-margin-right widget))
+          (%non-negative-int (widget-margin-top widget))
+          (%non-negative-int (widget-margin-bottom widget))))
+
+(defun %apply-widget-margins-to-size-request (widget request)
+  (multiple-value-bind (left right top bottom)
+      (%widget-margin-values widget)
+    (make-size-request
+     :min-width (+ left right (size-request-min-width request))
+     :min-height (+ top bottom (size-request-min-height request))
+     :expand-x (size-request-expand-x request)
+     :expand-y (size-request-expand-y request))))
+
+(defun %apply-widget-margins-to-rect (widget rect)
+  (multiple-value-bind (left right top bottom)
+      (%widget-margin-values widget)
+    (%compute-inner-rect rect left right top bottom)))
 
 (defun %align-position (start available-size child-size align)
   (case align
@@ -218,39 +255,55 @@
     (unless child
       (error "Window must have exactly one child."))
     (let ((child-request (measure child)))
-      (make-size-request
-       :min-width (size-request-min-width child-request)
-       :min-height (size-request-min-height child-request)
-       :expand-x nil
-       :expand-y nil))))
+      (%apply-widget-margins-to-size-request
+       w
+       (make-size-request
+        :min-width (size-request-min-width child-request)
+        :min-height (size-request-min-height child-request)
+        :expand-x nil
+        :expand-y nil)))))
 
 (defmethod layout ((w window) rect)
   (declare (ignore rect))
-  (let ((root-rect (make-rect :x 0
-                              :y 0
-                              :width (%non-negative-int (window-width w))
-                              :height (%non-negative-int (window-height w)))))
+  (let* ((outer-rect (make-rect :x 0
+                                :y 0
+                                :width (%non-negative-int (window-width w))
+                                :height (%non-negative-int (window-height w))))
+         (root-rect (%apply-widget-margins-to-rect w outer-rect)))
     (setf (widget-layout-rect w) root-rect))
   (let ((child (window-child w)))
     (unless child
       (error "Window must have exactly one child."))
     (let* ((request (measure child))
-           (root-width (%non-negative-int (window-width w)))
-           (root-height (%non-negative-int (window-height w)))
-          (hbox-class (find-class 'hbox nil))
-          (vbox-class (find-class 'vbox nil))
-          (container-child-p (or (and hbox-class (typep child hbox-class))
-                         (and vbox-class (typep child vbox-class))))
-           (child-width (if (or container-child-p
-                               (size-request-expand-x request))
+           (root-rect (widget-layout-rect w))
+           (root-x (rect-x root-rect))
+           (root-y (rect-y root-rect))
+           (root-width (rect-width root-rect))
+           (root-height (rect-height root-rect))
+           (hbox-class (find-class 'hbox nil))
+           (vbox-class (find-class 'vbox nil))
+           (container-child-p (or (and hbox-class (typep child hbox-class))
+                                  (and vbox-class (typep child vbox-class))))
+           (container-fill-by-default-p (and container-child-p
+                                             (eq (widget-content-alignment child) :top-left)))
+           (child-width (if (or (size-request-expand-x request)
+                               container-fill-by-default-p)
                             root-width
                             (size-request-min-width request)))
-           (child-height (if (or container-child-p
-                                (size-request-expand-y request))
+           (child-height (if (or (size-request-expand-y request)
+                                container-fill-by-default-p)
                              root-height
-                             (size-request-min-height request))))
-      (layout child (make-rect :x 0
-                               :y 0
+                             (size-request-min-height request)))
+           (child-x (%align-position root-x
+                                     root-width
+                                     child-width
+                                     (%alignment-x (widget-content-alignment child))))
+           (child-y (%align-position root-y
+                                     root-height
+                                     child-height
+                                     (%alignment-y (widget-content-alignment child)))))
+      (layout child (make-rect :x child-x
+                               :y child-y
                                :width child-width
                                :height child-height))))
   w)
@@ -280,21 +333,23 @@
         (setf max-min-height (max max-min-height (size-request-min-height req)))
         (setf expand-x (or expand-x (size-request-expand-x req)))
         (setf expand-y (or expand-y (size-request-expand-y req)))))
-    (make-size-request
-     :min-width (+ (hbox-padding-left box)
-                   (hbox-padding-right box)
-                   (%spacing-total (length children) (hbox-spacing box))
-                   total-min-width)
-     :min-height (+ (hbox-padding-top box)
-                    (hbox-padding-bottom box)
-                    max-min-height)
-     :expand-x expand-x
-     :expand-y expand-y)))
+    (%apply-widget-margins-to-size-request
+     box
+     (make-size-request
+      :min-width (+ (hbox-padding-left box)
+                    (hbox-padding-right box)
+                    (%spacing-total (length children) (hbox-spacing box))
+                    total-min-width)
+      :min-height (+ (hbox-padding-top box)
+                     (hbox-padding-bottom box)
+                     max-min-height)
+      :expand-x expand-x
+      :expand-y expand-y))))
 
 (defmethod layout ((box hbox) rect)
-  (setf (widget-layout-rect box) rect)
+  (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))
   (let* ((children (hbox-children box))
-         (inner (%compute-inner-rect rect
+         (inner (%compute-inner-rect (widget-layout-rect box)
                                     (hbox-padding-left box)
                                     (hbox-padding-right box)
                                     (hbox-padding-top box)
@@ -364,21 +419,23 @@
         (setf max-min-width (max max-min-width (size-request-min-width req)))
         (setf expand-x (or expand-x (size-request-expand-x req)))
         (setf expand-y (or expand-y (size-request-expand-y req)))))
-    (make-size-request
-     :min-width (+ (vbox-padding-left box)
-                   (vbox-padding-right box)
-                   max-min-width)
-     :min-height (+ (vbox-padding-top box)
-                    (vbox-padding-bottom box)
-                    (%spacing-total (length children) (vbox-spacing box))
-                    total-min-height)
-     :expand-x expand-x
-     :expand-y expand-y)))
+    (%apply-widget-margins-to-size-request
+     box
+     (make-size-request
+      :min-width (+ (vbox-padding-left box)
+                    (vbox-padding-right box)
+                    max-min-width)
+      :min-height (+ (vbox-padding-top box)
+                     (vbox-padding-bottom box)
+                     (%spacing-total (length children) (vbox-spacing box))
+                     total-min-height)
+      :expand-x expand-x
+      :expand-y expand-y))))
 
 (defmethod layout ((box vbox) rect)
-  (setf (widget-layout-rect box) rect)
+  (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))
   (let* ((children (vbox-children box))
-         (inner (%compute-inner-rect rect
+         (inner (%compute-inner-rect (widget-layout-rect box)
                                     (vbox-padding-left box)
                                     (vbox-padding-right box)
                                     (vbox-padding-top box)
@@ -435,14 +492,16 @@
    (color :initarg :color :accessor color-rect-color :initform '(255 255 255 255))))
 
 (defmethod measure ((rect-widget color-rect))
-  (make-size-request
-   :min-width (%non-negative-int (color-rect-min-width rect-widget))
-   :min-height (%non-negative-int (color-rect-min-height rect-widget))
-   :expand-x (not (null (color-rect-expand-x rect-widget)))
-   :expand-y (not (null (color-rect-expand-y rect-widget)))))
+  (%apply-widget-margins-to-size-request
+   rect-widget
+   (make-size-request
+    :min-width (%non-negative-int (color-rect-min-width rect-widget))
+    :min-height (%non-negative-int (color-rect-min-height rect-widget))
+    :expand-x (not (null (color-rect-expand-x rect-widget)))
+    :expand-y (not (null (color-rect-expand-y rect-widget))))))
 
 (defmethod layout ((rect-widget color-rect) rect)
-  (setf (widget-layout-rect rect-widget) rect)
+  (setf (widget-layout-rect rect-widget) (%apply-widget-margins-to-rect rect-widget rect))
   rect-widget)
 
 (defmethod render ((rect-widget color-rect) backend-window)
@@ -458,14 +517,16 @@
    (expand-y :initarg :expand-y :accessor filler-expand-y :initform nil)))
 
 (defmethod measure ((space filler))
-  (make-size-request
-   :min-width (%non-negative-int (filler-min-width space))
-   :min-height (%non-negative-int (filler-min-height space))
-   :expand-x (not (null (filler-expand-x space)))
-   :expand-y (not (null (filler-expand-y space)))))
+  (%apply-widget-margins-to-size-request
+   space
+   (make-size-request
+    :min-width (%non-negative-int (filler-min-width space))
+    :min-height (%non-negative-int (filler-min-height space))
+    :expand-x (not (null (filler-expand-x space)))
+    :expand-y (not (null (filler-expand-y space))))))
 
 (defmethod layout ((space filler) rect)
-  (setf (widget-layout-rect space) rect)
+  (setf (widget-layout-rect space) (%apply-widget-margins-to-rect space rect))
   space)
 
 (defmethod render ((space filler) backend-window)
@@ -499,14 +560,16 @@
                        :height draw-height))))
 
 (defmethod measure ((img image))
-  (make-size-request
-   :min-width (%surface-width (image-surface img))
-   :min-height (%surface-height (image-surface img))
-   :expand-x nil
-   :expand-y nil))
+  (%apply-widget-margins-to-size-request
+   img
+   (make-size-request
+    :min-width (%surface-width (image-surface img))
+    :min-height (%surface-height (image-surface img))
+    :expand-x nil
+    :expand-y nil)))
 
 (defmethod layout ((img image) rect)
-  (setf (widget-layout-rect img) rect)
+  (setf (widget-layout-rect img) (%apply-widget-margins-to-rect img rect))
   (multiple-value-bind (dest-rect source-rect)
       (%image-placement img)
     (declare (ignore source-rect))
@@ -554,19 +617,21 @@
          (right (%non-negative-border (nine-patch-border-right panel)))
          (top (%non-negative-border (nine-patch-border-top panel)))
          (bottom (%non-negative-border (nine-patch-border-bottom panel))))
-    (make-size-request
-     :min-width (+ left right (size-request-min-width child-request))
-     :min-height (+ top bottom (size-request-min-height child-request))
-     :expand-x (if child (size-request-expand-x child-request) nil)
-     :expand-y (if child (size-request-expand-y child-request) nil))))
+    (%apply-widget-margins-to-size-request
+     panel
+     (make-size-request
+      :min-width (+ left right (size-request-min-width child-request))
+      :min-height (+ top bottom (size-request-min-height child-request))
+      :expand-x (if child (size-request-expand-x child-request) nil)
+      :expand-y (if child (size-request-expand-y child-request) nil)))))
 
 (defmethod layout ((panel nine-patch) rect)
-  (setf (widget-layout-rect panel) rect)
+  (setf (widget-layout-rect panel) (%apply-widget-margins-to-rect panel rect))
   (let* ((left (%non-negative-border (nine-patch-border-left panel)))
          (right (%non-negative-border (nine-patch-border-right panel)))
          (top (%non-negative-border (nine-patch-border-top panel)))
          (bottom (%non-negative-border (nine-patch-border-bottom panel)))
-         (content (%compute-inner-rect rect left right top bottom))
+         (content (%compute-inner-rect (widget-layout-rect panel) left right top bottom))
          (child (nine-patch-child panel)))
     (setf (nine-patch-content-rect panel) content)
     (when child

@@ -12,6 +12,9 @@ SDL_ttf/
 build/
 .logs/
 
+# assets
+assets/
+
 # docs stuff
 docs/_build/
 docs/_static/
