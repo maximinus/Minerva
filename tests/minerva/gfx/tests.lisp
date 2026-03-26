@@ -85,14 +85,18 @@
              (when ,name
                (ignore-errors (destroy-surface ,name))))))))
 
+(defun %project-root ()
+  (or (ignore-errors (asdf:system-source-directory "minerva"))
+      (truename "./")))
+
 (defun %fixture-path (name)
   (namestring
    (merge-pathnames name
                     (merge-pathnames "fixtures/"
-                                     (merge-pathnames "tests/" (truename "./"))))))
+                                     (merge-pathnames "tests/" (%project-root))))))
 
 (defun %font-path ()
-  (namestring (merge-pathnames "assets/fonts/inconsolata.ttf" (truename "./"))))
+  (namestring (merge-pathnames "minerva/assets/fonts/inconsolata.ttf" (%project-root))))
 
 (%deftest test-01-position-stores-values
   (let ((pos (make-position :x 10 :y 20)))
