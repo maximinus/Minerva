@@ -55,6 +55,8 @@ int surface_is_rgba32(Surface *surface);
 
 int surface_fill_rect(Surface *surface, int x, int y, int width, int height,
                       unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+int surface_fill(Surface *surface,
+                 unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 int surface_read_pixel(Surface *surface, int x, int y,
                        unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a);
 

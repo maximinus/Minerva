@@ -35,7 +35,8 @@
                (when (eq (first event) :quit)
                  (minerva.gfx:request-window-close backend-window)))
              (minerva.gfx:begin-frame backend-window)
-             (minerva.gfx:clear-screen backend-window 0 0 0 255)
+             (minerva.gfx:clear-screen backend-window
+                                       (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
              (minerva.gui:layout ui-root (minerva.gui:make-rect :x 0 :y 0 :width width :height height))
              (minerva.gui:render ui-root backend-window)
              (minerva.gfx:end-frame backend-window)

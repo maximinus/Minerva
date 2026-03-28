@@ -91,8 +91,8 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 60))
          (box (make-instance 'hbox
                              :children (list a b c)
-                             :padding-left 10 :padding-right 20
-                             :padding-top 5 :padding-bottom 5
+                             :margin-left 10 :margin-right 20
+                             :margin-top 5 :margin-bottom 5
                              :spacing 7)))
     (%assert-min-size box 214 70 "hbox measure")))
 
@@ -102,8 +102,8 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 60))
          (box (make-instance 'vbox
                              :children (list a b c)
-                             :padding-left 3 :padding-right 4
-                             :padding-top 10 :padding-bottom 20
+                             :margin-left 3 :margin-right 4
+                             :margin-top 10 :margin-bottom 20
                              :spacing 5)))
     (%assert-min-size box 87 150 "vbox measure")))
 
@@ -113,7 +113,7 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 10))
          (box (make-instance 'hbox :children (list a b c) :spacing 10 :align-y :start))
          (root (make-instance 'window :width 300 :height 100 :child box)))
-    (%assert-min-size box 170 30 "hbox no-padding min-size")
+    (%assert-min-size box 170 30 "hbox no-margin min-size")
     (layout root (make-rect :x 0 :y 0 :width 300 :height 100))
     (%assert-rect a 0 0 50 20 "hbox child A")
     (%assert-rect b 60 0 60 30 "hbox child B")
@@ -125,7 +125,7 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 10))
          (box (make-instance 'vbox :children (list a b c) :spacing 8 :align-x :start))
          (root (make-instance 'window :width 200 :height 300 :child box)))
-    (%assert-min-size box 60 76 "vbox no-padding min-size")
+    (%assert-min-size box 60 76 "vbox no-margin min-size")
     (layout root (make-rect :x 0 :y 0 :width 200 :height 300))
     (%assert-rect a 0 0 50 20 "vbox child A")
     (%assert-rect b 0 28 60 30 "vbox child B")
@@ -267,17 +267,17 @@
     (%assert-rect a 0 0 100 50 "hbox main/cross A")
     (%assert-rect b 100 0 300 200 "hbox main/cross B")))
 
-(%deftest test-19-padding-reduces-inner-area
+(%deftest test-19-margin-reduces-inner-area
   (let* ((a (make-instance 'color-rect :min-width 50 :min-height 30))
          (box (make-instance 'hbox
                              :children (list a)
-                             :padding-left 10 :padding-right 20
-                             :padding-top 5 :padding-bottom 15
+                             :margin-left 10 :margin-right 20
+                             :margin-top 5 :margin-bottom 15
                              :spacing 0 :align-y :start))
          (root (make-instance 'window :width 300 :height 200 :child box)))
-    (%assert-min-size box 80 50 "hbox padding min-size")
+    (%assert-min-size box 80 50 "hbox margin min-size")
     (layout root (make-rect :x 0 :y 0 :width 300 :height 200))
-    (%assert-rect a 10 5 50 30 "hbox padding child")))
+    (%assert-rect a 10 5 50 30 "hbox margin child")))
 
 (%deftest test-20-nested-containers
   (let* ((top (make-instance 'color-rect :min-width 100 :min-height 50))
@@ -286,8 +286,8 @@
          (bottom (make-instance 'hbox :children (list left right) :spacing 10 :align-y :center))
          (root-box (make-instance 'vbox
                                   :children (list top bottom)
-                                  :padding-left 10 :padding-right 10
-                                  :padding-top 10 :padding-bottom 10
+                                  :margin-left 10 :margin-right 10
+                                  :margin-top 10 :margin-bottom 10
                                   :spacing 20 :align-x :start))
          (root (make-instance 'window :width 500 :height 300 :child root-box)))
     (%assert-min-size bottom 110 100 "nested bottom hbox min-size")
@@ -298,19 +298,19 @@
     (%assert-rect left 10 80 50 100 "nested bottom left")
     (%assert-rect right 70 105 50 50 "nested bottom right")))
 
-(%deftest test-21-empty-hbox-min-size-is-padding
+(%deftest test-21-empty-hbox-min-size-is-margin
   (let ((box (make-instance 'hbox
                             :children nil
-                            :padding-left 10 :padding-right 20
-                            :padding-top 5 :padding-bottom 15
+                            :margin-left 10 :margin-right 20
+                            :margin-top 5 :margin-bottom 15
                             :spacing 0)))
     (%assert-min-size box 30 20 "empty hbox")))
 
-(%deftest test-22-empty-vbox-min-size-is-padding
+(%deftest test-22-empty-vbox-min-size-is-margin
   (let ((box (make-instance 'vbox
                             :children nil
-                            :padding-left 10 :padding-right 20
-                            :padding-top 5 :padding-bottom 15
+                            :margin-left 10 :margin-right 20
+                            :margin-top 5 :margin-bottom 15
                             :spacing 0)))
     (%assert-min-size box 30 20 "empty vbox")))
 
@@ -363,11 +363,11 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 10 :expand-y t))
          (box (make-instance 'hbox
                              :children (list a b c)
-                             :padding-left 10 :padding-right 20
-                             :padding-top 5 :padding-bottom 5
+                             :margin-left 10 :margin-right 20
+                             :margin-top 5 :margin-bottom 5
                              :spacing 6)))
     (%assert-min-size box 212 40 "cross-axis expansion in hbox measure")
-    (%assert-expand-flags box nil t "cross-axis expansion aggregate flags")))
+                (%assert-expand-flags box nil nil "cross-axis expansion does not propagate upward")))
 
 (%deftest test-28-main-axis-expansion-not-in-cross-measure
   (let* ((a (make-instance 'color-rect :min-width 50 :min-height 20 :expand-y t))
@@ -375,19 +375,19 @@
          (c (make-instance 'color-rect :min-width 40 :min-height 10 :expand-y t))
          (box (make-instance 'vbox
                              :children (list a b c)
-                             :padding-left 3 :padding-right 4
-                             :padding-top 10 :padding-bottom 20
+                             :margin-left 3 :margin-right 4
+                             :margin-top 10 :margin-bottom 20
                              :spacing 5)))
     (%assert-min-size box 87 100 "main-axis expansion in vbox measure")
-    (%assert-expand-flags box nil t "main-axis expansion aggregate flags")))
+                (%assert-expand-flags box nil nil "main-axis expansion does not propagate upward")))
 
 (%deftest test-29-valid-layout-has-non-negative-rectangles
   (let* ((a (make-instance 'color-rect :min-width 30 :min-height 20))
          (b (make-instance 'color-rect :min-width 40 :min-height 10))
          (box (make-instance 'hbox
                              :children (list a b)
-                             :padding-left 10 :padding-right 5
-                             :padding-top 3 :padding-bottom 2
+                             :margin-left 10 :margin-right 5
+                             :margin-top 3 :margin-bottom 2
                              :spacing 4))
          (req (measure box))
          (root (make-instance 'window
@@ -408,13 +408,13 @@
          (right (make-instance 'color-rect :min-width 50 :min-height 30))
          (row (make-instance 'hbox
                              :children (list left fill right)
-                             :padding-left 5 :padding-right 5
-                             :padding-top 2 :padding-bottom 2
+                      :margin-left 5 :margin-right 5
+                      :margin-top 2 :margin-bottom 2
                              :spacing 10 :align-y :center))
          (column (make-instance 'vbox
                                 :children (list top row)
-                                :padding-left 7 :padding-right 7
-                                :padding-top 9 :padding-bottom 9
+                        :margin-left 7 :margin-right 7
+                        :margin-top 9 :margin-bottom 9
                                 :spacing 12 :align-x :start))
          (root (make-instance 'window :width 420 :height 260 :child column))
          (first-measure (measure column))
@@ -479,6 +479,8 @@
                                :border-right 7
                                :border-top 11
                                :border-bottom 13
+                               :expand-x t
+                               :expand-y t
                                :child child))
          (root (make-instance 'window :width 100 :height 80 :child panel)))
     (layout root (make-rect :x 0 :y 0 :width 100 :height 80))
@@ -557,81 +559,91 @@
   (let* ((child (make-instance 'color-rect :min-width 20 :min-height 10))
          (box (make-instance 'vbox
                              :children (list child)
-                             :padding-left 1 :padding-right 2
-                             :padding-top 3 :padding-bottom 4
-                             :margin-left 6 :margin-right 7
-                             :margin-top 8 :margin-bottom 9
+                             :margin-left 7 :margin-right 9
+                             :margin-top 11 :margin-bottom 13
                              :spacing 0
                              :align-x :start))
          (root (make-instance 'window :width 100 :height 100 :child box)))
-    (%assert-min-size box 36 34 "container margin + padding min-size")
+    (%assert-min-size box 36 34 "container margin min-size")
     (layout root (make-rect :x 0 :y 0 :width 100 :height 100))
-    (%assert-rect box 6 8 87 83 "container margin applied to own layout")
-    (%assert-rect child 7 11 20 10 "container margin and padding offset child")))
+    (%assert-rect box 7 11 84 76 "container margin applied to own layout")
+    (%assert-rect child 7 11 20 10 "container margin offset child")))
 
-(%deftest test-75-hbox-expanding-wrappers-equal-space-with-different-padding
+(%deftest test-75-hbox-expanding-wrappers-equal-space-with-different-margin
   (let* ((leaf-a (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (leaf-b (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (leaf-c (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (wrap-a (make-instance 'vbox
                                 :children (list leaf-a)
-                                :padding-left 0 :padding-right 0
-                                :padding-top 0 :padding-bottom 0
+                                :margin-left 0 :margin-right 0
+                                :margin-top 0 :margin-bottom 0
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-b (make-instance 'vbox
                                 :children (list leaf-b)
-                                :padding-left 25 :padding-right 25
-                                :padding-top 25 :padding-bottom 25
+                                :margin-left 25 :margin-right 25
+                                :margin-top 25 :margin-bottom 25
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-c (make-instance 'vbox
                                 :children (list leaf-c)
-                                :padding-left 50 :padding-right 50
-                                :padding-top 50 :padding-bottom 50
+                                :margin-left 50 :margin-right 50
+                                :margin-top 50 :margin-bottom 50
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (row (make-instance 'hbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-y :start))
          (root (make-instance 'window :width 900 :height 300 :child row)))
     (layout root (make-rect :x 0 :y 0 :width 900 :height 300))
-    (%assert-rect wrap-a 0 0 250 300 "hbox padded wrappers A min-size + equal extra")
-    (%assert-rect wrap-b 250 0 300 300 "hbox padded wrappers B min-size + equal extra")
-    (%assert-rect wrap-c 550 0 350 300 "hbox padded wrappers C min-size + equal extra")
-    (%assert-rect leaf-a 0 0 250 300 "hbox padded leaf A visible rect")
-    (%assert-rect leaf-b 275 25 250 250 "hbox padded leaf B visible rect")
-    (%assert-rect leaf-c 600 50 250 200 "hbox padded leaf C visible rect")))
+    (%assert-rect wrap-a 0 0 250 300 "hbox margin wrappers A min-size + equal extra")
+    (%assert-rect wrap-b 275 25 250 250 "hbox margin wrappers B min-size + equal extra")
+    (%assert-rect wrap-c 600 50 250 200 "hbox margin wrappers C min-size + equal extra")
+    (%assert-rect leaf-a 0 0 250 300 "hbox margin leaf A visible rect")
+    (%assert-rect leaf-b 275 25 250 250 "hbox margin leaf B visible rect")
+    (%assert-rect leaf-c 600 50 250 200 "hbox margin leaf C visible rect")))
 
-(%deftest test-76-vbox-expanding-wrappers-equal-space-with-different-padding
+(%deftest test-76-vbox-expanding-wrappers-equal-space-with-different-margin
   (let* ((leaf-a (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (leaf-b (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (leaf-c (make-instance 'color-rect :min-width 0 :min-height 0 :expand-x t :expand-y t))
          (wrap-a (make-instance 'hbox
                                 :children (list leaf-a)
-                                :padding-left 0 :padding-right 0
-                                :padding-top 0 :padding-bottom 0
+                                :margin-left 0 :margin-right 0
+                                :margin-top 0 :margin-bottom 0
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-b (make-instance 'hbox
                                 :children (list leaf-b)
-                                :padding-left 25 :padding-right 25
-                                :padding-top 25 :padding-bottom 25
+                                :margin-left 25 :margin-right 25
+                                :margin-top 25 :margin-bottom 25
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-c (make-instance 'hbox
                                 :children (list leaf-c)
-                                :padding-left 50 :padding-right 50
-                                :padding-top 50 :padding-bottom 50
+                                :margin-left 50 :margin-right 50
+                                :margin-top 50 :margin-bottom 50
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (column (make-instance 'vbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-x :start))
          (root (make-instance 'window :width 300 :height 900 :child column)))
     (layout root (make-rect :x 0 :y 0 :width 300 :height 900))
-    (%assert-rect wrap-a 0 0 300 250 "vbox padded wrappers A min-size + equal extra")
-    (%assert-rect wrap-b 0 250 300 300 "vbox padded wrappers B min-size + equal extra")
-    (%assert-rect wrap-c 0 550 300 350 "vbox padded wrappers C min-size + equal extra")
-    (%assert-rect leaf-a 0 0 300 250 "vbox padded leaf A visible rect")
-    (%assert-rect leaf-b 25 275 250 250 "vbox padded leaf B visible rect")
-    (%assert-rect leaf-c 50 600 200 250 "vbox padded leaf C visible rect")))
+    (%assert-rect wrap-a 0 0 300 250 "vbox margin wrappers A min-size + equal extra")
+    (%assert-rect wrap-b 25 275 250 250 "vbox margin wrappers B min-size + equal extra")
+    (%assert-rect wrap-c 50 600 200 250 "vbox margin wrappers C min-size + equal extra")
+    (%assert-rect leaf-a 0 0 300 250 "vbox margin leaf A visible rect")
+    (%assert-rect leaf-b 25 275 250 250 "vbox margin leaf B visible rect")
+    (%assert-rect leaf-c 50 600 200 250 "vbox margin leaf C visible rect")))
 
 (%deftest test-41-nine-patch-min-size-no-child-borders-only
   (let ((panel (make-instance 'nine-patch
@@ -921,7 +933,7 @@
     (%assert-min-size fixed-box 40 10 "fixed child min-size")
     (%assert-min-size expanding-box 40 10 "expanding child same min-size")
     (%assert-expand-flags fixed-box nil nil "fixed child does not propagate expand")
-    (%assert-expand-flags expanding-box t nil "expanding child propagates eligibility only")))
+    (%assert-expand-flags expanding-box nil nil "expanding child does not propagate eligibility")))
 
 (%deftest test-66-expand-does-not-force-upward-through-window
   (let* ((child (make-instance 'color-rect :min-width 30 :min-height 12 :expand-x t :expand-y t))
@@ -942,7 +954,18 @@
     (%assert-min-size parent 40 10 "parent min-size from children mins only")
     (layout root (make-rect :x 0 :y 0 :width 100 :height 20))
     (%assert-rect left-box 0 0 20 10 "non-expanding container keeps min width")
-    (%assert-rect right-box 20 0 80 10 "expanding container receives parent leftover")))
+    (%assert-rect right-box 20 0 20 10 "child expand does not make parent container expand")))
+
+(%deftest test-77-container-expands-only-when-explicitly-set
+  (let* ((left-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x nil :expand-y nil))
+         (right-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x t :expand-y nil))
+         (left-box (make-instance 'hbox :children (list left-leaf) :expand-x nil))
+         (right-box (make-instance 'hbox :children (list right-leaf) :expand-x t))
+         (parent (make-instance 'hbox :children (list left-box right-box) :spacing 0))
+         (root (make-instance 'window :width 100 :height 20 :child parent)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 20))
+    (%assert-rect left-box 0 0 20 10 "non-expanding container keeps min width")
+    (%assert-rect right-box 20 0 80 10 "container expands only when explicitly set")))
 
 (%deftest test-63-nine-patch-layout-deterministic
   (let* ((child (make-instance 'color-rect :min-width 10 :min-height 10 :expand-x t :expand-y t))
@@ -982,6 +1005,46 @@
       (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old))
     (%assert-equal calls-a calls-b "image render deterministic draw calls")))
 
+(%deftest test-78-widget-background-color-fills-consumed-area-including-margins
+  (let* ((calls '())
+         (img (make-instance 'image
+                             :surface '(:width 5 :height 5)
+                             :background-color (minerva.common:make-color :r 10 :g 20 :b 30 :a 40)
+                             :margin-left 3 :margin-right 4 :margin-top 5 :margin-bottom 6))
+         (old-fill (symbol-function 'minerva.gui::%call-fill-rect))
+         (old-draw (symbol-function 'minerva.gui::%call-draw-surface-rect)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%call-fill-rect)
+                 (lambda (backend-window rect color)
+                   (declare (ignore backend-window))
+                   (push (list :fill (%rect-value-list rect) color) calls)))
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (push (list :draw) calls)))
+           (layout img (make-rect :x 10 :y 20 :width 30 :height 40))
+           (render img nil))
+      (setf (symbol-function 'minerva.gui::%call-fill-rect) old-fill)
+      (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old-draw))
+    (%assert-equal (second (first (last calls))) '(10 20 30 40) "background covers consumed area including margins")
+    (%assert-equal (first (car calls)) :draw "image draws after background fill")))
+
+(%deftest test-79-widget-background-color-nil-does-not-fill
+  (let* ((fill-count 0)
+         (rect-widget (make-instance 'color-rect :min-width 10 :min-height 10 :color '(1 2 3 255)))
+         (old-fill (symbol-function 'minerva.gui::%call-fill-rect)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%call-fill-rect)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (incf fill-count)))
+           (layout rect-widget (make-rect :x 0 :y 0 :width 10 :height 10))
+           (render rect-widget nil))
+      (setf (symbol-function 'minerva.gui::%call-fill-rect) old-fill))
+    (%assert-equal fill-count 1 "only widget draw fill called when background-color is nil")))
+
 (defun run-gui-layout-tests ()
   (setf *test-count* 0
         *test-failures* 0)
@@ -1003,10 +1066,10 @@
                          test-16-vbox-align-end
                          test-17-hbox-cross-axis-expansion
                          test-18-hbox-main-and-cross-expansion
-                         test-19-padding-reduces-inner-area
+                         test-19-margin-reduces-inner-area
                          test-20-nested-containers
-                         test-21-empty-hbox-min-size-is-padding
-                         test-22-empty-vbox-min-size-is-padding
+                         test-21-empty-hbox-min-size-is-margin
+                         test-22-empty-vbox-min-size-is-margin
                          test-23-single-child-hbox
                          test-24-single-child-vbox
                          test-25-no-expanders-leave-extra-unassigned
@@ -1031,8 +1094,8 @@
                          test-71-image-right-alignment
                          test-72-widget-margins-affect-min-size-and-layout
                          test-73-container-margins-affect-min-size-and-child-placement
-                         test-75-hbox-expanding-wrappers-equal-space-with-different-padding
-                         test-76-vbox-expanding-wrappers-equal-space-with-different-padding
+                         test-75-hbox-expanding-wrappers-equal-space-with-different-margin
+                         test-76-vbox-expanding-wrappers-equal-space-with-different-margin
                          test-41-nine-patch-min-size-no-child-borders-only
                          test-42-nine-patch-min-size-includes-child
                          test-43-nine-patch-min-size-updates-with-child-change
@@ -1057,8 +1120,11 @@
                          test-65-expand-does-not-change-min-size
                          test-66-expand-does-not-force-upward-through-window
                          test-67-container-expand-is-parent-level-eligibility
+                         test-77-container-expands-only-when-explicitly-set
                          test-63-nine-patch-layout-deterministic
-                         test-64-image-render-deterministic))
+                         test-64-image-render-deterministic
+                         test-78-widget-background-color-fills-consumed-area-including-margins
+                         test-79-widget-background-color-nil-does-not-fill))
     (%run-test-case test-symbol))
   (format t "~%Executed ~D assertions.~%" *test-count*)
   (if (zerop *test-failures*)

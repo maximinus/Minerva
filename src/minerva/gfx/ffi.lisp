@@ -34,6 +34,7 @@
   :%surface-height
   :%surface-is-rgba32
   :%surface-fill-rect
+  :%surface-fill
   :%surface-read-pixel
   :%surface-blit
   :%surface-blit-rect
@@ -181,6 +182,13 @@
   (y int)
   (width int)
   (height int)
+  (r unsigned-char)
+  (g unsigned-char)
+  (b unsigned-char)
+  (a unsigned-char))
+
+(define-alien-routine ("surface_fill" %surface-fill) int
+  (surface c-surface)
   (r unsigned-char)
   (g unsigned-char)
   (b unsigned-char)

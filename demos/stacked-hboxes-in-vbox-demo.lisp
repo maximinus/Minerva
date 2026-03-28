@@ -1,5 +1,5 @@
-;; Run from project root with: sbcl --script demos/expand-vbox-margins-demo.lisp
-;; draws 3 color-rects in a vbox with no margins
+;; Run from project root with: sbcl --script demos/stacked-hboxes-in-vbox-demo.lisp
+;; draws 3 expanding hboxes stacked inside 1 expanding vbox
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
@@ -12,20 +12,38 @@
                  :expand-x t
                  :expand-y t))
 
-(defun run-expand-vbox-margins-demo (&key (title "Minerva VBox Expand + Margins Demo")
-                                          (width 800)
-                                          (height 600)
-                                          (max-runtime-ms 12000))
+(defun make-expand-row (color-a color-b color-c)
+  (make-instance 'minerva.gui:hbox
+                 :spacing 20
+                 :expand-x t
+                 :expand-y t
+                 :children (list (make-expand-color color-a)
+                                 (make-expand-color color-b)
+                                 (make-expand-color color-c))))
+
+(defun run-stacked-hboxes-in-vbox-demo (&key (title "Minerva Stacked HBoxes in VBox Demo")
+                                             (width 1000)
+                                             (height 700)
+                                             (max-runtime-ms 12000))
   (minerva.gfx:init-backend)
   (let* ((window (minerva.gfx:create-window :title title :width width :height height))
          (root-widget (make-instance 'minerva.gui:window
                                      :width width
                                      :height height
                                      :child (make-instance 'minerva.gui:vbox
+                                                          :expand-x t
+                                                          :expand-y t
+                                                          :spacing 5
                                                           :children (list
-                                                                     (make-expand-color '(255 179 186 255))
-                                                                     (make-expand-color '(186 255 201 255))
-                                                                     (make-expand-color '(255 223 186 255))))))
+                                                                     (make-expand-row '(255 102 102 255)
+                                                                                      '(255 178 102 255)
+                                                                                      '(255 255 102 255))
+                                                                     (make-expand-row '(102 204 255 255)
+                                                                                      '(153 153 255 255)
+                                                                                      '(204 153 255 255))
+                                                                     (make-expand-row '(102 255 178 255)
+                                                                                      '(153 255 153 255)
+                                                                                      '(255 153 204 255))))))
          (start-time (minerva.gfx:ticks-ms)))
     (unwind-protect
          (loop until (minerva.gfx:window-should-close-p window) do
@@ -53,4 +71,4 @@
       (minerva.gfx:destroy-window window)
       (minerva.gfx:shutdown-backend))))
 
-(run-expand-vbox-margins-demo)
+(run-stacked-hboxes-in-vbox-demo)

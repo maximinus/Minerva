@@ -1,4 +1,5 @@
 ;; Run from project root with: sbcl --script demos/expand-hbox-margins-demo.lisp
+;; draws 3 color-rects in with differing margins
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
@@ -46,7 +47,7 @@
                                                         :width window-width
                                                         :height window-height))
              (minerva.gfx:begin-frame window)
-             (minerva.gfx:clear-screen window 0 0 0 255)
+             (minerva.gfx:clear-screen window (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
              (minerva.gui:render root-widget window)
              (minerva.gfx:end-frame window))
 

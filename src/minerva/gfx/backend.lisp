@@ -53,6 +53,7 @@
                 :%surface-height
                 :%surface-is-rgba32
                 :%surface-fill-rect
+                :%surface-fill
                 :%surface-read-pixel
                 :%surface-blit
                 :%surface-blit-rect
@@ -106,6 +107,7 @@
   :surface-height
   :surface-rgba32-p
   :fill-surface-rect
+  :fill-surface
   :read-surface-pixel
   :blit-surface
   :blit-surface-rect
@@ -219,12 +221,24 @@
   (%begin-frame (pointer window))
   t)
 
-(defun clear-screen (window r g b a)
-  (%clear (pointer window) r g b a)
+(defun clear-screen (window color)
+  (%clear (pointer window)
+          (color-r color)
+          (color-g color)
+          (color-b color)
+          (color-a color))
   t)
 
-(defun fill-rect (window x y width height r g b a)
-  (%fill-rect (pointer window) x y width height r g b a)
+(defun fill-rect (window rect color)
+  (%fill-rect (pointer window)
+              (rect-x rect)
+              (rect-y rect)
+              (rect-width rect)
+              (rect-height rect)
+              (color-r color)
+              (color-g color)
+              (color-b color)
+              (color-a color))
   t)
 
 (defun end-frame (window)
@@ -276,6 +290,15 @@
                                    (color-b color)
                                    (color-a color)))
     (%signal-ffi-error "surface_fill_rect" "surface_fill_rect failed"))
+  t)
+
+(defun fill-surface (surface color)
+  (unless (= 1 (%surface-fill (pointer surface)
+                              (color-r color)
+                              (color-g color)
+                              (color-b color)
+                              (color-a color)))
+    (%signal-ffi-error "surface_fill" "surface_fill failed"))
   t)
 
 (defun read-surface-pixel (surface position)
