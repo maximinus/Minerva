@@ -28,3 +28,7 @@
 - Keep changes minimal and scoped.
 - Preserve existing architecture and test flow.
 - Update docs/scripts when changing developer workflow.
+
+## Lisp GUI coding notes
+- Prefer existing widget capabilities over custom one-off logic.
+- Prefer existing helper structs for cross-function data (e.g., `size`, `rect`).

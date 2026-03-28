@@ -89,6 +89,19 @@
   :label-color
   :label-surface
   :label-draw-rect
+  :button
+  :button-text
+  :button-font-name
+  :button-text-size
+  :button-color
+  :button-padding-x
+  :button-padding-y
+  :button-state
+  :button-normal-surface
+  :button-highlighted-surface
+  :button-pressed-surface
+  :button-text-surface
+  :button-text-draw-rect
   :nine-patch
   :nine-patch-surface
   :nine-patch-border-left
