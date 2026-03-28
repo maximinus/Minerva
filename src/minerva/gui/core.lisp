@@ -82,6 +82,13 @@
   :image
   :image-surface
   :image-draw-rect
+  :label
+  :label-text
+  :label-font-name
+  :label-text-size
+  :label-color
+  :label-surface
+  :label-draw-rect
   :nine-patch
   :nine-patch-surface
   :nine-patch-border-left

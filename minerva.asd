@@ -14,6 +14,7 @@
     (:file "src/minerva/gui/color-rect")
     (:file "src/minerva/gui/filler")
     (:file "src/minerva/gui/image")
+    (:file "src/minerva/gui/label")
     (:file "src/minerva/gui/nine-patch")
      (:file "src/minerva/events")))
 
@@ -29,6 +30,7 @@
    (:file "tests/minerva/gui/test-vbox")
    (:file "tests/minerva/gui/test-filler")
    (:file "tests/minerva/gui/test-image")
+  (:file "tests/minerva/gui/test-label")
    (:file "tests/minerva/gui/test-color-rect")
    (:file "tests/minerva/gui/test-nine-patch")
    (:file "tests/minerva/gui/tests")

@@ -9,6 +9,7 @@ option(MINERVA_BUILD_SMOKE_TEST "Build native smoke test executable" ON)
 option(MINERVA_FETCH_SDL3 "Fetch SDL3 source when system package is unavailable" ON)
 
 find_package(SDL3 QUIET CONFIG)
+find_package(Freetype REQUIRED)
 
 if(NOT SDL3_FOUND)
     if(MINERVA_FETCH_SDL3)
@@ -37,6 +38,7 @@ target_include_directories(minerva_native
 target_link_libraries(minerva_native
     PRIVATE
         SDL3::SDL3
+    Freetype::Freetype
 )
 
 set_target_properties(minerva_native PROPERTIES

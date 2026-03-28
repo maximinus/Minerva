@@ -1,6 +1,8 @@
 #include "minerva_native.h"
 
 #include <SDL3/SDL.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -20,9 +22,64 @@ struct Surface {
 struct Font {
     char *name_or_path;
     int size;
+    FT_Face face;
 };
 
 static char g_last_error[512];
+static FT_Library g_ft_library = NULL;
+static bool g_ft_initialized = false;
+
+static bool utf8_next_codepoint(const char *text, size_t text_len, size_t *index, unsigned int *codepoint) {
+    if (text == NULL || index == NULL || codepoint == NULL || *index >= text_len) {
+        return false;
+    }
+
+    unsigned char c0 = (unsigned char)text[*index];
+    if (c0 < 0x80) {
+        *codepoint = c0;
+        *index += 1;
+        return true;
+    }
+
+    if ((c0 & 0xE0) == 0xC0 && (*index + 1) < text_len) {
+        unsigned char c1 = (unsigned char)text[*index + 1];
+        if ((c1 & 0xC0) == 0x80) {
+            *codepoint = ((unsigned int)(c0 & 0x1F) << 6) | (unsigned int)(c1 & 0x3F);
+            *index += 2;
+            return true;
+        }
+    }
+
+    if ((c0 & 0xF0) == 0xE0 && (*index + 2) < text_len) {
+        unsigned char c1 = (unsigned char)text[*index + 1];
+        unsigned char c2 = (unsigned char)text[*index + 2];
+        if (((c1 & 0xC0) == 0x80) && ((c2 & 0xC0) == 0x80)) {
+            *codepoint = ((unsigned int)(c0 & 0x0F) << 12)
+                       | ((unsigned int)(c1 & 0x3F) << 6)
+                       | (unsigned int)(c2 & 0x3F);
+            *index += 3;
+            return true;
+        }
+    }
+
+    if ((c0 & 0xF8) == 0xF0 && (*index + 3) < text_len) {
+        unsigned char c1 = (unsigned char)text[*index + 1];
+        unsigned char c2 = (unsigned char)text[*index + 2];
+        unsigned char c3 = (unsigned char)text[*index + 3];
+        if (((c1 & 0xC0) == 0x80) && ((c2 & 0xC0) == 0x80) && ((c3 & 0xC0) == 0x80)) {
+            *codepoint = ((unsigned int)(c0 & 0x07) << 18)
+                       | ((unsigned int)(c1 & 0x3F) << 12)
+                       | ((unsigned int)(c2 & 0x3F) << 6)
+                       | (unsigned int)(c3 & 0x3F);
+            *index += 4;
+            return true;
+        }
+    }
+
+    *codepoint = 0xFFFDu;
+    *index += 1;
+    return true;
+}
 
 static void set_last_error_from_sdl(void) {
     const char *sdl_error = SDL_GetError();
@@ -110,10 +167,21 @@ int init(void) {
         set_last_error_from_sdl();
         return 0;
     }
+    if (FT_Init_FreeType(&g_ft_library) != 0) {
+        set_last_error_literal("freetype init failed");
+        SDL_Quit();
+        return 0;
+    }
+    g_ft_initialized = true;
     return 1;
 }
 
 void minerva_shutdown(void) {
+    if (g_ft_initialized && g_ft_library != NULL) {
+        FT_Done_FreeType(g_ft_library);
+        g_ft_library = NULL;
+        g_ft_initialized = false;
+    }
     SDL_Quit();
 }
 
@@ -624,6 +692,11 @@ Font *font_get(const char *name_or_path, int size) {
         return NULL;
     }
 
+    if (!g_ft_initialized || g_ft_library == NULL) {
+        set_last_error_literal("freetype is not initialized");
+        return NULL;
+    }
+
     Font *font = (Font *)SDL_calloc(1, sizeof(Font));
     if (font == NULL) {
         set_last_error_from_sdl();
@@ -646,6 +719,22 @@ Font *font_get(const char *name_or_path, int size) {
         SDL_free(font);
         return NULL;
     }
+
+    if (FT_New_Face(g_ft_library, resolved_name, 0, &font->face) != 0) {
+        set_last_error_literal("font file could not be loaded by freetype");
+        SDL_free(font->name_or_path);
+        SDL_free(font);
+        return NULL;
+    }
+
+    if (FT_Set_Pixel_Sizes(font->face, 0, (unsigned int)size) != 0) {
+        set_last_error_literal("freetype failed to set pixel size");
+        FT_Done_Face(font->face);
+        SDL_free(font->name_or_path);
+        SDL_free(font);
+        return NULL;
+    }
+
     font->size = size;
     return font;
 }
@@ -653,6 +742,10 @@ Font *font_get(const char *name_or_path, int size) {
 void font_destroy(Font *font) {
     if (font == NULL) {
         return;
+    }
+    if (font->face != NULL) {
+        FT_Done_Face(font->face);
+        font->face = NULL;
     }
     if (font->name_or_path != NULL) {
         SDL_free(font->name_or_path);
@@ -662,15 +755,39 @@ void font_destroy(Font *font) {
 }
 
 int font_measure_text(Font *font, const char *text, int *width, int *height) {
-    if (font == NULL) {
+    if (font == NULL || font->face == NULL) {
         set_last_error_literal("font is null");
         return 0;
     }
 
     size_t text_len = text != NULL ? SDL_strlen(text) : 0;
-    int glyph_width = (font->size >= 2) ? (font->size * 3 / 5) : 1;
-    int measured_width = (int)text_len * glyph_width;
+    int measured_width = 0;
     int measured_height = font->size;
+
+    FT_UInt prev_glyph_index = 0;
+    size_t index = 0;
+    while (index < text_len) {
+        unsigned int codepoint = 0;
+        if (!utf8_next_codepoint(text, text_len, &index, &codepoint)) {
+            break;
+        }
+
+        FT_UInt glyph_index = FT_Get_Char_Index(font->face, codepoint);
+        if (FT_HAS_KERNING(font->face) && prev_glyph_index != 0 && glyph_index != 0) {
+            FT_Vector kerning;
+            if (FT_Get_Kerning(font->face, prev_glyph_index, glyph_index, FT_KERNING_DEFAULT, &kerning) == 0) {
+                measured_width += (int)(kerning.x >> 6);
+            }
+        }
+
+        if (FT_Load_Glyph(font->face, glyph_index, FT_LOAD_DEFAULT) != 0) {
+            set_last_error_literal("freetype failed to load glyph for measure");
+            return 0;
+        }
+
+        measured_width += (int)(font->face->glyph->advance.x >> 6);
+        prev_glyph_index = glyph_index;
+    }
 
     if (width != NULL) {
         *width = measured_width;
@@ -683,7 +800,7 @@ int font_measure_text(Font *font, const char *text, int *width, int *height) {
 
 Surface *font_render_text(Font *font, const char *text,
                           unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-    if (font == NULL) {
+    if (font == NULL || font->face == NULL) {
         set_last_error_literal("font is null");
         return NULL;
     }
@@ -701,33 +818,112 @@ Surface *font_render_text(Font *font, const char *text,
         return NULL;
     }
 
-    size_t text_len = text != NULL ? SDL_strlen(text) : 0;
-    int glyph_width = (font->size >= 2) ? (font->size * 3 / 5) : 1;
-    int glyph_height = (font->size >= 2) ? (font->size - 1) : 1;
-    Uint32 aa_color = SDL_MapSurfaceRGBA(surface->surface, r, g, b, (Uint8)(a / 2));
-    Uint32 fg_color = SDL_MapSurfaceRGBA(surface->surface, r, g, b, a);
+    if (!SDL_LockSurface(surface->surface)) {
+        set_last_error_from_sdl();
+        surface_destroy(surface);
+        return NULL;
+    }
 
-    for (size_t i = 0; i < text_len; ++i) {
-        unsigned char ch = (unsigned char)text[i];
-        if (ch == ' ' || ch == '\t') {
-            continue;
-        }
-
-        int x = (int)i * glyph_width;
-        SDL_Rect aa_rect = { x, 0, glyph_width, glyph_height };
-        SDL_Rect fg_rect = { x + 1, 1, glyph_width - 2 > 0 ? glyph_width - 2 : 1, glyph_height - 2 > 0 ? glyph_height - 2 : 1 };
-
-        if (!SDL_FillSurfaceRect(surface->surface, &aa_rect, aa_color)) {
-            set_last_error_from_sdl();
-            surface_destroy(surface);
-            return NULL;
-        }
-        if (!SDL_FillSurfaceRect(surface->surface, &fg_rect, fg_color)) {
-            set_last_error_from_sdl();
-            surface_destroy(surface);
-            return NULL;
+    int pen_x = 0;
+    int baseline = 0;
+    if (font->face->size != NULL) {
+        baseline = (int)(font->face->size->metrics.ascender >> 6);
+        if (baseline < 0) {
+            baseline = 0;
         }
     }
+
+    size_t text_len = text != NULL ? SDL_strlen(text) : 0;
+    size_t index = 0;
+    FT_UInt prev_glyph_index = 0;
+    Uint8 *pixels = (Uint8 *)surface->surface->pixels;
+    int pitch = surface->surface->pitch;
+    const SDL_PixelFormatDetails *format_details = SDL_GetPixelFormatDetails(surface->surface->format);
+    if (format_details == NULL) {
+        SDL_UnlockSurface(surface->surface);
+        set_last_error_from_sdl();
+        surface_destroy(surface);
+        return NULL;
+    }
+
+    while (index < text_len) {
+        unsigned int codepoint = 0;
+        if (!utf8_next_codepoint(text, text_len, &index, &codepoint)) {
+            break;
+        }
+
+        FT_UInt glyph_index = FT_Get_Char_Index(font->face, codepoint);
+        if (FT_HAS_KERNING(font->face) && prev_glyph_index != 0 && glyph_index != 0) {
+            FT_Vector kerning;
+            if (FT_Get_Kerning(font->face, prev_glyph_index, glyph_index, FT_KERNING_DEFAULT, &kerning) == 0) {
+                pen_x += (int)(kerning.x >> 6);
+            }
+        }
+
+        if (FT_Load_Glyph(font->face, glyph_index, FT_LOAD_DEFAULT | FT_LOAD_TARGET_NORMAL) != 0) {
+            SDL_UnlockSurface(surface->surface);
+            set_last_error_literal("freetype failed to render glyph");
+            surface_destroy(surface);
+            return NULL;
+        }
+
+        if (FT_Render_Glyph(font->face->glyph, FT_RENDER_MODE_NORMAL) != 0) {
+            SDL_UnlockSurface(surface->surface);
+            set_last_error_literal("freetype failed to rasterize glyph in normal mode");
+            surface_destroy(surface);
+            return NULL;
+        }
+
+        FT_GlyphSlot glyph = font->face->glyph;
+        FT_Bitmap *bitmap = &glyph->bitmap;
+        int glyph_x = pen_x + glyph->bitmap_left;
+        int glyph_y = baseline - glyph->bitmap_top;
+
+        for (int row = 0; row < (int)bitmap->rows; ++row) {
+            for (int col = 0; col < (int)bitmap->width; ++col) {
+                int dst_x = glyph_x + col;
+                int dst_y = glyph_y + row;
+                if (dst_x < 0 || dst_y < 0 || dst_x >= safe_width || dst_y >= safe_height) {
+                    continue;
+                }
+
+                unsigned char coverage = 0;
+                if (bitmap->pixel_mode == FT_PIXEL_MODE_GRAY) {
+                    coverage = bitmap->buffer[row * bitmap->pitch + col];
+                } else if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
+                    unsigned char byte = bitmap->buffer[row * bitmap->pitch + (col >> 3)];
+                    unsigned char bit = (unsigned char)(0x80u >> (col & 7));
+                    coverage = (byte & bit) ? 255 : 0;
+                }
+                if (coverage == 0) {
+                    continue;
+                }
+
+                Uint8 effective_alpha = (Uint8)(((unsigned int)a * (unsigned int)coverage) / 255u);
+                Uint32 *row = (Uint32 *)(pixels + (dst_y * pitch));
+                Uint32 dst_pixel = row[dst_x];
+                Uint8 dst_r = 0;
+                Uint8 dst_g = 0;
+                Uint8 dst_b = 0;
+                Uint8 dst_a = 0;
+                SDL_GetRGBA(dst_pixel, format_details, NULL, &dst_r, &dst_g, &dst_b, &dst_a);
+
+                unsigned int src_a = effective_alpha;
+                unsigned int inv_a = 255u - src_a;
+
+                Uint8 out_r = (Uint8)((r * src_a + dst_r * inv_a) / 255u);
+                Uint8 out_g = (Uint8)((g * src_a + dst_g * inv_a) / 255u);
+                Uint8 out_b = (Uint8)((b * src_a + dst_b * inv_a) / 255u);
+                Uint8 out_a = (Uint8)(src_a + ((unsigned int)dst_a * inv_a) / 255u);
+                row[dst_x] = SDL_MapRGBA(format_details, NULL, out_r, out_g, out_b, out_a);
+            }
+        }
+
+        pen_x += (int)(glyph->advance.x >> 6);
+        prev_glyph_index = glyph_index;
+    }
+
+    SDL_UnlockSurface(surface->surface);
 
     return surface;
 }

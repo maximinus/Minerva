@@ -348,7 +348,16 @@
          (progn
            (setf white (render-text-to-surface font "Hi" (make-color :r 255 :g 255 :b 255 :a 255)))
            (setf red (render-text-to-surface font "Hi" (make-color :r 255 :g 0 :b 0 :a 255)))
-           (%assert-false (equal (%pixel->list white 1 1) (%pixel->list red 1 1)) "text color changes pixels"))
+           (labels ((first-opaque-pixel (surface)
+                      (loop for y from 0 below (surface-height surface) do
+                        (loop for x from 0 below (surface-width surface) do
+                          (let ((px (%pixel->list surface x y)))
+                            (when (> (fourth px) 0)
+                              (return-from first-opaque-pixel px)))))
+                      '(0 0 0 0)))
+             (%assert-false (equal (first-opaque-pixel white)
+                                   (first-opaque-pixel red))
+                            "text color changes pixels")))
       (ignore-errors (destroy-surface white))
       (ignore-errors (destroy-surface red))
       (ignore-errors (destroy-font font)))))
@@ -363,6 +372,26 @@
                   (space-x (+ glyph-width 2))
                   (px (%pixel->list s space-x 5)))
              (%assert-equal (fourth px) 0 "background in space is transparent")))
+      (ignore-errors (destroy-surface s))
+      (ignore-errors (destroy-font font)))))
+
+(%deftest test-text-rendering-has-antialiased-edges-by-default
+  (let ((font (get-font (%font-path) 32))
+        (s nil)
+        (has-soft-edge nil))
+    (unwind-protect
+         (progn
+           (setf s (render-text-to-surface font "A" (make-color :r 255 :g 255 :b 255 :a 255)))
+           (loop for y from 0 below (surface-height s) do
+             (loop for x from 0 below (surface-width s) do
+               (let* ((px (%pixel->list s x y))
+                      (alpha (fourth px)))
+                 (when (and (> alpha 0) (< alpha 255))
+                   (setf has-soft-edge t)
+                   (return))))
+             (when has-soft-edge
+               (return)))
+           (%assert-true has-soft-edge "text has intermediate alpha edge pixels"))
       (ignore-errors (destroy-surface s))
       (ignore-errors (destroy-font font)))))
 

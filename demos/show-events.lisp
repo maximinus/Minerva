@@ -1,4 +1,5 @@
 ;; Run from project root with: sbcl --script demos/show-events.lisp
+;; opens a screen and prints minerva events to the terminal
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
