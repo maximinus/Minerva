@@ -71,3 +71,6 @@
   (dolist (child (vbox-children box))
     (render child backend-window))
   box)
+
+(defmethod event-children ((box vbox))
+  (vbox-children box))

@@ -26,18 +26,33 @@
 (defun run-minerva-app (&key (title "Minerva") (width 800) (height 600))
   (minerva.gfx:init-backend)
   (let ((backend-window nil)
-        (ui-root (make-minerva-root-ui width height)))
+        (ui-root (make-minerva-root-ui width height))
+        (app-state nil))
     (unwind-protect
          (progn
            (setf backend-window (minerva.gfx:create-window :title title :width width :height height))
+           (setf app-state (minerva.events:make-app-state :root ui-root
+                                                          :window-width width
+                                                          :window-height height))
            (loop until (minerva.gfx:window-should-close-p backend-window) do
-             (dolist (event (minerva.gfx:poll-events))
-               (when (eq (first event) :quit)
-                 (minerva.gfx:request-window-close backend-window)))
+             (dolist (raw-event (minerva.gfx:poll-events))
+               (let ((event (minerva.events:sdl-event->minerva-event raw-event)))
+                 (when event
+                   (minerva.events:process-minerva-event app-state event))))
+             (when (and app-state (minerva.events:app-state-should-quit app-state))
+               (minerva.gfx:request-window-close backend-window))
              (minerva.gfx:begin-frame backend-window)
              (minerva.gfx:clear-screen backend-window
                                        (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
-             (minerva.gui:layout ui-root (minerva.gui:make-rect :x 0 :y 0 :width width :height height))
+             (let ((frame-width (if app-state
+                                    (minerva.events:app-state-window-width app-state)
+                                    width))
+                   (frame-height (if app-state
+                                     (minerva.events:app-state-window-height app-state)
+                                     height)))
+               (minerva.gui:layout ui-root (minerva.gui:make-rect :x 0 :y 0
+                                                                   :width frame-width
+                                                                   :height frame-height)))
              (minerva.gui:render ui-root backend-window)
              (minerva.gfx:end-frame backend-window)
              (minerva.gfx:sleep-ms 16)))

@@ -51,6 +51,8 @@
    :measure
    :layout
    :render
+  :handle-event
+  :event-children
    :window
   :window-size
    :window-width
@@ -218,6 +220,15 @@
 (defgeneric measure (widget))
 (defgeneric layout (widget rect))
 (defgeneric render (widget backend-window))
+(defgeneric handle-event (widget app-state event))
+(defgeneric event-children (widget))
+
+(defmethod handle-event ((widget widget) app-state event)
+  (declare (ignore app-state event))
+  nil)
+
+(defmethod event-children ((widget widget))
+  nil)
 
 (defun measure-min-width (widget)
   (size-request-min-width (measure widget)))

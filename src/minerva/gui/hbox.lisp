@@ -71,3 +71,6 @@
   (dolist (child (hbox-children box))
     (render child backend-window))
   box)
+
+(defmethod event-children ((box hbox))
+  (hbox-children box))

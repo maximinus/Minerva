@@ -101,3 +101,21 @@
 (defmethod render ((w window) backend-window)
   (render (window-child w) backend-window)
   w)
+
+(defmethod event-children ((w window))
+  (let ((child (window-child w)))
+    (if child (list child) nil)))
+
+(defmethod handle-event ((w window) app-state event)
+  (declare (ignore app-state))
+  (let ((type (first event)))
+    (case type
+      (:window-resized
+       (let ((new-width (or (getf (rest event) :width) (window-width w)))
+             (new-height (or (getf (rest event) :height) (window-height w))))
+         (setf (window-width w) new-width
+               (window-height w) new-height)
+         nil))
+      (:quit
+       '(:quit t))
+      (otherwise nil))))

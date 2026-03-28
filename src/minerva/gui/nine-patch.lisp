@@ -164,3 +164,7 @@
     (when child
       (render child backend-window))
     panel)))
+
+(defmethod event-children ((panel nine-patch))
+  (let ((child (nine-patch-child panel)))
+    (if child (list child) nil)))
