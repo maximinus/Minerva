@@ -17,7 +17,7 @@
               (setf window (minerva.gfx:create-window :title "Minerva Smoke" :width 64 :height 64))
               (setf surface (minerva.gfx:create-surface :width 8 :height 8))
               (minerva.gfx:begin-frame window)
-              (minerva.gfx:clear-screen window 0 0 0 255)
+              (minerva.gfx:clear-screen window (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
               (minerva.gfx:draw-surface window surface (minerva.gfx:make-position :x 2 :y 2))
               (minerva.gfx:end-frame window))
          (when surface

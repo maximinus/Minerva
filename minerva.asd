@@ -7,7 +7,14 @@
    (:file "src/minerva/common")
    (:file "src/minerva/gfx/ffi")
    (:file "src/minerva/gfx/backend")
-   (:file "src/minerva/gui/core")))
+    (:file "src/minerva/gui/core")
+    (:file "src/minerva/gui/window")
+    (:file "src/minerva/gui/hbox")
+    (:file "src/minerva/gui/vbox")
+    (:file "src/minerva/gui/color-rect")
+    (:file "src/minerva/gui/filler")
+    (:file "src/minerva/gui/image")
+    (:file "src/minerva/gui/nine-patch")))
 
 (asdf:defsystem "minerva/tests"
   :description "Minerva GUI and graphics tests"

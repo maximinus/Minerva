@@ -425,6 +425,21 @@ int surface_fill_rect(Surface *surface, int x, int y, int width, int height,
     return 1;
 }
 
+int surface_fill(Surface *surface,
+                 unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+    if (surface == NULL || surface->surface == NULL) {
+        set_last_error_literal("surface is null");
+        return 0;
+    }
+
+    Uint32 pixel = SDL_MapSurfaceRGBA(surface->surface, r, g, b, a);
+    if (!SDL_FillSurfaceRect(surface->surface, NULL, pixel)) {
+        set_last_error_from_sdl();
+        return 0;
+    }
+    return 1;
+}
+
 int surface_read_pixel(Surface *surface, int x, int y,
                        unsigned char *r, unsigned char *g, unsigned char *b, unsigned char *a) {
     if (surface == NULL || surface->surface == NULL) {

@@ -43,7 +43,7 @@
                                                         :width window-width
                                                         :height window-height))
              (minerva.gfx:begin-frame window)
-             (minerva.gfx:clear-screen window 0 0 0 255)
+             (minerva.gfx:clear-screen window (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
              (minerva.gui:render root-widget window)
              (minerva.gfx:end-frame window))
 

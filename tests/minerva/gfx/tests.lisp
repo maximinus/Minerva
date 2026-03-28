@@ -25,6 +25,7 @@
                 :surface-height
                 :surface-rgba32-p
                 :fill-surface-rect
+                :fill-surface
                 :read-surface-pixel
                 :blit-surface
                 :blit-surface-rect
@@ -376,6 +377,13 @@
       (ignore-errors (destroy-surface s))
       (ignore-errors (destroy-font font)))))
 
+(%deftest test-33-fill-surface-colors-entire-surface
+  (%with-surfaces ((s (create-surface :width 5 :height 4)))
+    (fill-surface s (make-color :r 12 :g 34 :b 56 :a 200))
+    (%assert-equal (%pixel->list s 0 0) '(12 34 56 200) "fill-surface top-left")
+    (%assert-equal (%pixel->list s 4 3) '(12 34 56 200) "fill-surface bottom-right")
+    (%assert-equal (%pixel->list s 2 1) '(12 34 56 200) "fill-surface center")))
+
 (%deftest test-58-repeated-surface-create-destroy-stable
   (dotimes (i 50)
     (let ((surface (create-surface :width 8 :height 8)))
@@ -512,6 +520,7 @@
                               test-30-text-color-affects-rendered-output
                               test-31-rendered-background-transparent
                               test-32-render-empty-string-consistent
+                              test-33-fill-surface-colors-entire-surface
                               test-58-repeated-surface-create-destroy-stable
                               test-59-repeated-font-lookup-render-stable
                               test-60-end-to-end-font-surface-widget-flow

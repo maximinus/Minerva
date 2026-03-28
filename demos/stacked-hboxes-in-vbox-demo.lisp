@@ -15,6 +15,8 @@
 (defun make-expand-row (color-a color-b color-c)
   (make-instance 'minerva.gui:hbox
                  :spacing 20
+                 :expand-x t
+                 :expand-y t
                  :children (list (make-expand-color color-a)
                                  (make-expand-color color-b)
                                  (make-expand-color color-c))))
@@ -29,6 +31,8 @@
                                      :width width
                                      :height height
                                      :child (make-instance 'minerva.gui:vbox
+                                                          :expand-x t
+                                                          :expand-y t
                                                           :spacing 5
                                                           :children (list
                                                                      (make-expand-row '(255 102 102 255)
@@ -57,7 +61,7 @@
                                                         :width window-width
                                                         :height window-height))
              (minerva.gfx:begin-frame window)
-             (minerva.gfx:clear-screen window 0 0 0 255)
+             (minerva.gfx:clear-screen window (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
              (minerva.gui:render root-widget window)
              (minerva.gfx:end-frame window))
 

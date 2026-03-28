@@ -367,7 +367,7 @@
                              :margin-top 5 :margin-bottom 5
                              :spacing 6)))
     (%assert-min-size box 212 40 "cross-axis expansion in hbox measure")
-    (%assert-expand-flags box nil t "cross-axis expansion aggregate flags")))
+                (%assert-expand-flags box nil nil "cross-axis expansion does not propagate upward")))
 
 (%deftest test-28-main-axis-expansion-not-in-cross-measure
   (let* ((a (make-instance 'color-rect :min-width 50 :min-height 20 :expand-y t))
@@ -379,7 +379,7 @@
                              :margin-top 10 :margin-bottom 20
                              :spacing 5)))
     (%assert-min-size box 87 100 "main-axis expansion in vbox measure")
-    (%assert-expand-flags box nil t "main-axis expansion aggregate flags")))
+                (%assert-expand-flags box nil nil "main-axis expansion does not propagate upward")))
 
 (%deftest test-29-valid-layout-has-non-negative-rectangles
   (let* ((a (make-instance 'color-rect :min-width 30 :min-height 20))
@@ -479,6 +479,8 @@
                                :border-right 7
                                :border-top 11
                                :border-bottom 13
+                               :expand-x t
+                               :expand-y t
                                :child child))
          (root (make-instance 'window :width 100 :height 80 :child panel)))
     (layout root (make-rect :x 0 :y 0 :width 100 :height 80))
@@ -576,19 +578,25 @@
                                 :margin-left 0 :margin-right 0
                                 :margin-top 0 :margin-bottom 0
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-b (make-instance 'vbox
                                 :children (list leaf-b)
                                 :margin-left 25 :margin-right 25
                                 :margin-top 25 :margin-bottom 25
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-c (make-instance 'vbox
                                 :children (list leaf-c)
                                 :margin-left 50 :margin-right 50
                                 :margin-top 50 :margin-bottom 50
                                 :spacing 0
-                                :align-x :start))
+                                :align-x :start
+                                :expand-x t
+                                :expand-y t))
          (row (make-instance 'hbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-y :start))
          (root (make-instance 'window :width 900 :height 300 :child row)))
     (layout root (make-rect :x 0 :y 0 :width 900 :height 300))
@@ -608,19 +616,25 @@
                                 :margin-left 0 :margin-right 0
                                 :margin-top 0 :margin-bottom 0
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-b (make-instance 'hbox
                                 :children (list leaf-b)
                                 :margin-left 25 :margin-right 25
                                 :margin-top 25 :margin-bottom 25
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (wrap-c (make-instance 'hbox
                                 :children (list leaf-c)
                                 :margin-left 50 :margin-right 50
                                 :margin-top 50 :margin-bottom 50
                                 :spacing 0
-                                :align-y :start))
+                                :align-y :start
+                                :expand-x t
+                                :expand-y t))
          (column (make-instance 'vbox :children (list wrap-a wrap-b wrap-c) :spacing 0 :align-x :start))
          (root (make-instance 'window :width 300 :height 900 :child column)))
     (layout root (make-rect :x 0 :y 0 :width 300 :height 900))
@@ -919,7 +933,7 @@
     (%assert-min-size fixed-box 40 10 "fixed child min-size")
     (%assert-min-size expanding-box 40 10 "expanding child same min-size")
     (%assert-expand-flags fixed-box nil nil "fixed child does not propagate expand")
-    (%assert-expand-flags expanding-box t nil "expanding child propagates eligibility only")))
+    (%assert-expand-flags expanding-box nil nil "expanding child does not propagate eligibility")))
 
 (%deftest test-66-expand-does-not-force-upward-through-window
   (let* ((child (make-instance 'color-rect :min-width 30 :min-height 12 :expand-x t :expand-y t))
@@ -940,7 +954,18 @@
     (%assert-min-size parent 40 10 "parent min-size from children mins only")
     (layout root (make-rect :x 0 :y 0 :width 100 :height 20))
     (%assert-rect left-box 0 0 20 10 "non-expanding container keeps min width")
-    (%assert-rect right-box 20 0 80 10 "expanding container receives parent leftover")))
+    (%assert-rect right-box 20 0 20 10 "child expand does not make parent container expand")))
+
+(%deftest test-77-container-expands-only-when-explicitly-set
+  (let* ((left-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x nil :expand-y nil))
+         (right-leaf (make-instance 'color-rect :min-width 20 :min-height 10 :expand-x t :expand-y nil))
+         (left-box (make-instance 'hbox :children (list left-leaf) :expand-x nil))
+         (right-box (make-instance 'hbox :children (list right-leaf) :expand-x t))
+         (parent (make-instance 'hbox :children (list left-box right-box) :spacing 0))
+         (root (make-instance 'window :width 100 :height 20 :child parent)))
+    (layout root (make-rect :x 0 :y 0 :width 100 :height 20))
+    (%assert-rect left-box 0 0 20 10 "non-expanding container keeps min width")
+    (%assert-rect right-box 20 0 80 10 "container expands only when explicitly set")))
 
 (%deftest test-63-nine-patch-layout-deterministic
   (let* ((child (make-instance 'color-rect :min-width 10 :min-height 10 :expand-x t :expand-y t))
@@ -979,6 +1004,46 @@
            (render img nil))
       (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old))
     (%assert-equal calls-a calls-b "image render deterministic draw calls")))
+
+(%deftest test-78-widget-background-color-fills-consumed-area-including-margins
+  (let* ((calls '())
+         (img (make-instance 'image
+                             :surface '(:width 5 :height 5)
+                             :background-color (minerva.common:make-color :r 10 :g 20 :b 30 :a 40)
+                             :margin-left 3 :margin-right 4 :margin-top 5 :margin-bottom 6))
+         (old-fill (symbol-function 'minerva.gui::%call-fill-rect))
+         (old-draw (symbol-function 'minerva.gui::%call-draw-surface-rect)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%call-fill-rect)
+                 (lambda (backend-window rect color)
+                   (declare (ignore backend-window))
+                   (push (list :fill (%rect-value-list rect) color) calls)))
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (push (list :draw) calls)))
+           (layout img (make-rect :x 10 :y 20 :width 30 :height 40))
+           (render img nil))
+      (setf (symbol-function 'minerva.gui::%call-fill-rect) old-fill)
+      (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old-draw))
+    (%assert-equal (second (first (last calls))) '(10 20 30 40) "background covers consumed area including margins")
+    (%assert-equal (first (car calls)) :draw "image draws after background fill")))
+
+(%deftest test-79-widget-background-color-nil-does-not-fill
+  (let* ((fill-count 0)
+         (rect-widget (make-instance 'color-rect :min-width 10 :min-height 10 :color '(1 2 3 255)))
+         (old-fill (symbol-function 'minerva.gui::%call-fill-rect)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%call-fill-rect)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (incf fill-count)))
+           (layout rect-widget (make-rect :x 0 :y 0 :width 10 :height 10))
+           (render rect-widget nil))
+      (setf (symbol-function 'minerva.gui::%call-fill-rect) old-fill))
+    (%assert-equal fill-count 1 "only widget draw fill called when background-color is nil")))
 
 (defun run-gui-layout-tests ()
   (setf *test-count* 0
@@ -1055,8 +1120,11 @@
                          test-65-expand-does-not-change-min-size
                          test-66-expand-does-not-force-upward-through-window
                          test-67-container-expand-is-parent-level-eligibility
+                         test-77-container-expands-only-when-explicitly-set
                          test-63-nine-patch-layout-deterministic
-                         test-64-image-render-deterministic))
+                         test-64-image-render-deterministic
+                         test-78-widget-background-color-fills-consumed-area-including-margins
+                         test-79-widget-background-color-nil-does-not-fill))
     (%run-test-case test-symbol))
   (format t "~%Executed ~D assertions.~%" *test-count*)
   (if (zerop *test-failures*)
