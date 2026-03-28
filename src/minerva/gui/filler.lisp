@@ -1,10 +1,41 @@
 (in-package :minerva.gui)
 
 (defclass filler (widget)
-  ((min-width :initarg :min-width :accessor filler-min-width :initform 0)
-   (min-height :initarg :min-height :accessor filler-min-height :initform 0)
+  ((min-size :initarg :min-size :accessor filler-min-size :initform nil)
    (expand-x :initarg :expand-x :accessor filler-expand-x :initform t)
    (expand-y :initarg :expand-y :accessor filler-expand-y :initform nil)))
+
+(defmethod initialize-instance :around ((space filler)
+                                        &rest initargs
+                                        &key min-size min-width min-height
+                                        &allow-other-keys)
+  (apply #'call-next-method space initargs)
+  (let* ((base-size (%coerce-size min-size))
+         (final-width (if (null min-width) (size-width base-size) min-width))
+         (final-height (if (null min-height) (size-height base-size) min-height)))
+    (setf (filler-min-size space)
+          (make-size :width final-width
+                     :height final-height))))
+
+(defun filler-min-width (space)
+  (size-width (filler-min-size space)))
+
+(defun filler-min-height (space)
+  (size-height (filler-min-size space)))
+
+(defun (setf filler-min-width) (value space)
+  (let ((min-size (filler-min-size space)))
+    (setf (filler-min-size space)
+          (make-size :width value
+                     :height (size-height min-size)))
+    value))
+
+(defun (setf filler-min-height) (value space)
+  (let ((min-size (filler-min-size space)))
+    (setf (filler-min-size space)
+          (make-size :width (size-width min-size)
+                     :height value))
+    value))
 
 (defmethod measure ((space filler))
   (%apply-widget-margins-to-size-request

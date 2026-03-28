@@ -18,8 +18,7 @@
                                       :surface surface
                                       :alignment :center))
          (root-widget (make-instance 'minerva.gui:window
-                                     :width width
-                                     :height height
+                                     :size (minerva.common:make-size :width width :height height)
                                      :child image-widget))
         (start-time (minerva.gfx:ticks-ms)))
     (unwind-protect
@@ -30,8 +29,8 @@
 
            (multiple-value-bind (window-width window-height)
                (minerva.gfx:window-size window)
-             (setf (minerva.gui:window-width root-widget) window-width
-                   (minerva.gui:window-height root-widget) window-height)
+             (setf (minerva.gui:window-size root-widget)
+               (minerva.common:make-size :width window-width :height window-height))
              (minerva.gui:layout root-widget
                                  (minerva.gui:make-rect :x 0
                                                         :y 0

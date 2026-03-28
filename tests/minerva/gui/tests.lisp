@@ -70,6 +70,37 @@
         (incf *test-failures*)
         (format t "- Fail ~(~A~) (~A)~%" test-symbol condition)))))
 
+(%deftest test-00-make-margins-single-value
+  (let ((margins (make-margins 5)))
+    (%assert-equal (list (margins-left margins)
+                         (margins-right margins)
+                         (margins-top margins)
+                         (margins-bottom margins))
+                   '(5 5 5 5)
+                   "single-value margins set all sides")))
+
+(%deftest test-00-make-margins-keyword-values
+  (let ((margins (make-margins :margin-top 5 :margin-bottom 7)))
+    (%assert-equal (list (margins-left margins)
+                         (margins-right margins)
+                         (margins-top margins)
+                         (margins-bottom margins))
+                   '(0 0 5 7)
+                   "keyword margins set only supplied sides")))
+
+(%deftest test-00-widget-accepts-margins-struct
+  (let* ((box (make-instance 'hbox
+                             :children nil
+                             :margins (make-margins 5)
+                             :spacing 0)))
+    (%assert-min-size box 10 10 "margins struct affects widget min-size")
+    (%assert-equal (list (widget-margin-left box)
+                         (widget-margin-right box)
+                         (widget-margin-top box)
+                         (widget-margin-bottom box))
+                   '(5 5 5 5)
+                   "widget side accessors reflect margins struct")))
+
 (%deftest test-01-window-passes-child-without-expand
   (let* ((child (make-instance 'color-rect :min-width 100 :min-height 50 :expand-x nil :expand-y nil))
          (root (make-instance 'window :width 800 :height 600 :child child)))
@@ -1048,7 +1079,10 @@
 (defun run-gui-layout-tests ()
   (setf *test-count* 0
         *test-failures* 0)
-  (dolist (test-symbol '(test-01-window-passes-child-without-expand
+    (dolist (test-symbol '(test-00-make-margins-single-value
+           test-00-make-margins-keyword-values
+           test-00-widget-accepts-margins-struct
+           test-01-window-passes-child-without-expand
                          test-02-window-expanding-child-fills
                          test-03-hbox-min-size
                          test-04-vbox-min-size

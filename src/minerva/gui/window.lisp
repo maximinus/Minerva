@@ -1,9 +1,40 @@
 (in-package :minerva.gui)
 
 (defclass window (widget)
-  ((width :initarg :width :accessor window-width :initform 0)
-   (height :initarg :height :accessor window-height :initform 0)
+  ((size :initarg :size :accessor window-size :initform nil)
    (child :initarg :child :accessor window-child :initform nil)))
+
+(defmethod initialize-instance :around ((w window)
+                                        &rest initargs
+                                        &key size width height
+                                        &allow-other-keys)
+  (apply #'call-next-method w initargs)
+  (let* ((base-size (%coerce-size size))
+         (final-width (if (null width) (size-width base-size) width))
+         (final-height (if (null height) (size-height base-size) height)))
+    (setf (window-size w)
+          (make-size :width final-width
+                     :height final-height))))
+
+(defun window-width (w)
+  (size-width (window-size w)))
+
+(defun window-height (w)
+  (size-height (window-size w)))
+
+(defun (setf window-width) (value w)
+  (let ((size (window-size w)))
+    (setf (window-size w)
+          (make-size :width value
+                     :height (size-height size)))
+    value))
+
+(defun (setf window-height) (value w)
+  (let ((size (window-size w)))
+    (setf (window-size w)
+          (make-size :width (size-width size)
+                     :height value))
+    value))
 
 (defmethod initialize-instance :after ((w window) &key)
   (unless (window-child w)

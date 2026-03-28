@@ -21,6 +21,12 @@
                 :color-b
                 :color-a)
   (:export
+    :margins
+    :make-margins
+    :margins-left
+    :margins-right
+    :margins-top
+    :margins-bottom
    :rect
    :make-rect
    :rect-x
@@ -35,6 +41,7 @@
    :size-request-expand-y
    :widget
    :widget-layout-rect
+  :widget-margins
   :widget-background-color
   :widget-content-alignment
   :widget-margin-left
@@ -45,6 +52,7 @@
    :layout
    :render
    :window
+  :window-size
    :window-width
    :window-height
    :window-child
@@ -57,12 +65,14 @@
    :vbox-spacing
    :vbox-align-x
    :color-rect
+  :color-rect-min-size
    :color-rect-min-width
    :color-rect-min-height
    :color-rect-expand-x
    :color-rect-expand-y
    :color-rect-color
    :filler
+  :filler-min-size
    :filler-min-width
    :filler-min-height
    :filler-expand-x
@@ -85,6 +95,27 @@
 
 (in-package :minerva.gui)
 
+(defstruct (margins
+            (:constructor %make-margins (&key (left 0) (right 0) (top 0) (bottom 0))))
+  (left 0 :type integer)
+  (right 0 :type integer)
+  (top 0 :type integer)
+  (bottom 0 :type integer))
+
+(defun make-margins (&rest args)
+  (cond
+    ((null args)
+     (%make-margins))
+    ((and (= (length args) 1)
+          (numberp (first args)))
+     (let ((value (%non-negative-int (first args))))
+       (%make-margins :left value :right value :top value :bottom value)))
+    (t
+     (%make-margins :left (%non-negative-int (getf args :margin-left 0))
+                    :right (%non-negative-int (getf args :margin-right 0))
+                    :top (%non-negative-int (getf args :margin-top 0))
+                    :bottom (%non-negative-int (getf args :margin-bottom 0))))))
+
 (defstruct size-request
   (min-width 0 :type integer)
   (min-height 0 :type integer)
@@ -94,24 +125,95 @@
 (defclass widget ()
   ((layout-rect :initform (make-rect)
                 :accessor widget-layout-rect)
+   (margins :initarg :margins
+            :initform nil
+            :accessor widget-margins)
    (background-color :initarg :background-color
                      :initform nil
                      :accessor widget-background-color)
    (content-alignment :initarg :alignment
                       :initform :top-left
-                      :accessor widget-content-alignment)
-   (margin-left :initarg :margin-left
-                :initform 0
-                :accessor widget-margin-left)
-   (margin-right :initarg :margin-right
-                 :initform 0
-                 :accessor widget-margin-right)
-   (margin-top :initarg :margin-top
-               :initform 0
-               :accessor widget-margin-top)
-   (margin-bottom :initarg :margin-bottom
-                  :initform 0
-                  :accessor widget-margin-bottom)))
+                      :accessor widget-content-alignment)))
+
+(defun %coerce-margins (value)
+  (cond
+    ((null value) (make-margins))
+    ((typep value 'margins) value)
+    ((numberp value) (make-margins value))
+    (t (error "Invalid margins value ~S. Expected NIL, integer, or MARGINS." value))))
+
+(defun %coerce-size (value)
+  (cond
+    ((null value) (make-size :width 0 :height 0))
+    ((typep value 'minerva.common:size) value)
+    ((numberp value)
+     (let ((dimension (%non-negative-int value)))
+       (make-size :width dimension :height dimension)))
+    (t (error "Invalid size value ~S. Expected NIL, integer, or SIZE." value))))
+
+(defmethod initialize-instance :around ((widget widget)
+               &rest initargs
+               &key margins margin-left margin-right margin-top margin-bottom
+               &allow-other-keys)
+  (apply #'call-next-method widget initargs)
+  (let* ((base (%coerce-margins margins))
+    (left (if (null margin-left) (margins-left base) margin-left))
+    (right (if (null margin-right) (margins-right base) margin-right))
+    (top (if (null margin-top) (margins-top base) margin-top))
+    (bottom (if (null margin-bottom) (margins-bottom base) margin-bottom)))
+    (setf (widget-margins widget)
+          (make-margins :margin-left left
+                        :margin-right right
+                        :margin-top top
+                        :margin-bottom bottom))))
+
+(defun widget-margin-left (widget)
+  (margins-left (widget-margins widget)))
+
+(defun widget-margin-right (widget)
+  (margins-right (widget-margins widget)))
+
+(defun widget-margin-top (widget)
+  (margins-top (widget-margins widget)))
+
+(defun widget-margin-bottom (widget)
+  (margins-bottom (widget-margins widget)))
+
+(defun (setf widget-margin-left) (value widget)
+  (let ((margins (widget-margins widget)))
+    (setf (widget-margins widget)
+          (make-margins :margin-left value
+                        :margin-right (margins-right margins)
+                        :margin-top (margins-top margins)
+                        :margin-bottom (margins-bottom margins)))
+    value))
+
+(defun (setf widget-margin-right) (value widget)
+  (let ((margins (widget-margins widget)))
+    (setf (widget-margins widget)
+          (make-margins :margin-left (margins-left margins)
+                        :margin-right value
+                        :margin-top (margins-top margins)
+                        :margin-bottom (margins-bottom margins)))
+    value))
+
+(defun (setf widget-margin-top) (value widget)
+  (let ((margins (widget-margins widget)))
+    (setf (widget-margins widget)
+          (make-margins :margin-left (margins-left margins)
+                        :margin-right (margins-right margins)
+                        :margin-top value
+                        :margin-bottom (margins-bottom margins)))
+    value))
+
+(defun (setf widget-margin-bottom) (value widget)
+  (let ((margins (widget-margins widget)))
+    (setf (widget-margins widget)
+          (make-margins :margin-left (margins-left margins)
+                        :margin-right (margins-right margins)
+                        :margin-top (margins-top margins)
+                        :margin-bottom value))
+    value))
 
 (defgeneric measure (widget))
 (defgeneric layout (widget rect))

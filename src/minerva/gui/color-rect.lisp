@@ -1,11 +1,42 @@
 (in-package :minerva.gui)
 
 (defclass color-rect (widget)
-  ((min-width :initarg :min-width :accessor color-rect-min-width :initform 0)
-   (min-height :initarg :min-height :accessor color-rect-min-height :initform 0)
+  ((min-size :initarg :min-size :accessor color-rect-min-size :initform nil)
    (expand-x :initarg :expand-x :accessor color-rect-expand-x :initform nil)
    (expand-y :initarg :expand-y :accessor color-rect-expand-y :initform nil)
    (color :initarg :color :accessor color-rect-color :initform '(255 255 255 255))))
+
+(defmethod initialize-instance :around ((rect-widget color-rect)
+                                        &rest initargs
+                                        &key min-size min-width min-height
+                                        &allow-other-keys)
+  (apply #'call-next-method rect-widget initargs)
+  (let* ((base-size (%coerce-size min-size))
+         (final-width (if (null min-width) (size-width base-size) min-width))
+         (final-height (if (null min-height) (size-height base-size) min-height)))
+    (setf (color-rect-min-size rect-widget)
+          (make-size :width final-width
+                     :height final-height))))
+
+(defun color-rect-min-width (rect-widget)
+  (size-width (color-rect-min-size rect-widget)))
+
+(defun color-rect-min-height (rect-widget)
+  (size-height (color-rect-min-size rect-widget)))
+
+(defun (setf color-rect-min-width) (value rect-widget)
+  (let ((min-size (color-rect-min-size rect-widget)))
+    (setf (color-rect-min-size rect-widget)
+          (make-size :width value
+                     :height (size-height min-size)))
+    value))
+
+(defun (setf color-rect-min-height) (value rect-widget)
+  (let ((min-size (color-rect-min-size rect-widget)))
+    (setf (color-rect-min-size rect-widget)
+          (make-size :width (size-width min-size)
+                     :height value))
+    value))
 
 (defmethod measure ((rect-widget color-rect))
   (%apply-widget-margins-to-size-request

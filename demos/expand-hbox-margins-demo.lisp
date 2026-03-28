@@ -9,10 +9,7 @@
 (defun make-expand-color (rgba margin)
   (make-instance 'minerva.gui:color-rect
                  :color rgba
-                 :margin-left margin
-                 :margin-right margin
-                 :margin-top margin
-                 :margin-bottom margin
+                 :margins (minerva.gui:make-margins margin)
                  :expand-x t
                  :expand-y t))
 
@@ -23,8 +20,7 @@
   (minerva.gfx:init-backend)
   (let* ((window (minerva.gfx:create-window :title title :width width :height height))
          (root-widget (make-instance 'minerva.gui:window
-                                     :width width
-                                     :height height
+              :size (minerva.common:make-size :width width :height height)
                                      :child (make-instance 'minerva.gui:hbox
                                                           :children (list
                                                                      (make-expand-color '(255 179 186 255) 0)
@@ -39,8 +35,8 @@
 
            (multiple-value-bind (window-width window-height)
                (minerva.gfx:window-size window)
-             (setf (minerva.gui:window-width root-widget) window-width
-                   (minerva.gui:window-height root-widget) window-height)
+             (setf (minerva.gui:window-size root-widget)
+               (minerva.common:make-size :width window-width :height window-height))
              (minerva.gui:layout root-widget
                                  (minerva.gui:make-rect :x 0
                                                         :y 0
