@@ -111,10 +111,13 @@
   :nine-patch-border-bottom
   :nine-patch-child
   :nine-patch-content-rect
-  :+default-menu-nine-patch-image-path+
-  :*default-image-paths*
-  :default-image-path
-  :load-default-image-surface
+  :menu-nine-patch
+  :menu-nine-patch-border-size
+  :menu-nine-patch-border-left
+  :menu-nine-patch-border-right
+  :menu-nine-patch-border-top
+  :menu-nine-patch-border-bottom
+  :default-image-paths
   :menu-item
   :menu-item-id
   :menu-item-text

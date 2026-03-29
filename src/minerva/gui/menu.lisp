@@ -6,15 +6,28 @@
    (spacing :initarg :spacing :accessor menu-spacing :initform 0)
    (icon-resolver :initarg :icon-resolver :accessor menu-icon-resolver :initform nil)
    (panel-surface :initarg :panel-surface :accessor menu-panel-surface :initform nil)
-   (border-left :initarg :border-left :accessor menu-border-left :initform 4)
-   (border-right :initarg :border-right :accessor menu-border-right :initform 4)
-   (border-top :initarg :border-top :accessor menu-border-top :initform 4)
-   (border-bottom :initarg :border-bottom :accessor menu-border-bottom :initform 4)
+  (border-left :initarg :border-left :accessor menu-border-left :initform menu-nine-patch-border-left)
+  (border-right :initarg :border-right :accessor menu-border-right :initform menu-nine-patch-border-right)
+  (border-top :initarg :border-top :accessor menu-border-top :initform menu-nine-patch-border-top)
+  (border-bottom :initarg :border-bottom :accessor menu-border-bottom :initform menu-nine-patch-border-bottom)
    (icon-column-width :accessor menu-icon-column-width :initform 0)
    (label-column-width :accessor menu-label-column-width :initform 0)
    (key-column-width :accessor menu-key-column-width :initform 0)
    (content-box :accessor menu-content-box :initform nil)
    (panel :accessor menu-panel :initform nil)))
+
+(defun %menu-default-panel-path ()
+  (if (and (stringp menu-nine-patch)
+           (> (length menu-nine-patch) 0)
+           (char= (char menu-nine-patch 0) #\/))
+      (subseq menu-nine-patch 1)
+      menu-nine-patch))
+
+(defun %menu-load-default-panel-surface ()
+  (let ((load-fn (%gfx-function "LOAD-SURFACE")))
+    (unless load-fn
+      (error "minerva.gfx:load-surface is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+    (funcall load-fn (%menu-default-panel-path))))
 
 (defun %menu-entry-spacer-p (entry)
   (or (eq entry :spacer)
@@ -100,8 +113,13 @@
   (unless (menu-panel menu)
     (when (null (menu-panel-surface menu))
       (setf (menu-panel-surface menu)
-            (ignore-errors
-              (load-default-image-surface :menu-nine-patch))))
+            (handler-case
+                (%menu-load-default-panel-surface)
+              (error (condition)
+                (warn "Failed to load default menu nine-patch image at ~A (~A)"
+                      (%menu-default-panel-path)
+                      condition)
+                nil))))
     (setf (menu-panel menu)
           (make-instance 'nine-patch
                          :surface (menu-panel-surface menu)

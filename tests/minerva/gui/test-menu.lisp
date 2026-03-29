@@ -34,25 +34,27 @@
       (%assert-equal (%surface-width (menu-item-icon-surface item)) 16 "menu-item stores icon surface"))))
 
 (%deftest test-default-image-path-registry-has-menu-nine-patch
-  (%assert-equal (default-image-path :menu-nine-patch)
+  (%assert-equal menu-nine-patch
                  "/assets/menu/menu.png"
-                 "default image path for menu nine-patch"))
+                 "menu nine-patch constant path")
+  (%assert-equal (cdr (assoc :menu-nine-patch default-image-paths))
+                 "/assets/menu/menu.png"
+                 "default image list includes menu nine-patch"))
 
 (%deftest test-menu-loads-default-panel-surface-when-not-provided
   (%with-stubbed-menu-text-render
-    (let ((old-load-default (symbol-function 'minerva.gui::load-default-image-surface)))
+    (let ((old-load-default (symbol-function 'minerva.gui::%menu-load-default-panel-surface)))
       (unwind-protect
            (progn
-             (setf (symbol-function 'minerva.gui::load-default-image-surface)
-                   (lambda (name)
-                     (declare (ignore name))
+             (setf (symbol-function 'minerva.gui::%menu-load-default-panel-surface)
+                   (lambda ()
                      '(:width 24 :height 24)))
              (let ((menu (make-instance 'menu
                                         :entries (list '(:text "Open" :command :open)))))
                (%assert-equal (menu-panel-surface menu)
                               '(:width 24 :height 24)
                               "menu uses default panel surface when none provided")))
-        (setf (symbol-function 'minerva.gui::load-default-image-surface) old-load-default)))))
+        (setf (symbol-function 'minerva.gui::%menu-load-default-panel-surface) old-load-default)))))
 
 (%deftest test-menu-item-hover-and-click-behavior
   (%with-stubbed-menu-text-render

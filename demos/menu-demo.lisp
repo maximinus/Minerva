@@ -18,16 +18,12 @@
 
 (defun make-menu-demo-ui (width height icon-map)
   (let* ((menu (make-instance 'minerva.gui:menu
-                              :border-left 6
-                              :border-right 6
-                              :border-top 6
-                              :border-bottom 6
                               :icon-resolver (lambda (icon-key)
                                                (cdr (assoc icon-key icon-map)))
-                              :entries (list '(:text "Open" :command :open :icon :open :key "Ctrl-O")
-                                             '(:text "Save" :command :save :icon :save :key "Ctrl-S")
+                              :entries (list '(:text "Open" :command :open :icon :open :key "Ctrl-O" :text-size 20)
+                                             '(:text "Save" :command :save :icon :save :key "Ctrl-S" :text-size 20)
                                              :spacer
-                                             '(:text "Exit" :command :quit-app :key "Ctrl-X")))))
+                                             '(:text "Exit" :command :quit-app :key "Ctrl-X" :text-size 20)))))
     (declare (ignore width height))
     (setf (minerva.gui:widget-content-alignment menu) :center)
     (make-instance 'minerva.gui:window
