@@ -2,9 +2,9 @@
 
 (defclass label (widget)
   ((text :initarg :text :accessor label-text :initform "")
-   (font-name :initarg :font-name :accessor label-font-name :initform "inconsolata")
-   (text-size :initarg :text-size :accessor label-text-size :initform 12)
-   (color :initarg :color :accessor label-color :initform '(0 0 0 255))
+  (font-name :initarg :font-name :accessor label-font-name :initform theme:default-font)
+  (text-size :initarg :text-size :accessor label-text-size :initform theme:default-font-size)
+  (color :initarg :color :accessor label-color :initform theme:default-color)
    (surface :accessor label-surface :initform nil)
    (draw-rect :accessor label-draw-rect :initform (make-rect))))
 
@@ -15,7 +15,7 @@
          (string-equal suffix value :start2 (- value-length suffix-length)))))
 
 (defun %label-font-path (font-name)
-  (let* ((name (or font-name "inconsolata"))
+  (let* ((name (or font-name theme:default-font))
          (looks-like-path (or (position #\/ name)
                               (position #\: name)
                               (%string-ends-with name ".ttf")))

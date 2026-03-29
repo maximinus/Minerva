@@ -128,6 +128,22 @@
                      t
                      "menu min-width reflects combined aligned columns"))))
 
+(%deftest test-menu-does-not-force-window-width
+  (%with-stubbed-menu-text-render
+    (let* ((menu (make-instance 'menu
+                                :entries (list '(:text "Open" :command :open)
+                                               '(:text "Save" :command :save)
+                                               '(:text "Exit" :command :quit))))
+           (request (measure menu))
+           (root (make-instance 'window :width 260 :height 180 :child menu)))
+      (%assert-equal (size-request-expand-x request)
+                     nil
+                     "menu does not request horizontal expansion")
+      (layout root (make-rect :x 0 :y 0 :width 260 :height 180))
+      (%assert-equal (rect-width (widget-layout-rect menu))
+                     (size-request-min-width request)
+                     "window uses menu intrinsic width when menu does not expand"))))
+
 (%deftest test-menu-spacer-occupies-row-between-items
   (%with-stubbed-menu-text-render
     (let* ((menu (make-instance 'menu
@@ -178,15 +194,15 @@
         (setf (symbol-function 'minerva.gui::%call-draw-surface-rect) old-draw))
       (%assert-equal (first calls) '(1 2 3 255) "hovered menu-item renders highlighted background"))))
 
-(%deftest test-menu-item-key-text-uses-lighter-default-color
+(%deftest test-menu-item-key-text-uses-theme-default-color
   (%with-stubbed-menu-text-render
     (let ((item (make-instance 'menu-item :text "Exit" :command :quit :key-text "Ctrl-X")))
       (%assert-equal (getf (menu-item-label-surface item) :color)
-                     '(255 255 255 255)
+                     '(0 0 0 255)
                      "menu-item label uses primary text color")
       (%assert-equal (getf (menu-item-key-surface item) :color)
-                     '(190 190 190 255)
-                     "menu-item key-text uses lighter color"))))
+                     '(0 0 0 255)
+                     "menu-item key-text uses theme default color"))))
 
 (%deftest test-menu-renders-panel-before-row-content
   (%with-stubbed-menu-text-render

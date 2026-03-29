@@ -6,10 +6,10 @@
    (spacing :initarg :spacing :accessor menu-spacing :initform 0)
    (icon-resolver :initarg :icon-resolver :accessor menu-icon-resolver :initform nil)
    (panel-surface :initarg :panel-surface :accessor menu-panel-surface :initform nil)
-  (border-left :initarg :border-left :accessor menu-border-left :initform menu-nine-patch-border-left)
-  (border-right :initarg :border-right :accessor menu-border-right :initform menu-nine-patch-border-right)
-  (border-top :initarg :border-top :accessor menu-border-top :initform menu-nine-patch-border-top)
-  (border-bottom :initarg :border-bottom :accessor menu-border-bottom :initform menu-nine-patch-border-bottom)
+  (border-left :initarg :border-left :accessor menu-border-left :initform theme:menu-nine-patch-border-left)
+  (border-right :initarg :border-right :accessor menu-border-right :initform theme:menu-nine-patch-border-right)
+  (border-top :initarg :border-top :accessor menu-border-top :initform theme:menu-nine-patch-border-top)
+  (border-bottom :initarg :border-bottom :accessor menu-border-bottom :initform theme:menu-nine-patch-border-bottom)
    (icon-column-width :accessor menu-icon-column-width :initform 0)
    (label-column-width :accessor menu-label-column-width :initform 0)
    (key-column-width :accessor menu-key-column-width :initform 0)
@@ -17,11 +17,11 @@
    (panel :accessor menu-panel :initform nil)))
 
 (defun %menu-default-panel-path ()
-  (if (and (stringp menu-nine-patch)
-           (> (length menu-nine-patch) 0)
-           (char= (char menu-nine-patch 0) #\/))
-      (subseq menu-nine-patch 1)
-      menu-nine-patch))
+  (if (and (stringp theme:menu-nine-patch)
+           (> (length theme:menu-nine-patch) 0)
+           (char= (char theme:menu-nine-patch 0) #\/))
+      (subseq theme:menu-nine-patch 1)
+      theme:menu-nine-patch))
 
 (defun %menu-load-default-panel-surface ()
   (let ((load-fn (%gfx-function "LOAD-SURFACE")))
@@ -64,10 +64,10 @@
                    :icon icon-value
                    :icon-surface icon-surface
                    :key-text key-text
-                   :font-name (or (getf entry :font-name) "inconsolata")
-                   :text-size (or (getf entry :text-size) 12)
-                   :text-color (or (getf entry :text-color) '(255 255 255 255))
-                   :key-text-color (or (getf entry :key-text-color) '(190 190 190 255))
+                   :font-name (or (getf entry :font-name) theme:default-font)
+                   :text-size (or (getf entry :text-size) theme:default-font-size)
+                   :text-color (or (getf entry :text-color) theme:default-color)
+                   :key-text-color (or (getf entry :key-text-color) theme:default-color)
                    :highlighted-color (or (getf entry :highlighted-color) '(70 70 70 255)))))
 
 (defun %menu-build-children (menu entries)
@@ -108,7 +108,7 @@
           (make-instance 'vbox
                          :children (menu-children menu)
                          :spacing (max 0 (%non-negative-int (menu-spacing menu)))
-                         :expand-x t
+                         :expand-x nil
                          :expand-y nil)))
   (unless (menu-panel menu)
     (when (null (menu-panel-surface menu))
@@ -128,7 +128,7 @@
                          :border-top (%non-negative-int (menu-border-top menu))
                          :border-bottom (%non-negative-int (menu-border-bottom menu))
                          :child (menu-content-box menu)
-                         :expand-x t
+             :expand-x nil
                          :expand-y nil))))
 
 (defmethod initialize-instance :after ((menu menu) &key)

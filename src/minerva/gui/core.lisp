@@ -20,6 +20,17 @@
                 :color-g
                 :color-b
                 :color-a)
+  (:import-from :minerva.gui.theme
+                :default-font
+                :default-font-size
+                :default-color
+                :menu-nine-patch
+                :menu-nine-patch-border-size
+                :menu-nine-patch-border-left
+                :menu-nine-patch-border-right
+                :menu-nine-patch-border-top
+                :menu-nine-patch-border-bottom
+                :default-image-paths)
   (:export
     :margins
     :make-margins
@@ -111,6 +122,9 @@
   :nine-patch-border-bottom
   :nine-patch-child
   :nine-patch-content-rect
+  :default-font
+  :default-font-size
+  :default-color
   :menu-nine-patch
   :menu-nine-patch-border-size
   :menu-nine-patch-border-left
