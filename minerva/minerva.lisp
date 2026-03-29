@@ -31,9 +31,7 @@
     (unwind-protect
          (progn
            (setf backend-window (minerva.gfx:create-window :title title :width width :height height))
-           (setf app-state (minerva.events:make-app-state :root ui-root
-                                                          :window-width width
-                                                          :window-height height))
+           (setf app-state (minerva.events:make-app-state :root ui-root))
            (loop until (minerva.gfx:window-should-close-p backend-window) do
              (dolist (raw-event (minerva.gfx:poll-events))
                (let ((event (minerva.events:sdl-event->minerva-event raw-event)))
@@ -45,10 +43,10 @@
              (minerva.gfx:clear-screen backend-window
                                        (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
              (let ((frame-width (if app-state
-                                    (minerva.events:app-state-window-width app-state)
+                                    (minerva.gui:window-width (minerva.events:app-state-root app-state))
                                     width))
                    (frame-height (if app-state
-                                     (minerva.events:app-state-window-height app-state)
+                                     (minerva.gui:window-height (minerva.events:app-state-root app-state))
                                      height)))
                (minerva.gui:layout ui-root (minerva.gui:make-rect :x 0 :y 0
                                                                    :width frame-width

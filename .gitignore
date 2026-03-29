@@ -12,8 +12,9 @@ SDL_ttf/
 build/
 .logs/
 
-# assets
-assets/
+# minerva assets
+minerva/assets/
+demos/assets/
 
 # docs stuff
 docs/_build/

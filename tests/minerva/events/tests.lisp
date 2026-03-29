@@ -20,9 +20,7 @@
                 :app-state-active-widget
                 :app-state-should-quit
                 :app-state-needs-redraw
-                :app-state-last-command
-                :app-state-window-width
-                :app-state-window-height))
+                :app-state-last-command))
 
 (in-package :minerva.events.tests)
 
@@ -158,11 +156,9 @@
      "default widget handler is no-op")
     (process-minerva-event state '(:window-resized :width 300 :height 150))
     (%assert-equal
-     (list (window-width root) (window-height root)
-           (app-state-window-width state)
-           (app-state-window-height state))
-     '(300 150 300 150)
-     "window resize updates root and app-state")
+         (list (window-width root) (window-height root))
+         '(300 150)
+         "window resize updates root")
     (process-minerva-event state '(:quit))
     (%assert-equal
      (app-state-should-quit state)
@@ -215,6 +211,19 @@
       (%assert-equal (app-state-last-command state) nil "mouse up outside does not emit command")
       (%assert-equal (app-state-active-widget state) nil "mouse up outside clears active widget")
       (%assert-equal (button-state btn) :normal "mouse up outside returns button to normal"))))
+
+(%deftest test-button-hover-clears-when-mouse-leaves
+  (%with-stubbed-button-gfx
+    (let* ((btn (make-instance 'button :text "Load" :command :load-file))
+           (root (make-instance 'window :width 120 :height 40 :child btn))
+           (state (make-app-state :root root)))
+      (layout root (make-rect :x 0 :y 0 :width 120 :height 40))
+      (process-minerva-event state '(:mouse-move :x 10 :y 10))
+      (%assert-equal (button-state btn) :highlighted "mouse move inside highlights button")
+      (setf (app-state-needs-redraw state) nil)
+      (process-minerva-event state '(:mouse-move :x 300 :y 300))
+      (%assert-equal (button-state btn) :normal "mouse leave clears highlight")
+      (%assert-equal (app-state-needs-redraw state) t "mouse leave requests redraw"))))
 
 (%deftest test-process-actions-handles-command-centrally
   (let ((state (make-app-state)))

@@ -17,16 +17,13 @@
                                        :font-name "inconsolata"
                                        :text-size 32
                                        :color '(255 120 120 255)
-                                       :padding-x 14
-                                       :padding-y 10
+                                       :padding (minerva.common:make-size :width 14 :height 10)
                                        :alignment :center))
          (root-widget (make-instance 'minerva.gui:window
                                      :size (minerva.common:make-size :width width :height height)
                                      :background-color (minerva.gfx:make-color :r 221 :g 221 :b 221 :a 255)
                                      :child button-widget))
-         (app-state (minerva.events:make-app-state :root root-widget
-                                                   :window-width width
-                                                   :window-height height))
+         (app-state (minerva.events:make-app-state :root root-widget))
          (start-time (minerva.gfx:ticks-ms)))
     (unwind-protect
          (loop until (minerva.gfx:window-should-close-p window) do

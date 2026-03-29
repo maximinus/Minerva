@@ -26,6 +26,33 @@
       (setf (symbol-function 'minerva.gui::%button-load-surface) old-load)
       (setf (symbol-function 'minerva.gui::%button-render-text-surface) old-render-text))))
 
+(%deftest test-button-padding-size-initarg
+  (let ((old-load (symbol-function 'minerva.gui::%button-load-surface))
+        (old-render-text (symbol-function 'minerva.gui::%button-render-text-surface)))
+    (unwind-protect
+         (progn
+           (setf (symbol-function 'minerva.gui::%button-load-surface)
+                 (lambda (path)
+                   (declare (ignore path))
+                   '(:width 24 :height 24)))
+           (setf (symbol-function 'minerva.gui::%button-render-text-surface)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   '(:width 50 :height 20)))
+           (let ((btn (make-instance 'button
+                                     :text "Pad"
+                                     :padding (minerva.common:make-size :width 14 :height 6))))
+             (%assert-equal (button-padding-x btn) 14 "button :padding size sets x padding")
+             (%assert-equal (button-padding-y btn) 6 "button :padding size sets y padding"))
+           (let ((btn (make-instance 'button
+                                     :text "Pad"
+                                     :padding (minerva.common:make-size :width 14 :height 6)
+                                     :padding-x 9)))
+             (%assert-equal (button-padding-x btn) 9 "button :padding-x overrides :padding width")
+             (%assert-equal (button-padding-y btn) 6 "button :padding height remains from size")))
+      (setf (symbol-function 'minerva.gui::%button-load-surface) old-load)
+      (setf (symbol-function 'minerva.gui::%button-render-text-surface) old-render-text))))
+
 (%deftest test-button-text-draw-rect-is-centered
   (let ((old-load (symbol-function 'minerva.gui::%button-load-surface))
         (old-render-text (symbol-function 'minerva.gui::%button-render-text-surface)))

@@ -14,27 +14,23 @@
                                        :text "Load"
                                        :command :load-file
                                        :font-name "inconsolata"
-                                       :text-size 14
+                                       :text-size 32
                                        :color '(0 0 00 255)
-                                       :padding-x 8
-                                       :padding-y 2
+                                       :padding (minerva.common:make-size :width 16 :height 16)
                                        :alignment :center)))
 
 (defun run-button-command-demo (&key (title "Minerva Button Command Demo")
                                   (width 800)
                                   (height 600)
-                                  (max-runtime-ms 12000))
+                                  (max-runtime-ms 20000))
   (minerva.gfx:init-backend)
   (let ((backend-window nil)
         (app-state nil)
-        (last-command nil)
         (start-time 0))
     (unwind-protect
          (progn
            (setf backend-window (minerva.gfx:create-window :title title :width width :height height))
-           (setf app-state (minerva.events:make-app-state :root (make-button-command-demo-ui width height)
-                                                          :window-width width
-                                                          :window-height height))
+           (setf app-state (minerva.events:make-app-state :root (make-button-command-demo-ui width height)))
            (setf start-time (minerva.gfx:ticks-ms))
            (loop until (minerva.gfx:window-should-close-p backend-window) do
              (dolist (raw-event (minerva.gfx:poll-events))
@@ -45,16 +41,15 @@
                      (minerva.gfx:request-window-close backend-window)))))
 
              (let ((current-command (minerva.events:app-state-last-command app-state)))
-               (unless (eq current-command last-command)
-                 (when current-command
-                   (format t "~&Button emitted command: ~S~%" current-command)
-                   (finish-output))
-                 (setf last-command current-command)))
+               (when current-command
+                 (format t "~&Button emitted command: ~S~%" current-command)
+                 (finish-output)
+                 (setf (minerva.events:app-state-last-command app-state) nil)))
 
              (when (minerva.events:app-state-needs-redraw app-state)
-               (let ((root (minerva.events:app-state-root app-state))
-                     (frame-width (minerva.events:app-state-window-width app-state))
-                     (frame-height (minerva.events:app-state-window-height app-state)))
+               (let* ((root (minerva.events:app-state-root app-state))
+                      (frame-width (minerva.gui:window-width root))
+                      (frame-height (minerva.gui:window-height root)))
                  (minerva.gui:layout root (minerva.gui:make-rect :x 0 :y 0
                                                                  :width frame-width
                                                                  :height frame-height))

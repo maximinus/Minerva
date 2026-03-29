@@ -2,9 +2,6 @@
   (:use :cl)
   (:import-from :minerva.gui
                 :widget
-                :window
-                :window-width
-                :window-height
                 :widget-layout-rect
                 :event-children
                 :handle-event
@@ -21,8 +18,6 @@
    :app-state-should-quit
     :app-state-needs-redraw
     :app-state-last-command
-   :app-state-window-width
-   :app-state-window-height
    :sdl-event->minerva-event
    :route-minerva-event
     :process-actions
@@ -34,34 +29,24 @@
 
 (defstruct (app-state
             (:constructor %make-app-state (&key root focused-widget active-widget should-quit needs-redraw
-                                                 last-command window-width window-height)))
+                                                 hovered-widget last-command)))
   (root nil)
   (focused-widget nil)
   (active-widget nil)
   (should-quit nil)
   (needs-redraw t)
-  (last-command nil)
-  (window-width 0 :type integer)
-  (window-height 0 :type integer))
+  (hovered-widget nil)
+  (last-command nil))
 
 (defun make-app-state (&key root focused-widget active-widget (should-quit nil) (needs-redraw t)
-                         last-command window-width window-height)
-  (let ((width (or window-width
-                   (when (typep root 'window)
-                     (window-width root))
-                   0))
-        (height (or window-height
-                    (when (typep root 'window)
-                      (window-height root))
-                    0)))
-    (%make-app-state :root root
-                     :focused-widget focused-widget
-                     :active-widget active-widget
-                     :should-quit should-quit
-                     :needs-redraw needs-redraw
-                     :last-command last-command
-                     :window-width (max 0 (truncate width))
-                     :window-height (max 0 (truncate height)))))
+                         hovered-widget last-command)
+  (%make-app-state :root root
+                   :focused-widget focused-widget
+                   :active-widget active-widget
+                   :should-quit should-quit
+                   :needs-redraw needs-redraw
+                   :hovered-widget hovered-widget
+                   :last-command last-command))
 
 (defun %normalize-mouse-button (button)
   (case button
@@ -174,9 +159,7 @@
 (defun %apply-app-state-event-updates (state event)
   (case (first event)
     (:window-resized
-     (setf (app-state-window-width state) (max 0 (truncate (or (getf (rest event) :width) 0)))
-           (app-state-window-height state) (max 0 (truncate (or (getf (rest event) :height) 0)))
-           (app-state-needs-redraw state) t))
+     (setf (app-state-needs-redraw state) t))
     (otherwise nil))
   state)
 
@@ -211,8 +194,31 @@
   (dolist (action (%normalize-actions actions) state)
     (process-action state action)))
 
+(defun %event-point (event)
+  (let ((x (getf (rest event) :x))
+        (y (getf (rest event) :y)))
+    (if (and (numberp x) (numberp y))
+        (values x y t)
+        (values 0 0 nil))))
+
+(defun %update-hovered-widget (state event)
+  (when (eq (first event) :mouse-move)
+    (multiple-value-bind (x y has-point)
+        (%event-point event)
+      (let* ((root (app-state-root state))
+             (previous (app-state-hovered-widget state))
+             (current (and has-point
+                           root
+                           (widget-at-point root x y))))
+        (unless (eq previous current)
+          (when previous
+            (process-actions state (handle-event previous state '(:mouse-leave))))
+          (setf (app-state-hovered-widget state) current)))))
+  state)
+
 (defun process-minerva-event (state event)
   (%apply-app-state-event-updates state event)
+  (%update-hovered-widget state event)
   (let* ((target (route-minerva-event state event))
          (result (and target (handle-event target state event))))
     (process-actions state result)

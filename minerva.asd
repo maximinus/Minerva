@@ -8,6 +8,7 @@
    (:file "src/minerva/gfx/ffi")
    (:file "src/minerva/gfx/backend")
     (:file "src/minerva/gui/core")
+  (:file "src/minerva/gui/default-images")
     (:file "src/minerva/gui/window")
     (:file "src/minerva/gui/hbox")
     (:file "src/minerva/gui/vbox")
@@ -17,6 +18,9 @@
     (:file "src/minerva/gui/label")
     (:file "src/minerva/gui/button")
     (:file "src/minerva/gui/nine-patch")
+    (:file "src/minerva/gui/menu-item")
+    (:file "src/minerva/gui/menu-spacer")
+    (:file "src/minerva/gui/menu")
      (:file "src/minerva/events")))
 
 (asdf:defsystem "minerva/tests"
@@ -35,6 +39,7 @@
   (:file "tests/minerva/gui/test-button")
    (:file "tests/minerva/gui/test-color-rect")
    (:file "tests/minerva/gui/test-nine-patch")
+    (:file "tests/minerva/gui/test-menu")
    (:file "tests/minerva/gui/tests")
    (:file "tests/minerva/events/tests")
    (:file "tests/minerva/gfx/tests"))

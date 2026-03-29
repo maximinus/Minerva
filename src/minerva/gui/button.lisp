@@ -5,6 +5,7 @@
 (defclass button (widget)
   ((text :initarg :text :accessor button-text :initform "")
   (command :initarg :command :accessor button-command :initform nil)
+  (padding :initarg :padding :reader button-padding :initform nil)
    (font-name :initarg :font-name :accessor button-font-name :initform "inconsolata")
    (text-size :initarg :text-size :accessor button-text-size :initform 12)
    (color :initarg :color :accessor button-color :initform '(255 255 255 255))
@@ -17,6 +18,17 @@
    (pressed-surface :initarg :pressed-surface :accessor button-pressed-surface :initform nil)
    (text-surface :accessor button-text-surface :initform nil)
    (text-draw-rect :accessor button-text-draw-rect :initform (make-rect))))
+
+  (defmethod initialize-instance :around ((btn button)
+                 &rest initargs
+                 &key padding padding-x padding-y
+                 &allow-other-keys)
+    (apply #'call-next-method btn initargs)
+    (let* ((base-padding (%coerce-size padding))
+      (final-padding-x (if (null padding-x) (size-width base-padding) padding-x))
+      (final-padding-y (if (null padding-y) (size-height base-padding) padding-y)))
+      (setf (button-padding-x btn) (%non-negative-int final-padding-x)
+       (button-padding-y btn) (%non-negative-int final-padding-y))))
 
 (defun %button-project-root ()
   (or (ignore-errors (asdf:system-source-directory "minerva"))
@@ -325,4 +337,8 @@
                               :pressed
                               (if inside :highlighted :normal)))
        nil))
+    (:mouse-leave
+     (unless (button-pointer-down-p btn)
+       (%button-set-state btn app-state :normal))
+     nil)
     (otherwise nil)))

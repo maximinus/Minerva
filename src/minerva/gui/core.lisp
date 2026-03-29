@@ -111,6 +111,45 @@
   :nine-patch-border-bottom
   :nine-patch-child
   :nine-patch-content-rect
+  :+default-menu-nine-patch-image-path+
+  :*default-image-paths*
+  :default-image-path
+  :load-default-image-surface
+  :menu-item
+  :menu-item-id
+  :menu-item-text
+  :menu-item-command
+  :menu-item-icon
+  :menu-item-key-text
+  :menu-item-highlighted-color
+  :menu-item-state
+  :menu-item-icon-surface
+  :menu-item-label-surface
+  :menu-item-key-surface
+  :menu-item-icon-column-width
+  :menu-item-label-column-width
+  :menu-item-key-column-width
+  :menu-item-icon-draw-rect
+  :menu-item-label-draw-rect
+  :menu-item-key-draw-rect
+  :menu-spacer
+  :menu-spacer-line-color
+  :menu-spacer-top-spacing
+  :menu-spacer-bottom-spacing
+  :menu-spacer-line-thickness
+  :menu-spacer-inset-x
+  :menu
+  :menu-entries
+  :menu-children
+  :menu-panel-surface
+  :menu-border-left
+  :menu-border-right
+  :menu-border-top
+  :menu-border-bottom
+  :menu-icon-column-width
+  :menu-label-column-width
+  :menu-key-column-width
+  :make-menu
    :measure-min-width
    :measure-min-height
    :measure-expand-x
