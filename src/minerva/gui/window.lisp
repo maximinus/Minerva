@@ -117,5 +117,5 @@
                (window-height w) new-height)
          nil))
       (:quit
-       '(:quit t))
+        '((:command :quit-app)))
       (otherwise nil))))

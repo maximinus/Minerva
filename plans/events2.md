@@ -140,9 +140,8 @@ This is enough to establish the pattern.
 
 ## Required widget type
 
-Check the current `Button` widget fits this model.
+Check the current `Button` widget fits this model. This is mainly complete.
 
----
 
 ## Required properties
 
@@ -174,69 +173,13 @@ The command or action name to emit when activated, for example:
 
 ---
 
-# Part 2: Button Minimum Size
-
-## Goal
-
-The button should participate in layout like any other widget.
-
-For this phase, keep minimum size rules simple.
-
-### Acceptable options
-
-Either:
-
-1. use a fixed minimum size for all buttons in this phase
-2. compute a minimum size from label text if text measurement is already available
-
-Either is acceptable.
-
-If text measurement is not yet ready or would complicate this phase too much, use a fixed minimum size.
-
-Example:
-
-* minimum width 80
-* minimum height 30
-
-The important part is that layout works and the button has a rectangle.
-
----
-
-# Part 3: Button Rendering
-
-## Goal
-
-The button must visibly reflect its interaction state.
-
-For this phase, keep rendering simple.
-
-The button can render as:
-
-* a rectangle background
-* with different colors depending on state
-* optional text label if text rendering is already easy to use
-
-### Minimum visual behaviour
-
-Use different colors for:
-
-* normal
-* hovered
-* pressed
-
-This is enough for the first interactive milestone.
-
-If labels are already easy to draw, include them. If not, it is acceptable to leave label rendering basic or temporary.
-
----
-
 # Part 4: Button Event Handling
 
 ## Goal
 
 Buttons must respond to Minerva mouse events.
 
-For this phase, handle:
+For this phase, handle only these:
 
 * `:mouse-move`
 * `:mouse-down`

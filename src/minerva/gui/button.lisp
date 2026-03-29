@@ -4,6 +4,7 @@
 
 (defclass button (widget)
   ((text :initarg :text :accessor button-text :initform "")
+  (command :initarg :command :accessor button-command :initform nil)
    (font-name :initarg :font-name :accessor button-font-name :initform "inconsolata")
    (text-size :initarg :text-size :accessor button-text-size :initform 12)
    (color :initarg :color :accessor button-color :initform '(255 255 255 255))
@@ -76,6 +77,42 @@
        (>= y (rect-y rect))
        (< x (+ (rect-x rect) (rect-width rect)))
        (< y (+ (rect-y rect) (rect-height rect)))))
+
+(defun %events-accessor (name)
+  (let* ((events-package (find-package :minerva.events))
+         (symbol (and events-package (find-symbol name events-package))))
+    (and symbol
+         (fboundp symbol)
+         (symbol-function symbol))))
+
+(defun %button-app-state-value (app-state accessor-name)
+  (let ((accessor (%events-accessor accessor-name)))
+    (when (and app-state accessor)
+      (funcall accessor app-state))))
+
+(defun %set-button-app-state-value (app-state accessor-name value)
+  (let* ((events-package (find-package :minerva.events))
+         (symbol (and events-package (find-symbol accessor-name events-package)))
+         (setter-name (and symbol (list 'setf symbol)))
+         (setter (and setter-name (fboundp setter-name) (fdefinition setter-name))))
+    (when (and app-state setter)
+      (funcall setter value app-state)))
+  value)
+
+(defun %button-mark-redraw (app-state)
+  (%set-button-app-state-value app-state "APP-STATE-NEEDS-REDRAW" t))
+
+(defun %button-active-widget (app-state)
+  (%button-app-state-value app-state "APP-STATE-ACTIVE-WIDGET"))
+
+(defun %button-set-active-widget (app-state widget)
+  (%set-button-app-state-value app-state "APP-STATE-ACTIVE-WIDGET" widget))
+
+(defun %button-set-state (btn app-state state)
+  (unless (eq (button-state btn) state)
+    (setf (button-state btn) state)
+    (%button-mark-redraw app-state))
+  state)
 
 (defun %button-state-surface (btn)
   (case (button-state btn)
@@ -250,7 +287,6 @@
   btn)
 
 (defmethod handle-event ((btn button) app-state event)
-  (declare (ignore app-state))
   (case (first event)
     (:mouse-down
      (let* ((button (getf (rest event) :button))
@@ -258,27 +294,35 @@
             (y (getf (rest event) :y))
             (inside (%button-point-in-rect-p x y (widget-layout-rect btn))))
        (when (and (eq button :left) inside)
-         (setf (button-pointer-down-p btn) t
-               (button-state btn) :pressed)
-         '(:pressed t))))
+         (setf (button-pointer-down-p btn) t)
+         (%button-set-active-widget app-state btn)
+         (%button-set-state btn app-state :pressed)
+         nil)))
     (:mouse-up
      (let* ((button (getf (rest event) :button))
             (x (getf (rest event) :x))
             (y (getf (rest event) :y))
             (inside (%button-point-in-rect-p x y (widget-layout-rect btn)))
-            (was-down (button-pointer-down-p btn)))
+            (was-down (button-pointer-down-p btn))
+            (was-active (eq (%button-active-widget app-state) btn))
+            (activate-p (and (eq button :left)
+                             inside
+                             (or was-active
+                                 (and (null app-state) was-down)))))
        (when (eq button :left)
-         (setf (button-pointer-down-p btn) nil
-               (button-state btn) (if inside :highlighted :normal))
-         (when (and was-down inside)
-           '(:clicked t)))))
+         (setf (button-pointer-down-p btn) nil)
+         (when was-active
+           (%button-set-active-widget app-state nil))
+         (%button-set-state btn app-state (if inside :highlighted :normal))
+         (when (and activate-p (button-command btn))
+           (list (list :command (button-command btn)))))))
     (:mouse-move
      (let* ((x (getf (rest event) :x))
             (y (getf (rest event) :y))
             (inside (%button-point-in-rect-p x y (widget-layout-rect btn))))
-       (setf (button-state btn)
-             (if (button-pointer-down-p btn)
-                 (if inside :pressed :normal)
-                 (if inside :highlighted :normal)))
+       (%button-set-state btn app-state
+                          (if (button-pointer-down-p btn)
+                              :pressed
+                              (if inside :highlighted :normal)))
        nil))
     (otherwise nil)))

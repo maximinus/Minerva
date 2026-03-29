@@ -3,6 +3,8 @@
   (:import-from :minerva.gui
                 :hbox
                 :window
+                :button
+                :button-state
                 :color-rect
                 :make-rect
                 :layout
@@ -13,8 +15,12 @@
                 :make-app-state
                 :sdl-event->minerva-event
                 :route-minerva-event
+                :process-actions
                 :process-minerva-event
+                :app-state-active-widget
                 :app-state-should-quit
+                :app-state-needs-redraw
+                :app-state-last-command
                 :app-state-window-width
                 :app-state-window-height))
 
@@ -27,6 +33,23 @@
 (defmacro %deftest (name &body body)
   `(defun ,name ()
      ,@body))
+
+(defmacro %with-stubbed-button-gfx (&body body)
+  `(let ((old-load (symbol-function 'minerva.gui::%button-load-surface))
+         (old-render-text (symbol-function 'minerva.gui::%button-render-text-surface)))
+     (unwind-protect
+          (progn
+            (setf (symbol-function 'minerva.gui::%button-load-surface)
+                  (lambda (path)
+                    (declare (ignore path))
+                    '(:width 24 :height 24)))
+            (setf (symbol-function 'minerva.gui::%button-render-text-surface)
+                  (lambda (&rest args)
+                    (declare (ignore args))
+                    '(:width 20 :height 12)))
+            ,@body)
+       (setf (symbol-function 'minerva.gui::%button-load-surface) old-load)
+       (setf (symbol-function 'minerva.gui::%button-render-text-surface) old-render-text))))
 
 (defun %assert-equal (actual expected label)
   (incf *test-count*)
@@ -145,6 +168,63 @@
      (app-state-should-quit state)
      t
      "quit marks app-state should-quit")))
+
+(%deftest test-mouse-up-routes-to-active-widget
+  (%with-stubbed-button-gfx
+    (let* ((left (make-instance 'button :text "L" :command :left-cmd))
+           (right (make-instance 'button :text "R" :command :right-cmd))
+           (root (make-instance 'window :width 120 :height 40
+                                :child (make-instance 'hbox :children (list left right) :spacing 0)))
+           (state (make-app-state :root root :active-widget left)))
+      (layout root (make-rect :x 0 :y 0 :width 120 :height 40))
+      (%assert-equal
+       (route-minerva-event state '(:mouse-up :button :left :x 90 :y 20))
+       left
+       "mouse-up routes to active widget when set"))))
+
+(%deftest test-button-click-emits-command-and-clears-active-widget
+  (%with-stubbed-button-gfx
+    (let* ((btn (make-instance 'button :text "Load" :command :load-file))
+           (root (make-instance 'window :width 120 :height 40 :child btn))
+           (state (make-app-state :root root)))
+      (layout root (make-rect :x 0 :y 0 :width 120 :height 40))
+      (setf (app-state-needs-redraw state) nil)
+      (process-minerva-event state '(:mouse-move :x 10 :y 10))
+      (%assert-equal (button-state btn) :highlighted "mouse move inside highlights button")
+      (%assert-equal (app-state-needs-redraw state) t "hover transition requests redraw")
+      (setf (app-state-needs-redraw state) nil)
+      (process-minerva-event state '(:mouse-down :button :left :x 10 :y 10))
+      (%assert-equal (button-state btn) :pressed "mouse down inside presses button")
+      (%assert-equal (app-state-active-widget state) btn "mouse down sets active widget")
+      (%assert-equal (app-state-needs-redraw state) t "press transition requests redraw")
+      (setf (app-state-needs-redraw state) nil)
+      (process-minerva-event state '(:mouse-up :button :left :x 10 :y 10))
+      (%assert-equal (app-state-last-command state) :load-file "mouse up inside emits command action")
+      (%assert-equal (app-state-active-widget state) nil "mouse up clears active widget")
+      (%assert-equal (button-state btn) :highlighted "mouse up inside returns to highlighted")
+      (%assert-equal (app-state-needs-redraw state) t "release transition requests redraw"))))
+
+(%deftest test-button-release-outside-does-not-activate
+  (%with-stubbed-button-gfx
+    (let* ((btn (make-instance 'button :text "Load" :command :load-file))
+           (root (make-instance 'window :width 120 :height 40 :child btn))
+           (state (make-app-state :root root)))
+      (layout root (make-rect :x 0 :y 0 :width 120 :height 40))
+      (process-minerva-event state '(:mouse-down :button :left :x 10 :y 10))
+      (process-minerva-event state '(:mouse-up :button :left :x 300 :y 300))
+      (%assert-equal (app-state-last-command state) nil "mouse up outside does not emit command")
+      (%assert-equal (app-state-active-widget state) nil "mouse up outside clears active widget")
+      (%assert-equal (button-state btn) :normal "mouse up outside returns button to normal"))))
+
+(%deftest test-process-actions-handles-command-centrally
+  (let ((state (make-app-state)))
+    (setf (app-state-needs-redraw state) nil)
+    (process-actions state '((:command :load-file)))
+    (%assert-equal (app-state-last-command state) :load-file "process-actions records handled command")
+    (%assert-equal (app-state-needs-redraw state) t "load-file command marks redraw")
+    (setf (app-state-should-quit state) nil)
+    (process-actions state '((:command :quit-app)))
+    (%assert-equal (app-state-should-quit state) t "quit-app command sets should-quit")))
 
 (defun run-event-tests ()
   (setf *test-count* 0

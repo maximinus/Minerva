@@ -96,6 +96,7 @@
   :button-color
   :button-padding-x
   :button-padding-y
+  :button-command
   :button-state
   :button-normal-surface
   :button-highlighted-surface
