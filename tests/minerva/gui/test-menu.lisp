@@ -33,13 +33,19 @@
       (%assert-equal (menu-item-key-text item) "Ctrl-O" "menu-item stores key-text")
       (%assert-equal (%surface-width (menu-item-icon-surface item)) 16 "menu-item stores icon surface"))))
 
-(%deftest test-default-image-path-registry-has-menu-nine-patch
+(%deftest test-theme-default-image-paths-are-flat-vars
   (%assert-equal menu-nine-patch
                  "/assets/menu/menu.png"
                  "menu nine-patch constant path")
-  (%assert-equal (cdr (assoc :menu-nine-patch default-image-paths))
-                 "/assets/menu/menu.png"
-                 "default image list includes menu nine-patch"))
+  (%assert-equal theme:button-nine-patch-normal
+                 "/assets/button/button_normal.png"
+                 "button normal path is direct theme var")
+  (%assert-equal theme:button-nine-patch-highlight
+                 "/assets/button/button_highlight.png"
+                 "button highlight path is direct theme var")
+  (%assert-equal theme:button-nine-patch-pressed
+                 "/assets/button/button_pressed.png"
+                 "button pressed path is direct theme var"))
 
 (%deftest test-menu-loads-default-panel-surface-when-not-provided
   (%with-stubbed-menu-text-render
@@ -197,10 +203,18 @@
 (%deftest test-menu-item-key-text-uses-theme-default-color
   (%with-stubbed-menu-text-render
     (let ((item (make-instance 'menu-item :text "Exit" :command :quit :key-text "Ctrl-X")))
-      (%assert-equal (getf (menu-item-label-surface item) :color)
+      (%assert-equal (let ((color (getf (menu-item-label-surface item) :color)))
+                       (list (color-r color)
+                             (color-g color)
+                             (color-b color)
+                             (color-a color)))
                      '(0 0 0 255)
                      "menu-item label uses primary text color")
-      (%assert-equal (getf (menu-item-key-surface item) :color)
+      (%assert-equal (let ((color (getf (menu-item-key-surface item) :color)))
+                       (list (color-r color)
+                             (color-g color)
+                             (color-b color)
+                             (color-a color)))
                      '(0 0 0 255)
                      "menu-item key-text uses theme default color"))))
 

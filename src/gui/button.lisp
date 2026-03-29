@@ -8,7 +8,7 @@
   (padding :initarg :padding :reader button-padding :initform nil)
   (font-name :initarg :font-name :accessor button-font-name :initform theme:default-font)
   (text-size :initarg :text-size :accessor button-text-size :initform theme:default-font-size)
-  (color :initarg :color :accessor button-color :initform theme:default-color)
+  (color :initarg :color :accessor button-color :initform theme:default-font-color)
    (padding-x :initarg :padding-x :accessor button-padding-x :initform 0)
    (padding-y :initarg :padding-y :accessor button-padding-y :initform 0)
    (state :initarg :state :accessor button-state :initform :normal)
@@ -34,17 +34,22 @@
   (or (ignore-errors (asdf:system-source-directory "minerva"))
       (truename "./")))
 
-(defun %button-state-filename (state)
+(defun %button-theme-path (state)
   (case state
-    (:normal "button_normal.png")
-    (:highlighted "button_highlight.png")
-    (:pressed "button_pressed.png")
+    (:normal theme:button-nine-patch-normal)
+    (:highlighted theme:button-nine-patch-highlight)
+    (:pressed theme:button-nine-patch-pressed)
     (otherwise (error "Invalid button state ~S" state))))
 
+(defun %button-normalize-path (path)
+  (if (and (stringp path)
+           (> (length path) 0)
+           (char= (char path 0) #\/))
+      (subseq path 1)
+      path))
+
 (defun %button-state-surface-path (state)
-  (namestring
-   (merge-pathnames (format nil "minerva/assets/buttons/~A" (%button-state-filename state))
-                    (%button-project-root))))
+  (%button-normalize-path (%button-theme-path state)))
 
 (defun %button-color-components (color)
   (destructuring-bind (r g b &optional (a 255))
@@ -59,7 +64,7 @@
 (defun %button-load-surface (path)
   (let ((load-fn (%gfx-function "LOAD-SURFACE")))
     (unless load-fn
-      (error "minerva.gfx:load-surface is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx:load-surface is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (funcall load-fn path)))
 
 (defun %button-render-text-surface (font-name text-size text color)
@@ -68,7 +73,7 @@
         (render-text-fn (%gfx-function "RENDER-TEXT-TO-SURFACE"))
         (make-color-fn (%gfx-function "MAKE-COLOR")))
     (unless (and get-font-fn destroy-font-fn render-text-fn make-color-fn)
-      (error "minerva.gfx text rendering functions are unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx text rendering functions are unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (let ((font nil))
       (unwind-protect
            (progn

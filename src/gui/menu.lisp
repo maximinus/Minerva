@@ -26,7 +26,7 @@
 (defun %menu-load-default-panel-surface ()
   (let ((load-fn (%gfx-function "LOAD-SURFACE")))
     (unless load-fn
-      (error "minerva.gfx:load-surface is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx:load-surface is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (funcall load-fn (%menu-default-panel-path))))
 
 (defun %menu-entry-spacer-p (entry)
@@ -66,9 +66,9 @@
                    :key-text key-text
                    :font-name (or (getf entry :font-name) theme:default-font)
                    :text-size (or (getf entry :text-size) theme:default-font-size)
-                   :text-color (or (getf entry :text-color) theme:default-color)
-                   :key-text-color (or (getf entry :key-text-color) theme:default-color)
-                   :highlighted-color (or (getf entry :highlighted-color) '(70 70 70 255)))))
+                   :text-color (or (getf entry :text-color) theme:default-font-color)
+                   :key-text-color (or (getf entry :key-text-color) theme:default-font-color)
+                   :highlighted-color (or (getf entry :highlighted-color) theme:default-menu-background-highlight))))
 
 (defun %menu-build-children (menu entries)
   (loop for entry in entries

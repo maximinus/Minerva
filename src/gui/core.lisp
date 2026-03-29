@@ -23,14 +23,15 @@
   (:import-from :minerva.gui.theme
                 :default-font
                 :default-font-size
-                :default-color
+                :default-font-color
+                :window-background-color
+                :default-menu-background-highlight
                 :menu-nine-patch
                 :menu-nine-patch-border-size
                 :menu-nine-patch-border-left
                 :menu-nine-patch-border-right
                 :menu-nine-patch-border-top
-                :menu-nine-patch-border-bottom
-                :default-image-paths)
+                :menu-nine-patch-border-bottom)
   (:export
     :margins
     :make-margins
@@ -124,14 +125,15 @@
   :nine-patch-content-rect
   :default-font
   :default-font-size
-  :default-color
+  :default-font-color
+  :window-background-color
+  :default-menu-background-highlight
   :menu-nine-patch
   :menu-nine-patch-border-size
   :menu-nine-patch-border-left
   :menu-nine-patch-border-right
   :menu-nine-patch-border-top
   :menu-nine-patch-border-bottom
-  :default-image-paths
   :menu-item
   :menu-item-id
   :menu-item-text
@@ -411,7 +413,7 @@
          (fill-rect-symbol (and gfx-package (find-symbol "FILL-RECT" gfx-package)))
          (fill-rect-fn (and fill-rect-symbol (fboundp fill-rect-symbol) (symbol-function fill-rect-symbol))))
     (unless fill-rect-fn
-      (error "minerva.gfx:fill-rect is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx:fill-rect is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (destructuring-bind (r g b a)
         (if (listp color)
             color
@@ -433,7 +435,7 @@
   (let ((draw-fn (%gfx-function "DRAW-SURFACE-RECT"))
         (make-pos-fn (%gfx-function "MAKE-POSITION")))
     (unless (and draw-fn make-pos-fn)
-      (error "minerva.gfx surface draw functions are unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx surface draw functions are unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (funcall draw-fn
              backend-window
              surface
@@ -443,7 +445,7 @@
 (defun %call-draw-surface-rect-scaled (backend-window surface source-rect dest-rect)
   (let ((draw-fn (%gfx-function "DRAW-SURFACE-RECT-SCALED")))
     (unless draw-fn
-      (error "minerva.gfx:draw-surface-rect-scaled is unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx:draw-surface-rect-scaled is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (funcall draw-fn backend-window surface source-rect dest-rect)))
 
 (defun %surface-width (surface)

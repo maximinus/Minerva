@@ -4,7 +4,7 @@
   ((text :initarg :text :accessor label-text :initform "")
   (font-name :initarg :font-name :accessor label-font-name :initform theme:default-font)
   (text-size :initarg :text-size :accessor label-text-size :initform theme:default-font-size)
-  (color :initarg :color :accessor label-color :initform theme:default-color)
+  (color :initarg :color :accessor label-color :initform theme:default-font-color)
    (surface :accessor label-surface :initform nil)
    (draw-rect :accessor label-draw-rect :initform (make-rect))))
 
@@ -45,7 +45,7 @@
         (render-text-fn (%gfx-function "RENDER-TEXT-TO-SURFACE"))
         (make-color-fn (%gfx-function "MAKE-COLOR")))
     (unless (and get-font-fn destroy-font-fn render-text-fn make-color-fn)
-      (error "minerva.gfx text rendering functions are unavailable. Load src/minerva/gfx/ffi.lisp and src/minerva/gfx/backend.lisp first."))
+      (error "minerva.gfx text rendering functions are unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
     (let ((font nil))
       (unwind-protect
            (progn

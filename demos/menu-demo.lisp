@@ -6,15 +6,12 @@
 
 (minerva.tooling.demo-bootstrap:load-minerva)
 
-(defun make-solid-icon-surface (rgba)
-  (let ((surface (minerva.gfx:create-surface :width 16 :height 16)))
-    (minerva.gfx:fill-surface surface
-                              (apply #'minerva.gfx:make-color
-                                     (list :r (first rgba)
-                                           :g (second rgba)
-                                           :b (third rgba)
-                                           :a (fourth rgba))))
-    surface))
+(defun demo-asset-path (path)
+  (if (and (stringp path)
+           (> (length path) 0)
+           (char= (char path 0) #\/))
+      (subseq path 1)
+      path))
 
 (defun make-menu-demo-ui (width height icon-map)
   (let* ((menu (make-instance 'minerva.gui:menu
@@ -34,6 +31,8 @@
 (defun run-menu-demo (&key (title "Minerva Menu Demo")
                         (width 800)
                         (height 600)
+        (open-icon-path "/assets/icons/open.png")
+        (save-icon-path "/assets/icons/save.png")
                         (max-runtime-ms 30000))
   (minerva.gfx:init-backend)
   (let ((backend-window nil)
@@ -44,8 +43,8 @@
     (unwind-protect
          (progn
            (setf backend-window (minerva.gfx:create-window :title title :width width :height height))
-               (setf open-icon (make-solid-icon-surface '(88 200 120 255))
-                 save-icon (make-solid-icon-surface '(110 160 255 255)))
+               (setf open-icon (minerva.gfx:load-surface (demo-asset-path open-icon-path))
+                 save-icon (minerva.gfx:load-surface (demo-asset-path save-icon-path)))
            (setf app-state
                  (minerva.events:make-app-state
               :root (make-menu-demo-ui width

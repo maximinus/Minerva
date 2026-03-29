@@ -6,10 +6,10 @@ Scope
 
 These docs describe Lisp-side APIs from:
 
-- ``src/minerva/conditions.lisp``
-- ``src/minerva/gfx/ffi.lisp``
-- ``src/minerva/gfx/backend.lisp``
-- ``src/minerva/gui/core.lisp``
+- ``src/conditions.lisp``
+- ``src/gfx/ffi.lisp``
+- ``src/gfx/backend.lisp``
+- ``src/gui/core.lisp``
 
 The native C layer is intentionally not documented here.
 

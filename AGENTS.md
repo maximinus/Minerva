@@ -21,8 +21,8 @@
 - Logs are written to `.logs/`.
 
 ## Error/condition conventions
-- Prefer project conditions from `src/minerva/conditions.lisp`.
-- FFI/resource failures should be raised at the Lisp FFI wrapper boundary (`src/minerva/gfx/backend.lisp`).
+- Prefer project conditions from `src/conditions.lisp`.
+- FFI/resource failures should be raised at the Lisp FFI wrapper boundary (`src/gfx/backend.lisp`).
 
 ## Practical constraints
 - Keep changes minimal and scoped.

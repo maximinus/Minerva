@@ -13,10 +13,6 @@
                  :child (make-instance 'minerva.gui:button
                                        :text "Load"
                                        :command :load-file
-                                       :font-name "inconsolata"
-                                       :text-size 32
-                                       :color '(0 0 00 255)
-                                       :padding (minerva.common:make-size :width 16 :height 16)
                                        :alignment :center)))
 
 (defun run-button-command-demo (&key (title "Minerva Button Command Demo")

@@ -2,7 +2,9 @@
 
 (defclass window (widget)
   ((size :initarg :size :accessor window-size :initform nil)
-   (child :initarg :child :accessor window-child :initform nil)))
+  (child :initarg :child :accessor window-child :initform nil))
+  (:default-initargs
+  :background-color theme:window-background-color))
 
 (defmethod initialize-instance :around ((w window)
                                         &rest initargs

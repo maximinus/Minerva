@@ -26,7 +26,12 @@
                    (setf captured-color color)
                    '(:width 1 :height 1)))
            (make-instance 'label :text "A" :font-name "inconsolata" :text-size 12)
-           (%assert-equal captured-color '(0 0 0 255) "label default color black"))
+                   (%assert-equal (list (color-r captured-color)
+                        (color-g captured-color)
+                        (color-b captured-color)
+                        (color-a captured-color))
+                      '(0 0 0 255)
+                      "label default color black"))
       (setf (symbol-function 'minerva.gui::%render-label-text-surface) old))))
 
 (%deftest test-label-font-name-resolves-to-project-assets

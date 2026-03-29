@@ -14,10 +14,6 @@
   (let* ((window (minerva.gfx:create-window :title title :width width :height height))
          (button-widget (make-instance 'minerva.gui:button
                                        :text "Click Me"
-                                       :font-name "inconsolata"
-                                       :text-size 32
-                                       :color '(255 120 120 255)
-                                       :padding (minerva.common:make-size :width 14 :height 10)
                                        :alignment :center))
          (root-widget (make-instance 'minerva.gui:window
                                      :size (minerva.common:make-size :width width :height height)
