@@ -53,6 +53,7 @@
    :size-request-expand-y
    :widget
    :widget-layout-rect
+  :widget-last-render-position
   :widget-margins
   :widget-background-color
   :widget-content-alignment
@@ -206,6 +207,8 @@
 (defclass widget ()
   ((layout-rect :initform (make-rect)
                 :accessor widget-layout-rect)
+   (last-render-position :initform nil
+                         :accessor widget-last-render-position)
    (margins :initarg :margins
             :initform nil
             :accessor widget-margins)
@@ -363,6 +366,18 @@
 (defmethod render :around ((widget widget) backend-window)
   (%render-widget-background widget backend-window)
   (call-next-method))
+
+(defun %copy-rect (rect)
+  (when rect
+    (make-rect :x (rect-x rect)
+               :y (rect-y rect)
+               :width (rect-width rect)
+               :height (rect-height rect))))
+
+(defmethod render :before ((widget widget) backend-window)
+  (declare (ignore backend-window))
+  (setf (widget-last-render-position widget)
+        (%copy-rect (widget-layout-rect widget))))
 
 (defun %align-position (start available-size child-size align)
   (case align

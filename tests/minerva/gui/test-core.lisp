@@ -1,5 +1,20 @@
 (in-package :minerva.gui)
 
+(defclass test-render-probe-widget (widget) ())
+
+(defmethod measure ((widget test-render-probe-widget))
+  (declare (ignore widget))
+  (make-size-request :min-width 0 :min-height 0 :expand-x nil :expand-y nil))
+
+(defmethod layout ((widget test-render-probe-widget) rect)
+  (setf (widget-layout-rect widget)
+        (%apply-widget-margins-to-rect widget rect))
+  widget)
+
+(defmethod render ((widget test-render-probe-widget) backend-window)
+  (declare (ignore backend-window))
+  widget)
+
 (%deftest test-make-margins-single-value
   (let ((margins (make-margins 5)))
     (%assert-equal (list (margins-left margins)
@@ -8,6 +23,17 @@
                          (margins-bottom margins))
                    '(5 5 5 5)
                    "single-value margins set all sides")))
+
+(%deftest test-widget-last-render-position-updates-after-render
+  (let ((probe (make-instance 'test-render-probe-widget :margins 5)))
+    (%assert-equal (widget-last-render-position probe)
+                   nil
+                   "last-render-position is nil before first render")
+    (layout probe (make-rect :x 10 :y 20 :width 100 :height 50))
+    (render probe nil)
+    (%assert-equal (%rect-value-list (widget-last-render-position probe))
+                   '(15 25 90 40)
+                   "last-render-position stores inner/content rect after render")))
 
 (%deftest test-make-margins-keyword-values
   (let ((margins (make-margins :margin-top 5 :margin-bottom 7)))
