@@ -42,16 +42,9 @@
              (minerva.gfx:begin-frame backend-window)
              (minerva.gfx:clear-screen backend-window
                                        (minerva.gfx:make-color :r 0 :g 0 :b 0 :a 255))
-             (let ((frame-width (if app-state
-                                    (minerva.gui:window-width (minerva.events:app-state-root app-state))
-                                    width))
-                   (frame-height (if app-state
-                                     (minerva.gui:window-height (minerva.events:app-state-root app-state))
-                                     height)))
-               (minerva.gui:layout ui-root (minerva.gui:make-rect :x 0 :y 0
-                                                                   :width frame-width
-                                                                   :height frame-height)))
-             (minerva.gui:render ui-root backend-window)
+             (when app-state
+               (minerva.events:layout-app-state app-state)
+               (minerva.events:render-app-state app-state backend-window))
              (minerva.gfx:end-frame backend-window)
              (minerva.gfx:sleep-ms 16)))
       (ignore-errors

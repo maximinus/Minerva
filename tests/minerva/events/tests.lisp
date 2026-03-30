@@ -5,18 +5,35 @@
                 :window
                 :button
                 :button-state
+                :menu
                 :color-rect
                 :make-rect
                 :layout
                 :handle-event
+                :measure
+                :render
+                :widget
+                :widget-layout-rect
+                :size-request-min-width
+                :size-request-min-height
                 :window-width
                 :window-height)
   (:import-from :minerva.events
                 :make-app-state
+                :make-overlay
                 :sdl-event->minerva-event
                 :route-minerva-event
                 :process-actions
                 :process-minerva-event
+                :layout-app-state
+                :render-app-state
+                :app-state-overlay-stack
+                :push-overlay
+                :pop-overlay
+                :remove-overlay
+                :top-overlay
+                :overlay-stack-empty-p
+                :overlay-rect
                 :app-state-active-widget
                 :app-state-should-quit
                 :app-state-needs-redraw
@@ -27,6 +44,7 @@
 (defvar *test-count* 0)
 (defvar *test-failures* 0)
 (defvar *current-test-name* nil)
+(defvar *render-probe-events* nil)
 
 (defmacro %deftest (name &body body)
   `(defun ,name ()
@@ -48,6 +66,30 @@
             ,@body)
        (setf (symbol-function 'minerva.gui::%button-load-surface) old-load)
        (setf (symbol-function 'minerva.gui::%button-render-text-surface) old-render-text))))
+
+(defclass render-probe (widget)
+  ((id :initarg :id :accessor render-probe-id)
+   (min-width :initarg :min-width :accessor render-probe-min-width :initform 10)
+   (min-height :initarg :min-height :accessor render-probe-min-height :initform 10)))
+
+(defmethod measure ((probe render-probe))
+  (minerva.gui:make-size-request :min-width (render-probe-min-width probe)
+                                 :min-height (render-probe-min-height probe)
+                                 :expand-x nil
+                                 :expand-y nil))
+
+(defmethod layout ((probe render-probe) rect)
+  (setf (widget-layout-rect probe) rect)
+  probe)
+
+(defmethod render ((probe render-probe) backend-window)
+  (declare (ignore backend-window))
+  (push (render-probe-id probe) *render-probe-events*)
+  probe)
+
+(defmethod handle-event ((probe render-probe) app-state event)
+  (declare (ignore app-state event))
+  nil)
 
 (defun %assert-equal (actual expected label)
   (incf *test-count*)
@@ -234,6 +276,124 @@
     (setf (app-state-should-quit state) nil)
     (process-actions state '((:command :quit-app)))
     (%assert-equal (app-state-should-quit state) t "quit-app command sets should-quit")))
+
+(%deftest test-overlay-stack-push-pop-remove
+  (let* ((root (make-instance 'window :width 120 :height 80 :child (make-instance 'color-rect)))
+         (state (make-app-state :root root))
+         (overlay-a (make-overlay :root-widget (make-instance 'color-rect)
+                                  :rect (make-rect :x 0 :y 0 :width 20 :height 20)))
+         (overlay-b (make-overlay :root-widget (make-instance 'color-rect)
+                                  :rect (make-rect :x 4 :y 4 :width 20 :height 20))))
+    (%assert-equal (overlay-stack-empty-p state) t "overlay stack starts empty")
+    (push-overlay state overlay-a)
+    (%assert-equal (top-overlay state) overlay-a "top overlay after first push")
+    (push-overlay state overlay-b)
+    (%assert-equal (length (app-state-overlay-stack state)) 2 "overlay push appends stack")
+    (%assert-equal (top-overlay state) overlay-b "newest overlay is top")
+    (%assert-equal (pop-overlay state) overlay-b "pop returns newest overlay")
+    (%assert-equal (top-overlay state) overlay-a "top overlay updates after pop")
+    (%assert-equal (remove-overlay state overlay-a) t "remove-overlay removes matching instance")
+    (%assert-equal (overlay-stack-empty-p state) t "overlay stack empty after removals")))
+
+(%deftest test-overlay-render-order-base-before_overlays
+  (let* ((base-probe (make-instance 'render-probe :id :base :min-width 60 :min-height 40))
+         (overlay-a-probe (make-instance 'render-probe :id :overlay-a :min-width 20 :min-height 20))
+         (overlay-b-probe (make-instance 'render-probe :id :overlay-b :min-width 20 :min-height 20))
+         (root (make-instance 'window :width 120 :height 80 :child base-probe :background-color nil))
+         (state (make-app-state :root root)))
+    (setf *render-probe-events* nil)
+    (push-overlay state (make-overlay :root-widget overlay-a-probe
+                                      :rect (make-rect :x 2 :y 2 :width 20 :height 20)))
+    (push-overlay state (make-overlay :root-widget overlay-b-probe
+                                      :rect (make-rect :x 6 :y 6 :width 20 :height 20)))
+    (layout-app-state state)
+    (render-app-state state nil)
+    (%assert-equal (reverse *render-probe-events*)
+                   '(:base :overlay-a :overlay-b)
+                   "render order is base then overlays oldest-to-newest")))
+
+(%deftest test-overlay-mouse-routing-prefers-newest
+  (let* ((base (make-instance 'color-rect :min-width 120 :min-height 80))
+         (root (make-instance 'window :width 120 :height 80 :child base))
+         (state (make-app-state :root root))
+         (lower (make-instance 'color-rect :min-width 30 :min-height 30))
+         (upper (make-instance 'color-rect :min-width 30 :min-height 30)))
+    (push-overlay state (make-overlay :root-widget lower
+                                      :rect (make-rect :x 10 :y 10 :width 30 :height 30)))
+    (push-overlay state (make-overlay :root-widget upper
+                                      :rect (make-rect :x 10 :y 10 :width 30 :height 30)))
+    (layout-app-state state)
+    (%assert-equal (route-minerva-event state '(:mouse-down :button :left :x 12 :y 12))
+                   upper
+                   "mouse routes to newest overlay first")))
+
+(%deftest test-overlay-pass-through-and-blocking
+  (let* ((base-widget (make-instance 'color-rect :min-width 120 :min-height 50))
+         (root (make-instance 'window :width 120 :height 50 :child base-widget))
+         (state (make-app-state :root root))
+         (pass-through-overlay (make-overlay :root-widget (make-instance 'color-rect :min-width 20 :min-height 20)
+                                            :rect (make-rect :x 80 :y 80 :width 20 :height 20)
+                                            :blocks-lower-input-p nil))
+         (blocking-overlay (make-overlay :root-widget (make-instance 'color-rect :min-width 20 :min-height 20)
+                                         :rect (make-rect :x 80 :y 80 :width 20 :height 20)
+                                         :blocks-lower-input-p t)))
+    (layout-app-state state)
+    (push-overlay state pass-through-overlay)
+    (layout-app-state state)
+    (%assert-equal (route-minerva-event state '(:mouse-down :button :left :x 10 :y 10))
+                   base-widget
+                   "non-blocking top overlay allows lower layer routing")
+    (remove-overlay state pass-through-overlay)
+    (push-overlay state blocking-overlay)
+    (layout-app-state state)
+    (%assert-equal (route-minerva-event state '(:mouse-down :button :left :x 10 :y 10))
+                   nil
+                   "blocking top overlay prevents lower layer routing")))
+
+(%deftest test-overlay-anchor-placement-and_independent_layout
+  (let* ((base (make-instance 'color-rect :min-width 100 :min-height 60))
+         (root (make-instance 'window :width 100 :height 60 :child base))
+         (overlay-widget (make-instance 'color-rect :min-width 18 :min-height 12))
+         (state (make-app-state :root root))
+         (anchor (make-rect :x 7 :y 9 :width 20 :height 5))
+         (overlay (make-overlay :root-widget overlay-widget
+                                :anchor-rect anchor
+                                :anchor-offset-y 3
+                                :rect (make-rect :x 500 :y 500 :width 0 :height 0))))
+    (push-overlay state overlay)
+    (layout-app-state state)
+    (%assert-equal (list (minerva.gui:rect-x (overlay-rect overlay))
+                         (minerva.gui:rect-y (overlay-rect overlay))
+                         (minerva.gui:rect-width (overlay-rect overlay))
+                         (minerva.gui:rect-height (overlay-rect overlay)))
+                   '(7 17 18 12)
+                   "anchor placement resolves below anchor using measured size")
+    (%assert-equal (list (minerva.gui:rect-x (widget-layout-rect overlay-widget))
+                         (minerva.gui:rect-y (widget-layout-rect overlay-widget)))
+                   '(7 17)
+                   "overlay layout is independent from base tree flow")))
+
+(%deftest test-menu-overlay-renders-above-base
+  (let* ((draw-events '())
+         (base-probe (make-instance 'render-probe :id :base :min-width 100 :min-height 60))
+         (root (make-instance 'window :width 140 :height 90 :child base-probe :background-color nil))
+         (menu-widget (make-instance 'menu :entries nil :panel-surface '(:width 24 :height 24)))
+         (state (make-app-state :root root))
+         (old-scaled (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)))
+    (unwind-protect
+         (progn
+           (setf *render-probe-events* nil)
+           (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled)
+                 (lambda (&rest args)
+                   (declare (ignore args))
+                   (push :menu draw-events)))
+           (push-overlay state (make-overlay :root-widget menu-widget
+                                             :rect (make-rect :x 10 :y 10 :width 90 :height 50)))
+           (layout-app-state state)
+           (render-app-state state nil)
+           (%assert-equal (first (reverse *render-probe-events*)) :base "base renders before menu overlay draws")
+           (%assert-equal (car draw-events) :menu "menu overlay draws after base"))
+      (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old-scaled))))
 
 (defun run-event-tests ()
   (setf *test-count* 0
