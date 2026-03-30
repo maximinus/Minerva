@@ -111,12 +111,9 @@ It also has input and dismissal behaviour.
 Each overlay should have at least:
 
 * `root-widget`
-* `rect` or final layout rectangle
-* anchor information
-* `takes-focus-p`
-* `blocks-lower-input-p`
-* `close-on-escape-p`
-* `close-on-outside-click-p`
+* `position`
+* `capture-all`
+* `focus`
 
 Optional but useful:
 

@@ -21,7 +21,8 @@
     (:file "src/gui/menu-item")
     (:file "src/gui/menu-spacer")
     (:file "src/gui/menu")
-     (:file "src/events")))
+    (:file "src/events/events")
+    (:file "src/events/overlay")))
 
 (asdf:defsystem "minerva/tests"
   :description "Minerva GUI and graphics tests"
