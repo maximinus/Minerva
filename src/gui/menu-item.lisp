@@ -241,6 +241,12 @@
            (%menu-item-set-active-widget app-state nil))
          (%menu-item-set-state item app-state (if inside :hovered :normal))
          (when (and activate-p (menu-item-command item))
+           (when app-state
+             (ignore-errors
+               (let ((close-fn (and (fboundp 'minerva.gui::%menu-bar-close-from-app-state)
+                                    (symbol-function 'minerva.gui::%menu-bar-close-from-app-state))))
+                 (when close-fn
+                   (funcall close-fn app-state)))))
            (list (list :command (menu-item-command item)))))))
     (:mouse-move
      (let* ((x (getf (rest event) :x))

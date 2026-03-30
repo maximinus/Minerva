@@ -12,6 +12,18 @@
     :button-nine-patch-normal
     :button-nine-patch-highlight
     :button-nine-patch-pressed
+    :menubar-nine-patch
+    :menubar-nine-patch-border-size
+    :menubar-nine-patch-border-left
+    :menubar-nine-patch-border-right
+    :menubar-nine-patch-border-top
+    :menubar-nine-patch-border-bottom
+    :menubar-button-bg-normal
+    :menubar-button-bg-hovered
+    :menubar-button-bg-pressed
+    :menubar-button-text-normal
+    :menubar-button-text-pressed
+    :menubar-menu-overlay-offset-y
    :menu-nine-patch
    :menu-nine-patch-border-size
    :menu-nine-patch-border-left
@@ -30,6 +42,20 @@
 (defvar button-nine-patch-normal "/assets/button/button_normal.png")
 (defvar button-nine-patch-highlight "/assets/button/button_highlight.png")
 (defvar button-nine-patch-pressed "/assets/button/button_pressed.png")
+
+(defvar menubar-nine-patch "/assets/menu/menu.png")
+(defvar menubar-nine-patch-border-size 4)
+(defvar menubar-nine-patch-border-left menubar-nine-patch-border-size)
+(defvar menubar-nine-patch-border-right menubar-nine-patch-border-size)
+(defvar menubar-nine-patch-border-top menubar-nine-patch-border-size)
+(defvar menubar-nine-patch-border-bottom menubar-nine-patch-border-size)
+
+(defvar menubar-button-bg-normal (make-color :r 0 :g 0 :b 0 :a 0))
+(defvar menubar-button-bg-hovered (make-color :r 200 :g 200 :b 200 :a 255))
+(defvar menubar-button-bg-pressed (make-color :r 120 :g 120 :b 120 :a 255))
+(defvar menubar-button-text-normal default-font-color)
+(defvar menubar-button-text-pressed (make-color :r 255 :g 255 :b 255 :a 255))
+(defvar menubar-menu-overlay-offset-y 2)
 
 (defvar menu-nine-patch "/assets/menu/menu.png")
 (defvar menu-nine-patch-border-size 4)

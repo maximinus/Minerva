@@ -2,10 +2,15 @@
   (:use :cl)
   (:import-from :minerva.gui
                 :hbox
+                :vbox
                 :window
                 :button
                 :button-state
                 :menu
+                :menu-bar
+                :menu-bar-buttons
+                :menu-bar-open-index
+                :menu-bar-button-state
                 :color-rect
                 :make-rect
                 :layout
@@ -66,6 +71,48 @@
             ,@body)
        (setf (symbol-function 'minerva.gui::%button-load-surface) old-load)
        (setf (symbol-function 'minerva.gui::%button-render-text-surface) old-render-text))))
+
+(defmacro %with-stubbed-menu-bar-gfx (&body body)
+  `(%with-stubbed-button-gfx
+     (let ((old-render (symbol-function 'minerva.gui::%render-label-text-surface))
+           (old-load-default (symbol-function 'minerva.gui::%menu-load-default-panel-surface)))
+       (unwind-protect
+            (progn
+              (setf (symbol-function 'minerva.gui::%render-label-text-surface)
+                    (lambda (font-name text-size text color)
+                      (declare (ignore font-name text-size color))
+                      (list :width (max 1 (* 7 (length (or text ""))))
+                            :height 14)))
+              (setf (symbol-function 'minerva.gui::%menu-load-default-panel-surface)
+                    (lambda ()
+                      '(:width 48 :height 24)))
+              ,@body)
+         (setf (symbol-function 'minerva.gui::%render-label-text-surface) old-render)
+         (setf (symbol-function 'minerva.gui::%menu-load-default-panel-surface) old-load-default)))))
+
+(defun %menu-bar-test-state ()
+  (let* ((bar (make-instance 'menu-bar
+                             :entries (list '(:text "File"
+                                              :items ((:text "Open" :command :open)
+                                                      (:text "Save" :command :save)))
+                                            '(:text "Edit"
+                                              :items ((:text "Cut" :command :cut)
+                                        (:text "Paste" :command :paste))))))
+         (body-button (make-instance 'button :text "Body" :command :body))
+         (root (make-instance 'window
+                              :width 320
+                              :height 200
+                              :child (make-instance 'vbox
+                                                    :spacing 0
+                                                    :children (list bar body-button))))
+         (state (make-app-state :root root)))
+    (layout root (make-rect :x 0 :y 0 :width 320 :height 200))
+    (values state bar body-button)))
+
+(defun %click-point-inside (widget)
+  (let ((rect (widget-layout-rect widget)))
+    (list (+ (minerva.gui:rect-x rect) 2)
+          (+ (minerva.gui:rect-y rect) 2))))
 
 (defclass render-probe (widget)
   ((id :initarg :id :accessor render-probe-id)
@@ -394,6 +441,121 @@
            (%assert-equal (first (reverse *render-probe-events*)) :base "base renders before menu overlay draws")
            (%assert-equal (car draw-events) :menu "menu overlay draws after base"))
       (setf (symbol-function 'minerva.gui::%call-draw-surface-rect-scaled) old-scaled))))
+
+(%deftest test-menubar-click-opens-overlay-and-presses-button
+  (%with-stubbed-menu-bar-gfx
+    (multiple-value-bind (state bar body-button)
+        (%menu-bar-test-state)
+      (declare (ignore body-button))
+      (let* ((file-button (first (menu-bar-buttons bar)))
+             (file-point (%click-point-inside file-button)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first file-point) :y (second file-point)))
+        (%assert-equal (length (app-state-overlay-stack state))
+                       1
+                       "clicking menubar button opens one overlay")
+        (%assert-equal (menu-bar-open-index bar)
+                       0
+                       "clicking first menubar button marks first menu open")
+        (%assert-equal (menu-bar-button-state file-button)
+                       :pressed
+                       "opened menubar button remains pressed")))))
+
+(%deftest test-menubar-menu-item-click-closes-overlay-and-emits-command
+  (%with-stubbed-menu-bar-gfx
+    (multiple-value-bind (state bar body-button)
+        (%menu-bar-test-state)
+      (declare (ignore body-button))
+      (let* ((file-button (first (menu-bar-buttons bar)))
+             (file-point (%click-point-inside file-button)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first file-point) :y (second file-point)))
+        (layout-app-state state)
+        (let* ((overlay (first (last (app-state-overlay-stack state))))
+               (menu-widget (minerva.gui::menu-bar-overlay-root-menu-widget
+                             (minerva.events:overlay-root-widget overlay)))
+               (first-item (first (remove-if-not (lambda (child)
+                                                   (typep child 'minerva.gui:menu-item))
+                                                 (minerva.gui:menu-children menu-widget))))
+               (item-point (%click-point-inside first-item)))
+          (process-minerva-event state (list :mouse-down :button :left :x (first item-point) :y (second item-point)))
+          (process-minerva-event state (list :mouse-up :button :left :x (first item-point) :y (second item-point)))
+          (%assert-equal (length (app-state-overlay-stack state))
+                         0
+                         "menu item click closes menubar overlay")
+          (%assert-equal (menu-bar-open-index bar)
+                         nil
+                         "menu item click clears menubar open index")
+          (%assert-equal (app-state-last-command state)
+                         :open
+                         "menu item click still emits command"))))))
+
+(%deftest test-menubar-escape-closes-overlay
+  (%with-stubbed-menu-bar-gfx
+    (multiple-value-bind (state bar body-button)
+        (%menu-bar-test-state)
+      (declare (ignore body-button))
+      (let* ((file-button (first (menu-bar-buttons bar)))
+             (file-point (%click-point-inside file-button)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state '(:key-down :key :escape))
+        (%assert-equal (length (app-state-overlay-stack state))
+                       0
+                       "escape closes menubar overlay")
+        (%assert-equal (menu-bar-open-index bar)
+                       nil
+                       "escape clears menubar open index")
+        (%assert-equal (menu-bar-button-state file-button)
+                       :normal
+                       "escape resets opened button to normal")))))
+
+(%deftest test-menubar-outside-left-click-closes-and-consumes
+  (%with-stubbed-menu-bar-gfx
+    (multiple-value-bind (state bar body-button)
+        (%menu-bar-test-state)
+      (let* ((file-button (first (menu-bar-buttons bar)))
+             (file-point (%click-point-inside file-button))
+             (body-point (%click-point-inside body-button)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first file-point) :y (second file-point)))
+        (setf (app-state-last-command state) nil)
+        (process-minerva-event state (list :mouse-down :button :left :x (first body-point) :y (second body-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first body-point) :y (second body-point)))
+        (%assert-equal (length (app-state-overlay-stack state))
+                       0
+                       "outside left click closes menu overlay")
+        (%assert-equal (menu-bar-open-index bar)
+                       nil
+                       "outside left click clears open index")
+        (%assert-equal (app-state-last-command state)
+                       nil
+                       "outside click is consumed and does not activate base button")))))
+
+(%deftest test-menubar-clicking-another-button-switches-menus
+  (%with-stubbed-menu-bar-gfx
+    (multiple-value-bind (state bar body-button)
+        (%menu-bar-test-state)
+      (declare (ignore body-button))
+      (let* ((file-button (first (menu-bar-buttons bar)))
+             (edit-button (second (menu-bar-buttons bar)))
+             (file-point (%click-point-inside file-button))
+             (edit-point (%click-point-inside edit-button)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-up :button :left :x (first file-point) :y (second file-point)))
+        (process-minerva-event state (list :mouse-down :button :left :x (first edit-point) :y (second edit-point)))
+        (%assert-equal (menu-bar-open-index bar)
+                       1
+                       "clicking second menubar button switches open menu")
+        (%assert-equal (length (app-state-overlay-stack state))
+                       1
+                       "switching menus keeps a single overlay open")
+        (%assert-equal (menu-bar-button-state file-button)
+                       :normal
+                       "previous menubar button returns to normal after switch")
+        (%assert-equal (menu-bar-button-state edit-button)
+                       :pressed
+                       "newly opened menubar button is pressed")))))
 
 (defun run-event-tests ()
   (setf *test-count* 0

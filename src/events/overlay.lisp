@@ -149,8 +149,10 @@
                                    (eq focus :capture))
                                root-widget)))))
                 (when (or (overlay-capture-all overlay)
-                          (eq focus :capture)
-                          (overlay-blocks-lower-input-p overlay))
+                          (eq focus :capture))
+                  (return-from decide
+                    (or root-widget :blocked)))
+                (when (overlay-blocks-lower-input-p overlay)
                   (return-from decide :blocked))))))))))
 
 (defun %overlay-target-for-keyboard (state)

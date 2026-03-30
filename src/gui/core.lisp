@@ -26,6 +26,18 @@
                 :default-font-color
                 :window-background-color
                 :default-menu-background-highlight
+                :menubar-nine-patch
+                :menubar-nine-patch-border-size
+                :menubar-nine-patch-border-left
+                :menubar-nine-patch-border-right
+                :menubar-nine-patch-border-top
+                :menubar-nine-patch-border-bottom
+                :menubar-button-bg-normal
+                :menubar-button-bg-hovered
+                :menubar-button-bg-pressed
+                :menubar-button-text-normal
+                :menubar-button-text-pressed
+                :menubar-menu-overlay-offset-y
                 :menu-nine-patch
                 :menu-nine-patch-border-size
                 :menu-nine-patch-border-left
@@ -129,6 +141,18 @@
   :default-font-color
   :window-background-color
   :default-menu-background-highlight
+  :menubar-nine-patch
+  :menubar-nine-patch-border-size
+  :menubar-nine-patch-border-left
+  :menubar-nine-patch-border-right
+  :menubar-nine-patch-border-top
+  :menubar-nine-patch-border-bottom
+  :menubar-button-bg-normal
+  :menubar-button-bg-hovered
+  :menubar-button-bg-pressed
+  :menubar-button-text-normal
+  :menubar-button-text-pressed
+  :menubar-menu-overlay-offset-y
   :menu-nine-patch
   :menu-nine-patch-border-size
   :menu-nine-patch-border-left
@@ -170,6 +194,15 @@
   :menu-label-column-width
   :menu-key-column-width
   :make-menu
+  :menu-bar
+  :menu-bar-entries
+  :menu-bar-buttons
+  :menu-bar-open-index
+  :menu-bar-open-overlay
+  :make-menu-bar
+  :menu-bar-button
+  :menu-bar-button-text
+  :menu-bar-button-state
    :measure-min-width
    :measure-min-height
    :measure-expand-x

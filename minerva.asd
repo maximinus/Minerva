@@ -21,6 +21,7 @@
     (:file "src/gui/menu-item")
     (:file "src/gui/menu-spacer")
     (:file "src/gui/menu")
+    (:file "src/gui/menu-bar")
     (:file "src/events/events")
     (:file "src/events/overlay")))
 
@@ -41,6 +42,7 @@
    (:file "tests/minerva/gui/test-color-rect")
    (:file "tests/minerva/gui/test-nine-patch")
     (:file "tests/minerva/gui/test-menu")
+  (:file "tests/minerva/gui/test-menu-bar")
    (:file "tests/minerva/gui/tests")
    (:file "tests/minerva/events/tests")
    (:file "tests/minerva/gfx/tests"))
