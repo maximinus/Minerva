@@ -27,6 +27,8 @@
                    :width width
                    :height height
                    :child (make-instance 'minerva.gui:vbox
+                                         :expand-x t
+                                         :expand-y t
                                          :spacing 0
                                          :children (list menu-bar
                                                          (make-instance 'minerva.gui:color-rect

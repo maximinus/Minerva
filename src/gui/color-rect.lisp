@@ -2,9 +2,19 @@
 
 (defclass color-rect (widget)
   ((min-size :initarg :min-size :accessor color-rect-min-size :initform nil)
-   (expand-x :initarg :expand-x :accessor color-rect-expand-x :initform nil)
-   (expand-y :initarg :expand-y :accessor color-rect-expand-y :initform nil)
    (color :initarg :color :accessor color-rect-color :initform '(255 255 255 255))))
+
+(defun color-rect-expand-x (rect-widget)
+  (widget-expand-x rect-widget))
+
+(defun color-rect-expand-y (rect-widget)
+  (widget-expand-y rect-widget))
+
+(defun (setf color-rect-expand-x) (value rect-widget)
+  (setf (widget-expand-x rect-widget) value))
+
+(defun (setf color-rect-expand-y) (value rect-widget)
+  (setf (widget-expand-y rect-widget) value))
 
 (defmethod initialize-instance :around ((rect-widget color-rect)
                                         &rest initargs
@@ -41,11 +51,9 @@
 (defmethod measure ((rect-widget color-rect))
   (%apply-widget-margins-to-size-request
    rect-widget
-   (make-size-request
-    :min-width (%non-negative-int (color-rect-min-width rect-widget))
-    :min-height (%non-negative-int (color-rect-min-height rect-widget))
-    :expand-x (not (null (color-rect-expand-x rect-widget)))
-    :expand-y (not (null (color-rect-expand-y rect-widget))))))
+   (%widget-size-request rect-widget
+                         (color-rect-min-width rect-widget)
+                         (color-rect-min-height rect-widget))))
 
 (defmethod layout ((rect-widget color-rect) rect)
   (setf (widget-layout-rect rect-widget) (%apply-widget-margins-to-rect rect-widget rect))

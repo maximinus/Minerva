@@ -273,11 +273,11 @@
          (padded-height (+ text-height (* 2 (%non-negative-int (button-padding-y btn))))))
     (%apply-widget-margins-to-size-request
      btn
-     (make-size-request
-      :min-width (+ padded-width (* 2 *button-border-size*))
-      :min-height (+ padded-height (* 2 *button-border-size*))
-      :expand-x nil
-      :expand-y nil))))
+    (%widget-size-request btn
+              (+ padded-width (* 2 *button-border-size*))
+              (+ padded-height (* 2 *button-border-size*))
+              :expand-x nil
+              :expand-y nil))))
 
 (defmethod layout ((btn button) rect)
   (setf (widget-layout-rect btn) (%apply-widget-margins-to-rect btn rect))

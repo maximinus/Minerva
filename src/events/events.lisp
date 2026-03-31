@@ -35,6 +35,7 @@
    :app-state-should-quit
    :app-state-needs-redraw
    :app-state-last-command
+  :set-focused-widget
    :push-overlay
    :pop-overlay
    :remove-overlay
@@ -101,6 +102,8 @@
         (intern (string (code-char (+ key 32))) :keyword))
        ((and (>= key 97) (<= key 122))
         (intern (string (code-char key)) :keyword))
+      ((and (>= key 48) (<= key 57))
+       (intern (string (code-char key)) :keyword))
        (t (%key-fallback-keyword key))))
     (t (%key-fallback-keyword key))))
 
@@ -118,6 +121,8 @@
        (list :key-down :key (%normalize-key (second raw-event))))
       (:key-up
        (list :key-up :key (%normalize-key (second raw-event))))
+      (:text-input
+       (list :text-input :text (or (second raw-event) "")))
       (:mouse-move
        (list :mouse-move
              :x (truncate (or (second raw-event) 0))
@@ -190,3 +195,14 @@
 (defun process-actions (state actions)
   (dolist (action (%normalize-actions actions) state)
     (process-action state action)))
+
+(defun set-focused-widget (state widget)
+  (let ((previous (app-state-focused-widget state)))
+    (unless (eq previous widget)
+      (when previous
+        (handle-event previous state '(:focus-lost)))
+      (setf (app-state-focused-widget state) widget)
+      (when widget
+        (handle-event widget state '(:focus-gained)))
+      (setf (app-state-needs-redraw state) t)))
+  (app-state-focused-widget state))

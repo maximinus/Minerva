@@ -187,6 +187,10 @@
    '(:key-down :key :escape)
    "escape key down converts")
   (%assert-equal
+   (sdl-event->minerva-event '(:text-input "abc"))
+   '(:text-input :text "abc")
+   "text input converts to payload event")
+  (%assert-equal
    (sdl-event->minerva-event '(:window-resized 1400 900))
    '(:window-resized :width 1400 :height 900)
    "window resized converts")
@@ -234,6 +238,22 @@
      (route-minerva-event state-no-focus '(:key-down :key :escape))
      root
      "key event falls back to root when focus is nil")))
+
+(%deftest test-text-input-routing-prefers-focused-widget
+  (let* ((focused (make-instance 'color-rect :min-width 20 :min-height 20))
+         (other (make-instance 'color-rect :min-width 20 :min-height 20))
+         (root (make-instance 'window :width 100 :height 50
+                              :child (make-instance 'hbox :children (list focused other))))
+         (state-with-focus (make-app-state :root root :focused-widget focused))
+         (state-no-focus (make-app-state :root root :focused-widget nil)))
+    (%assert-equal
+     (route-minerva-event state-with-focus '(:text-input :text "a"))
+     focused
+     "text input routes to focused widget")
+    (%assert-equal
+     (route-minerva-event state-no-focus '(:text-input :text "a"))
+     root
+     "text input falls back to root when focus is nil")))
 
 (%deftest test-default-and-window-event-handlers
   (let* ((leaf (make-instance 'color-rect :min-width 10 :min-height 10))

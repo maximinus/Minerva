@@ -49,6 +49,27 @@ Optional native smoke check:
 ./run_smoke.sh
 ```
 
+## Rebuild native bridge (C)
+
+If you change code under `native/src`, rebuild the native bridge from the project root:
+
+```bash
+cmake --build build/native
+```
+
+If build files are missing or you want to reconfigure first:
+
+```bash
+cmake -S native -B build/native
+cmake --build build/native
+```
+
+For a clean rebuild:
+
+```bash
+cmake --build build/native --clean-first
+```
+
 If you need the equivalent manual command:
 
 ```bash

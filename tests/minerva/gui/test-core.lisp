@@ -2,6 +2,10 @@
 
 (defclass test-render-probe-widget (widget) ())
 
+(defclass test-expand-probe-widget (widget)
+  ((min-width :initarg :min-width :accessor expand-probe-min-width :initform 0)
+   (min-height :initarg :min-height :accessor expand-probe-min-height :initform 0)))
+
 (defmethod measure ((widget test-render-probe-widget))
   (declare (ignore widget))
   (make-size-request :min-width 0 :min-height 0 :expand-x nil :expand-y nil))
@@ -12,6 +16,22 @@
   widget)
 
 (defmethod render ((widget test-render-probe-widget) backend-window)
+  (declare (ignore backend-window))
+  widget)
+
+(defmethod measure ((widget test-expand-probe-widget))
+  (%apply-widget-margins-to-size-request
+   widget
+   (%widget-size-request widget
+                         (expand-probe-min-width widget)
+                         (expand-probe-min-height widget))))
+
+(defmethod layout ((widget test-expand-probe-widget) rect)
+  (setf (widget-layout-rect widget)
+        (%apply-widget-margins-to-rect widget rect))
+  widget)
+
+(defmethod render ((widget test-expand-probe-widget) backend-window)
   (declare (ignore backend-window))
   widget)
 
@@ -43,6 +63,16 @@
                          (margins-bottom margins))
                    '(0 0 5 7)
                    "keyword margins set only supplied sides")))
+
+(%deftest test-base-widget-expand-flags-default-and-override
+  (let* ((default-widget (make-instance 'test-expand-probe-widget :min-width 10 :min-height 5))
+         (expanding-widget (make-instance 'test-expand-probe-widget
+                                          :min-width 10
+                                          :min-height 5
+                                          :expand-x t
+                                          :expand-y t)))
+    (%assert-expand-flags default-widget nil nil "base widget expand defaults are false")
+    (%assert-expand-flags expanding-widget t t "base widget expand initargs propagate via helper")))
 
 (%deftest test-widget-accepts-margins-struct
   (let* ((box (make-instance 'hbox

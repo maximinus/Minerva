@@ -69,6 +69,8 @@
   :widget-margins
   :widget-background-color
   :widget-content-alignment
+  :widget-expand-x
+  :widget-expand-y
   :widget-margin-left
   :widget-margin-right
   :widget-margin-top
@@ -78,6 +80,7 @@
    :render
   :handle-event
   :event-children
+  :tick-widget
    :window
   :window-size
    :window-width
@@ -128,6 +131,22 @@
   :button-pressed-surface
   :button-text-surface
   :button-text-draw-rect
+  :text-editor
+  :text-editor-text
+  :text-editor-caret-position
+  :text-editor-focused-p
+  :text-editor-caret-visible-p
+  :text-editor-last-blink-ms
+  :text-editor-blink-interval-ms
+  :text-editor-font-name
+  :text-editor-text-size
+  :text-editor-text-color
+  :text-editor-caret-color
+  :text-editor-padding-x
+  :text-editor-padding-y
+  :text-editor-min-width
+  :text-editor-min-height
+  :text-editor-update-blink
   :nine-patch
   :nine-patch-surface
   :nine-patch-border-left
@@ -248,6 +267,12 @@
    (background-color :initarg :background-color
                      :initform nil
                      :accessor widget-background-color)
+  (expand-x :initarg :expand-x
+         :initform nil
+         :accessor widget-expand-x)
+  (expand-y :initarg :expand-y
+         :initform nil
+         :accessor widget-expand-y)
    (content-alignment :initarg :alignment
                       :initform :top-left
                       :accessor widget-content-alignment)))
@@ -282,7 +307,9 @@
           (make-margins :margin-left left
                         :margin-right right
                         :margin-top top
-                        :margin-bottom bottom))))
+            :margin-bottom bottom)
+          (widget-expand-x widget) (not (null (widget-expand-x widget)))
+          (widget-expand-y widget) (not (null (widget-expand-y widget))))))
 
 (defun widget-margin-left (widget)
   (margins-left (widget-margins widget)))
@@ -337,12 +364,17 @@
 (defgeneric render (widget backend-window))
 (defgeneric handle-event (widget app-state event))
 (defgeneric event-children (widget))
+(defgeneric tick-widget (widget app-state now-ms))
 
 (defmethod handle-event ((widget widget) app-state event)
   (declare (ignore app-state event))
   nil)
 
 (defmethod event-children ((widget widget))
+  nil)
+
+(defmethod tick-widget ((widget widget) app-state now-ms)
+  (declare (ignore app-state now-ms))
   nil)
 
 (defun measure-min-width (widget)
@@ -374,6 +406,19 @@
      :min-height (+ top bottom (size-request-min-height request))
      :expand-x (size-request-expand-x request)
      :expand-y (size-request-expand-y request))))
+
+(defun %widget-size-request (widget min-width min-height
+                                   &key (expand-x :inherit)
+                                        (expand-y :inherit))
+  (make-size-request
+   :min-width (%non-negative-int min-width)
+   :min-height (%non-negative-int min-height)
+   :expand-x (if (eq expand-x :inherit)
+                 (not (null (widget-expand-x widget)))
+                 (not (null expand-x)))
+   :expand-y (if (eq expand-y :inherit)
+                 (not (null (widget-expand-y widget)))
+                 (not (null expand-y)))))
 
 (defun %apply-widget-margins-to-rect (widget rect)
   (multiple-value-bind (left right top bottom)

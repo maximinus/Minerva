@@ -227,11 +227,11 @@
          (padding-y (%non-negative-int (menu-bar-button-padding-y button))))
     (%apply-widget-margins-to-size-request
      button
-     (make-size-request
-      :min-width (+ text-width (* 2 padding-x))
-      :min-height (+ text-height (* 2 padding-y))
-      :expand-x nil
-      :expand-y nil))))
+      (%widget-size-request button
+                (+ text-width (* 2 padding-x))
+                (+ text-height (* 2 padding-y))
+                :expand-x nil
+                :expand-y nil))))
 
 (defmethod layout ((button menu-bar-button) rect)
   (setf (widget-layout-rect button) (%apply-widget-margins-to-rect button rect))

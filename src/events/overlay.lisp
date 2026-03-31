@@ -121,6 +121,7 @@
   state)
 
 (defun render-app-state (state backend-window)
+  (%tick-app-state state)
   (let ((root (app-state-root state)))
     (when root
       (render root backend-window)))
@@ -175,7 +176,7 @@
     (case type
       ((:window-resized :quit)
        root)
-      ((:key-down :key-up)
+      ((:key-down :key-up :text-input)
        (let ((overlay-target (%overlay-target-for-keyboard state)))
          (if (eq overlay-target :blocked)
              nil
@@ -209,6 +210,26 @@
                   root))))))
       (otherwise nil))))
 
+(defun %walk-widget-tree (root fn)
+  (labels ((visit (widget)
+             (when widget
+               (funcall fn widget)
+               (dolist (child (event-children widget))
+                 (visit child)))))
+    (visit root)))
+
+(defun %tick-app-state (state)
+  (let ((ticks-fn (minerva.gui::%gfx-function "TICKS-MS")))
+    (when ticks-fn
+      (let ((now-ms (funcall ticks-fn)))
+        (%walk-widget-tree (app-state-root state)
+                           (lambda (widget)
+                             (minerva.gui:tick-widget widget state now-ms)))
+        (dolist (overlay (app-state-overlay-stack state))
+          (%walk-widget-tree (overlay-root-widget overlay)
+                             (lambda (widget)
+                               (minerva.gui:tick-widget widget state now-ms))))))))
+
 (defun %update-hovered-widget (state event)
   (when (eq (first event) :mouse-move)
     (let* ((previous (app-state-hovered-widget state))
@@ -224,5 +245,10 @@
   (%update-hovered-widget state event)
   (let* ((target (route-minerva-event state event))
          (result (and target (handle-event target state event))))
+    (when (and (eq (first event) :mouse-down)
+               (eq (getf (rest event) :button) :left)
+               (not (eq target (app-state-focused-widget state))))
+      (set-focused-widget state nil))
     (process-actions state result)
     target))
+

@@ -49,11 +49,11 @@
     (let ((child-request (measure child)))
       (%apply-widget-margins-to-size-request
        w
-       (make-size-request
-        :min-width (size-request-min-width child-request)
-        :min-height (size-request-min-height child-request)
-        :expand-x nil
-        :expand-y nil)))))
+       (%widget-size-request w
+                             (size-request-min-width child-request)
+                             (size-request-min-height child-request)
+                             :expand-x nil
+                             :expand-y nil)))))
 
 (defmethod layout ((w window) rect)
   (declare (ignore rect))

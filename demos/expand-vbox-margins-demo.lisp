@@ -1,5 +1,5 @@
 ;; Run from project root with: sbcl --script demos/expand-vbox-margins-demo.lisp
-;; draws 3 color-rects in a vbox with no margins
+;; draws 3 expanding color-rects in an expanding vbox
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
@@ -21,6 +21,8 @@
          (root-widget (make-instance 'minerva.gui:window
               :size (minerva.common:make-size :width width :height height)
                                      :child (make-instance 'minerva.gui:vbox
+                                                          :expand-x t
+                                                          :expand-y t
                                                           :children (list
                                                                      (make-expand-color '(255 179 186 255))
                                                                      (make-expand-color '(186 255 201 255))

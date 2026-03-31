@@ -119,11 +119,11 @@
                               (%menu-item-key-height item))))
     (%apply-widget-margins-to-size-request
      item
-     (make-size-request
-      :min-width (+ (* 2 padding-x) content-width)
-      :min-height (+ (* 2 padding-y) content-height)
-      :expand-x t
-      :expand-y nil))))
+      (%widget-size-request item
+                (+ (* 2 padding-x) content-width)
+                (+ (* 2 padding-y) content-height)
+                :expand-x t
+                :expand-y nil))))
 
 (defmethod layout ((item menu-item) rect)
   (setf (widget-layout-rect item) (%apply-widget-margins-to-rect item rect))

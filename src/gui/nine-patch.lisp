@@ -7,9 +7,7 @@
    (border-top :initarg :border-top :accessor nine-patch-border-top :initform 0)
    (border-bottom :initarg :border-bottom :accessor nine-patch-border-bottom :initform 0)
    (child :initarg :child :accessor nine-patch-child :initform nil)
-  (content-rect :accessor nine-patch-content-rect :initform (make-rect))
-  (expand-x :initarg :expand-x :initform nil)
-  (expand-y :initarg :expand-y :initform nil)))
+  (content-rect :accessor nine-patch-content-rect :initform (make-rect))))
 
 (defun %non-negative-border (value)
   (%non-negative-int value))
@@ -30,11 +28,9 @@
          (bottom (%non-negative-border (nine-patch-border-bottom panel))))
     (%apply-widget-margins-to-size-request
      panel
-     (make-size-request
-      :min-width (+ left right (size-request-min-width child-request))
-      :min-height (+ top bottom (size-request-min-height child-request))
-      :expand-x (not (null (slot-value panel 'expand-x)))
-      :expand-y (not (null (slot-value panel 'expand-y)))))))
+      (%widget-size-request panel
+                (+ left right (size-request-min-width child-request))
+                (+ top bottom (size-request-min-height child-request))))))
 
 (defmethod layout ((panel nine-patch) rect)
   (setf (widget-layout-rect panel) (%apply-widget-margins-to-rect panel rect))

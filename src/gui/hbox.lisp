@@ -3,9 +3,7 @@
 (defclass hbox (widget)
   ((children :initarg :children :accessor hbox-children :initform nil)
    (spacing :initarg :spacing :accessor hbox-spacing :initform 0)
-  (align-y :initarg :align-y :accessor hbox-align-y :initform :start)
-  (expand-x :initarg :expand-x :initform nil)
-  (expand-y :initarg :expand-y :initform nil)))
+  (align-y :initarg :align-y :accessor hbox-align-y :initform :start)))
 
 (defmethod measure ((box hbox))
   (let* ((children (hbox-children box))
@@ -17,12 +15,10 @@
         (setf max-min-height (max max-min-height (size-request-min-height req)))))
     (%apply-widget-margins-to-size-request
      box
-     (make-size-request
-      :min-width (+ (%spacing-total (length children) (hbox-spacing box))
-                    total-min-width)
-      :min-height max-min-height
-      :expand-x (not (null (slot-value box 'expand-x)))
-        :expand-y (not (null (slot-value box 'expand-y)))))))
+      (%widget-size-request box
+                    (+ (%spacing-total (length children) (hbox-spacing box))
+                      total-min-width)
+                    max-min-height))))
 
 (defmethod layout ((box hbox) rect)
   (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))

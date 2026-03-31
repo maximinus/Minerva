@@ -91,11 +91,11 @@
 (defmethod measure ((lbl label))
   (%apply-widget-margins-to-size-request
    lbl
-   (make-size-request
-    :min-width (%surface-width (label-surface lbl))
-    :min-height (%surface-height (label-surface lbl))
-    :expand-x nil
-    :expand-y nil)))
+   (%widget-size-request lbl
+                         (%surface-width (label-surface lbl))
+                         (%surface-height (label-surface lbl))
+                         :expand-x nil
+                         :expand-y nil)))
 
 (defmethod layout ((lbl label) rect)
   (setf (widget-layout-rect lbl) (%apply-widget-margins-to-rect lbl rect))

@@ -764,6 +764,19 @@ int font_measure_text(Font *font, const char *text, int *width, int *height) {
     int measured_width = 0;
     int measured_height = font->size;
 
+    if (font->face->size != NULL) {
+        int ascender = (int)((font->face->size->metrics.ascender + 63) >> 6);
+        int descender = (int)((-font->face->size->metrics.descender + 63) >> 6);
+        int line_height = (int)((font->face->size->metrics.height + 63) >> 6);
+        int metric_height = ascender + descender;
+        if (metric_height > measured_height) {
+            measured_height = metric_height;
+        }
+        if (line_height > measured_height) {
+            measured_height = line_height;
+        }
+    }
+
     FT_UInt prev_glyph_index = 0;
     size_t index = 0;
     while (index < text_len) {

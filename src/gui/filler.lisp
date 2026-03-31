@@ -1,9 +1,22 @@
 (in-package :minerva.gui)
 
 (defclass filler (widget)
-  ((min-size :initarg :min-size :accessor filler-min-size :initform nil)
-   (expand-x :initarg :expand-x :accessor filler-expand-x :initform t)
-   (expand-y :initarg :expand-y :accessor filler-expand-y :initform nil)))
+  ((min-size :initarg :min-size :accessor filler-min-size :initform nil))
+  (:default-initargs
+   :expand-x t
+   :expand-y nil))
+
+(defun filler-expand-x (space)
+  (widget-expand-x space))
+
+(defun filler-expand-y (space)
+  (widget-expand-y space))
+
+(defun (setf filler-expand-x) (value space)
+  (setf (widget-expand-x space) value))
+
+(defun (setf filler-expand-y) (value space)
+  (setf (widget-expand-y space) value))
 
 (defmethod initialize-instance :around ((space filler)
                                         &rest initargs
@@ -40,11 +53,9 @@
 (defmethod measure ((space filler))
   (%apply-widget-margins-to-size-request
    space
-   (make-size-request
-    :min-width (%non-negative-int (filler-min-width space))
-    :min-height (%non-negative-int (filler-min-height space))
-    :expand-x (not (null (filler-expand-x space)))
-    :expand-y (not (null (filler-expand-y space))))))
+   (%widget-size-request space
+                         (filler-min-width space)
+                         (filler-min-height space))))
 
 (defmethod layout ((space filler) rect)
   (setf (widget-layout-rect space) (%apply-widget-margins-to-rect space rect))

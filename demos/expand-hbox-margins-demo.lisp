@@ -1,5 +1,5 @@
 ;; Run from project root with: sbcl --script demos/expand-hbox-margins-demo.lisp
-;; draws 3 color-rects in with differing margins
+;; draws 3 expanding color-rects in an expanding hbox with differing margins
 
 (load (merge-pathnames #P"../tools/tooling/demo-bootstrap.lisp"
                        (make-pathname :name nil :type nil :defaults (or *load-truename* *load-pathname*))))
@@ -22,6 +22,8 @@
          (root-widget (make-instance 'minerva.gui:window
               :size (minerva.common:make-size :width width :height height)
                                      :child (make-instance 'minerva.gui:hbox
+                                                          :expand-x t
+                                                          :expand-y t
                                                           :children (list
                                                                      (make-expand-color '(255 179 186 255) 0)
                                                                      (make-expand-color '(186 255 201 255) 25)

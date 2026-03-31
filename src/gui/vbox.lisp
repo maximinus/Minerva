@@ -3,9 +3,7 @@
 (defclass vbox (widget)
   ((children :initarg :children :accessor vbox-children :initform nil)
    (spacing :initarg :spacing :accessor vbox-spacing :initform 0)
-  (align-x :initarg :align-x :accessor vbox-align-x :initform :start)
-  (expand-x :initarg :expand-x :initform nil)
-  (expand-y :initarg :expand-y :initform nil)))
+  (align-x :initarg :align-x :accessor vbox-align-x :initform :start)))
 
 (defmethod measure ((box vbox))
   (let* ((children (vbox-children box))
@@ -17,12 +15,10 @@
         (setf max-min-width (max max-min-width (size-request-min-width req)))))
     (%apply-widget-margins-to-size-request
      box
-     (make-size-request
-      :min-width max-min-width
-      :min-height (+ (%spacing-total (length children) (vbox-spacing box))
-                     total-min-height)
-      :expand-x (not (null (slot-value box 'expand-x)))
-        :expand-y (not (null (slot-value box 'expand-y)))))))
+     (%widget-size-request box
+                           max-min-width
+                           (+ (%spacing-total (length children) (vbox-spacing box))
+                      total-min-height)))))
 
 (defmethod layout ((box vbox) rect)
   (setf (widget-layout-rect box) (%apply-widget-margins-to-rect box rect))

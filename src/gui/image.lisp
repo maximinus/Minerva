@@ -29,11 +29,11 @@
 (defmethod measure ((img image))
   (%apply-widget-margins-to-size-request
    img
-   (make-size-request
-    :min-width (%surface-width (image-surface img))
-    :min-height (%surface-height (image-surface img))
-    :expand-x nil
-    :expand-y nil)))
+   (%widget-size-request img
+                         (%surface-width (image-surface img))
+                         (%surface-height (image-surface img))
+                         :expand-x nil
+                         :expand-y nil)))
 
 (defmethod layout ((img image) rect)
   (setf (widget-layout-rect img) (%apply-widget-margins-to-rect img rect))

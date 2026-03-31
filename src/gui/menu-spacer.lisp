@@ -16,13 +16,13 @@
 (defmethod measure ((spacer menu-spacer))
   (%apply-widget-margins-to-size-request
    spacer
-   (make-size-request
-    :min-width 0
-    :min-height (+ (menu-spacer-top-spacing spacer)
+  (%widget-size-request spacer
+                 0
+                 (+ (menu-spacer-top-spacing spacer)
                    (menu-spacer-line-thickness spacer)
                    (menu-spacer-bottom-spacing spacer))
-    :expand-x t
-    :expand-y nil)))
+                 :expand-x t
+                 :expand-y nil)))
 
 (defmethod layout ((spacer menu-spacer) rect)
   (setf (widget-layout-rect spacer) (%apply-widget-margins-to-rect spacer rect))
