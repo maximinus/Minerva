@@ -187,6 +187,22 @@
    '(:key-down :key :escape)
    "escape key down converts")
   (%assert-equal
+   (sdl-event->minerva-event '(:key-down 8))
+   '(:key-down :key :backspace)
+   "backspace key down converts")
+  (%assert-equal
+   (sdl-event->minerva-event '(:key-down 127))
+   '(:key-down :key :delete)
+   "delete key down converts")
+  (%assert-equal
+   (sdl-event->minerva-event '(:key-down 1073741898))
+   '(:key-down :key :home)
+   "home key down converts")
+  (%assert-equal
+   (sdl-event->minerva-event '(:key-down 1073741901))
+   '(:key-down :key :end)
+   "end key down converts")
+  (%assert-equal
    (sdl-event->minerva-event '(:text-input "abc"))
    '(:text-input :text "abc")
    "text input converts to payload event")

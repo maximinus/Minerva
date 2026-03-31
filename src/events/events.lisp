@@ -92,8 +92,12 @@
     ((integerp key)
      (cond
        ((= key 27) :escape)
+       ((= key 8) :backspace)
+       ((= key 127) :delete)
        ((or (= key 13) (= key 10)) :enter)
        ((= key 32) :space)
+       ((or (= key 1073741898) (= key 278)) :home)
+       ((or (= key 1073741901) (= key 279)) :end)
        ((or (= key 1073741904) (= key 276)) :left)
        ((or (= key 1073741903) (= key 275)) :right)
        ((or (= key 1073741906) (= key 273)) :up)

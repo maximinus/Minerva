@@ -3,9 +3,15 @@
 (defparameter *text-editor-default-min-width* 200)
 (defparameter *text-editor-default-text-size* theme:default-font-size)
 
+(defparameter *text-editor-default-visible-lines* 4)
+
 (defclass text-editor (widget)
   ((text :initarg :text :accessor text-editor-text :initform "")
    (caret-position :initarg :caret-position :accessor text-editor-caret-position :initform 0)
+  (lines :initarg :lines :accessor text-editor-lines :initform nil)
+  (caret-line :initarg :caret-line :accessor text-editor-caret-line :initform 0)
+  (caret-column :initarg :caret-column :accessor text-editor-caret-column :initform 0)
+  (preferred-column :initarg :preferred-column :accessor text-editor-preferred-column :initform nil)
    (focused-p :initarg :focused-p :accessor text-editor-focused-p :initform nil)
    (caret-visible-p :initarg :caret-visible-p :accessor text-editor-caret-visible-p :initform nil)
    (last-blink-ms :initarg :last-blink-ms :accessor text-editor-last-blink-ms :initform 0)
@@ -19,9 +25,109 @@
    (min-width :initarg :min-width :accessor text-editor-min-width :initform *text-editor-default-min-width*)
    (min-height :initarg :min-height :accessor text-editor-min-height :initform 0)
    (text-surface :accessor text-editor-text-surface :initform nil)
-  (surface-text-cache :accessor text-editor-surface-text-cache :initform nil))
+   (surface-text-cache :accessor text-editor-surface-text-cache :initform nil))
   (:default-initargs
-  :background-color '(245 245 245 255)))
+   :background-color '(245 245 245 255)))
+
+(defun %text-editor-split-lines (text)
+  (let ((source (or text "")))
+    (if (= (length source) 0)
+        (list "")
+        (let ((lines nil)
+              (start 0)
+              (length (length source)))
+          (loop for newline-pos = (position #\Newline source :start start)
+                do (if newline-pos
+                       (progn
+                         (push (subseq source start newline-pos) lines)
+                         (setf start (1+ newline-pos)))
+                       (progn
+                         (push (subseq source start length) lines)
+                         (return))))
+          (when (and (> length 0)
+                     (char= (char source (1- length)) #\Newline))
+            (push "" lines))
+          (nreverse lines)))))
+
+(defun %text-editor-join-lines (lines)
+  (format nil "~{~A~^~%~}" (or lines (list ""))))
+
+(defun %text-editor-normalize-lines (lines)
+  (let ((normalized (mapcar (lambda (line) (or line "")) (or lines nil))))
+    (if normalized normalized (list ""))))
+
+(defun %text-editor-position-from-line-column (lines line column)
+  (let* ((safe-lines (%text-editor-normalize-lines lines))
+         (max-line-index (1- (length safe-lines)))
+         (line-index (max 0 (min max-line-index (truncate line))))
+         (line-text (nth line-index safe-lines))
+         (line-length (length line-text))
+         (column-index (max 0 (min line-length (truncate column)))))
+    (+ (loop for idx from 0 below line-index
+             sum (1+ (length (nth idx safe-lines))))
+       column-index)))
+
+(defun %text-editor-line-column-from-position (lines position)
+  (let* ((safe-lines (%text-editor-normalize-lines lines))
+         (max-position (max 0 (%text-editor-position-from-line-column
+                               safe-lines
+                               (1- (length safe-lines))
+                               (length (car (last safe-lines))))))
+         (remaining (max 0 (min max-position (truncate position)))))
+    (loop for line-index from 0 below (length safe-lines)
+          for line-text = (nth line-index safe-lines)
+          for line-length = (length line-text)
+          do (if (<= remaining line-length)
+                 (return (values line-index remaining))
+                 (decf remaining (1+ line-length)))
+          finally (return (values (1- (length safe-lines))
+                                  (length (car (last safe-lines))))))))
+
+(defun %text-editor-clamp-line-column (editor)
+  (let* ((lines (%text-editor-normalize-lines (text-editor-lines editor)))
+         (max-line-index (1- (length lines))))
+    (setf (text-editor-lines editor) lines
+          (text-editor-caret-line editor)
+          (max 0 (min max-line-index (truncate (text-editor-caret-line editor)))))
+    (let* ((line-text (nth (text-editor-caret-line editor) lines))
+           (line-length (length line-text)))
+      (setf (text-editor-caret-column editor)
+            (max 0 (min line-length (truncate (text-editor-caret-column editor))))))))
+
+(defun %text-editor-sync-from-text-and-position (editor)
+  (setf (text-editor-text editor) (or (text-editor-text editor) "")
+        (text-editor-lines editor) (%text-editor-split-lines (text-editor-text editor)))
+  (let ((max-position (%text-editor-position-from-line-column
+                       (text-editor-lines editor)
+                       (1- (length (text-editor-lines editor)))
+                       (length (car (last (text-editor-lines editor)))))))
+    (setf (text-editor-caret-position editor)
+          (max 0 (min max-position (truncate (text-editor-caret-position editor))))))
+  (multiple-value-bind (line column)
+      (%text-editor-line-column-from-position (text-editor-lines editor)
+                                              (text-editor-caret-position editor))
+    (setf (text-editor-caret-line editor) line
+          (text-editor-caret-column editor) column
+          (text-editor-preferred-column editor) column))
+  editor)
+
+(defun %text-editor-sync-derived-state (editor &key (update-preferred-column t))
+  (%text-editor-clamp-line-column editor)
+  (setf (text-editor-text editor) (%text-editor-join-lines (text-editor-lines editor))
+        (text-editor-caret-position editor)
+        (%text-editor-position-from-line-column (text-editor-lines editor)
+                                                (text-editor-caret-line editor)
+                                                (text-editor-caret-column editor)))
+  (when update-preferred-column
+    (setf (text-editor-preferred-column editor) (text-editor-caret-column editor)))
+  editor)
+
+(defun %text-editor-current-line-text (editor)
+  (nth (text-editor-caret-line editor) (text-editor-lines editor)))
+
+(defun %text-editor-set-current-line-text (editor text)
+  (setf (nth (text-editor-caret-line editor) (text-editor-lines editor)) (or text ""))
+  editor)
 
 (defmethod initialize-instance :after ((editor text-editor) &key)
   (setf (text-editor-text editor) (or (text-editor-text editor) "")
@@ -31,7 +137,11 @@
         (text-editor-min-height editor) (%non-negative-int (text-editor-min-height editor))
         (text-editor-text-size editor) (max 1 (%non-negative-int (text-editor-text-size editor)))
         (text-editor-blink-interval-ms editor) (%non-negative-int (text-editor-blink-interval-ms editor)))
-  (%text-editor-clamp-caret editor)
+  (if (text-editor-lines editor)
+      (progn
+        (setf (text-editor-lines editor) (%text-editor-normalize-lines (text-editor-lines editor)))
+        (%text-editor-sync-derived-state editor :update-preferred-column t))
+      (%text-editor-sync-from-text-and-position editor))
   (unless (text-editor-focused-p editor)
     (setf (text-editor-caret-visible-p editor) nil)))
 
@@ -100,10 +210,8 @@
         (truncate (* (/ (get-internal-real-time) internal-time-units-per-second) 1000)))))
 
 (defun %text-editor-clamp-caret (editor)
-  (let* ((text (text-editor-text editor))
-         (text-length (length text)))
-    (setf (text-editor-caret-position editor)
-          (max 0 (min text-length (truncate (text-editor-caret-position editor)))))))
+  (%text-editor-sync-from-text-and-position editor)
+  editor)
 
 (defun %text-editor-reset-blink (editor &optional now-ms)
   (let ((stamp (or now-ms (%text-editor-current-ticks))))
@@ -161,12 +269,8 @@
                 (max 1 (text-editor-text-size editor))))))
 
 (defun %text-editor-refresh-surface (editor)
-  (let ((text (or (text-editor-text editor) "")))
-    (unless (equal text (text-editor-surface-text-cache editor))
-      (%text-editor-destroy-surface (text-editor-text-surface editor))
-      (setf (text-editor-text-surface editor)
-            (%text-editor-render-text-surface editor text)
-            (text-editor-surface-text-cache editor) text))))
+  (declare (ignore editor))
+  nil)
 
 (defun %text-editor-content-rect (editor)
   (let* ((layout-rect (widget-layout-rect editor))
@@ -178,7 +282,9 @@
     inner))
 
 (defun %text-editor-caret-prefix (editor)
-  (subseq (text-editor-text editor) 0 (text-editor-caret-position editor)))
+  (subseq (%text-editor-current-line-text editor)
+          0
+          (text-editor-caret-column editor)))
 
 (defun %text-editor-keyword->text (key)
   (cond
@@ -193,18 +299,181 @@
 
 (defun %text-editor-insert-text (editor text)
   (when (and (stringp text) (> (length text) 0))
-    (%text-editor-clamp-caret editor)
-    (let* ((current (text-editor-text editor))
-           (caret (text-editor-caret-position editor)))
-      (setf (text-editor-text editor)
-            (concatenate 'string
-                         (subseq current 0 caret)
-                         text
-                         (subseq current caret))
-            (text-editor-caret-position editor) (+ caret (length text))))
-    (%text-editor-clamp-caret editor)
-    (%text-editor-refresh-surface editor))
-  editor)
+    (%text-editor-clamp-line-column editor)
+    (let* ((line-index (text-editor-caret-line editor))
+           (column-index (text-editor-caret-column editor))
+           (line (%text-editor-current-line-text editor))
+           (before (subseq line 0 column-index))
+           (after (subseq line column-index))
+           (parts (%text-editor-split-lines text)))
+      (if (= (length parts) 1)
+          (progn
+            (%text-editor-set-current-line-text editor (concatenate 'string before text after))
+            (incf (text-editor-caret-column editor) (length text)))
+          (let* ((first-line (concatenate 'string before (first parts)))
+                 (middle-lines (subseq parts 1 (1- (length parts))))
+                 (last-line (concatenate 'string (car (last parts)) after))
+                 (all-lines (text-editor-lines editor))
+                 (prefix-lines (subseq all-lines 0 line-index))
+                 (suffix-lines (subseq all-lines (1+ line-index))))
+            (setf (text-editor-lines editor)
+                  (append prefix-lines
+                          (list first-line)
+                          middle-lines
+                          (list last-line)
+                          suffix-lines)
+                  (text-editor-caret-line editor) (+ line-index (1- (length parts)))
+                  (text-editor-caret-column editor) (length (car (last parts))))))
+      (%text-editor-sync-derived-state editor :update-preferred-column t)
+      (%text-editor-refresh-surface editor))
+  editor))
+
+(defun %text-editor-move-left (editor)
+  (cond
+    ((> (text-editor-caret-column editor) 0)
+     (decf (text-editor-caret-column editor))
+     (%text-editor-sync-derived-state editor :update-preferred-column t)
+     t)
+    ((> (text-editor-caret-line editor) 0)
+     (decf (text-editor-caret-line editor))
+     (setf (text-editor-caret-column editor)
+           (length (%text-editor-current-line-text editor)))
+     (%text-editor-sync-derived-state editor :update-preferred-column t)
+     t)
+    (t nil)))
+
+(defun %text-editor-move-right (editor)
+  (let* ((line (%text-editor-current-line-text editor))
+         (line-length (length line))
+         (last-line-index (1- (length (text-editor-lines editor)))))
+    (cond
+      ((< (text-editor-caret-column editor) line-length)
+       (incf (text-editor-caret-column editor))
+       (%text-editor-sync-derived-state editor :update-preferred-column t)
+       t)
+      ((< (text-editor-caret-line editor) last-line-index)
+       (incf (text-editor-caret-line editor))
+       (setf (text-editor-caret-column editor) 0)
+       (%text-editor-sync-derived-state editor :update-preferred-column t)
+       t)
+      (t nil))))
+
+(defun %text-editor-move-vertical (editor delta)
+  (let* ((line-count (length (text-editor-lines editor)))
+         (target-line (+ (text-editor-caret-line editor) delta)))
+    (if (or (< target-line 0)
+            (>= target-line line-count))
+        nil
+        (let* ((preferred (or (text-editor-preferred-column editor)
+                              (text-editor-caret-column editor)))
+               (target-length (length (nth target-line (text-editor-lines editor)))))
+          (setf (text-editor-caret-line editor) target-line
+                (text-editor-caret-column editor) (min preferred target-length)
+                (text-editor-preferred-column editor) preferred)
+          (%text-editor-sync-derived-state editor :update-preferred-column nil)
+          t))))
+
+(defun %text-editor-move-home (editor)
+  (if (= (text-editor-caret-column editor) 0)
+      nil
+      (progn
+        (setf (text-editor-caret-column editor) 0)
+        (%text-editor-sync-derived-state editor :update-preferred-column t)
+        t)))
+
+(defun %text-editor-move-end (editor)
+  (let ((line-length (length (%text-editor-current-line-text editor))))
+    (if (= (text-editor-caret-column editor) line-length)
+        nil
+        (progn
+          (setf (text-editor-caret-column editor) line-length)
+          (%text-editor-sync-derived-state editor :update-preferred-column t)
+          t))))
+
+(defun %text-editor-insert-newline (editor)
+  (let* ((line-index (text-editor-caret-line editor))
+         (column-index (text-editor-caret-column editor))
+         (line (%text-editor-current-line-text editor))
+         (before (subseq line 0 column-index))
+         (after (subseq line column-index))
+         (all-lines (text-editor-lines editor))
+         (prefix-lines (subseq all-lines 0 line-index))
+         (suffix-lines (subseq all-lines (1+ line-index))))
+    (setf (text-editor-lines editor)
+          (append prefix-lines (list before after) suffix-lines)
+          (text-editor-caret-line editor) (1+ line-index)
+          (text-editor-caret-column editor) 0)
+    (%text-editor-sync-derived-state editor :update-preferred-column t)
+    t))
+
+(defun %text-editor-backspace (editor)
+  (let ((line-index (text-editor-caret-line editor))
+        (column-index (text-editor-caret-column editor)))
+    (cond
+      ((> column-index 0)
+       (let* ((line (%text-editor-current-line-text editor))
+              (before (subseq line 0 (1- column-index)))
+              (after (subseq line column-index)))
+         (%text-editor-set-current-line-text editor (concatenate 'string before after))
+         (decf (text-editor-caret-column editor))
+         (%text-editor-sync-derived-state editor :update-preferred-column t)
+         t))
+      ((> line-index 0)
+       (let* ((all-lines (text-editor-lines editor))
+              (previous-line (nth (1- line-index) all-lines))
+              (current-line (nth line-index all-lines))
+              (joined-line (concatenate 'string previous-line current-line))
+              (prefix-lines (subseq all-lines 0 (1- line-index)))
+              (suffix-lines (subseq all-lines (1+ line-index))))
+         (setf (text-editor-lines editor)
+               (append prefix-lines (list joined-line) suffix-lines)
+               (text-editor-caret-line editor) (1- line-index)
+               (text-editor-caret-column editor) (length previous-line))
+         (%text-editor-sync-derived-state editor :update-preferred-column t)
+         t))
+      (t nil))))
+
+(defun %text-editor-delete-forward (editor)
+  (let* ((all-lines (text-editor-lines editor))
+         (line-index (text-editor-caret-line editor))
+         (column-index (text-editor-caret-column editor))
+         (line (%text-editor-current-line-text editor))
+         (line-length (length line))
+         (last-line-index (1- (length all-lines))))
+    (cond
+      ((< column-index line-length)
+       (let ((before (subseq line 0 column-index))
+             (after (subseq line (1+ column-index))))
+         (%text-editor-set-current-line-text editor (concatenate 'string before after))
+         (%text-editor-sync-derived-state editor :update-preferred-column t)
+         t))
+      ((< line-index last-line-index)
+       (let* ((next-line (nth (1+ line-index) all-lines))
+              (joined-line (concatenate 'string line next-line))
+              (prefix-lines (subseq all-lines 0 line-index))
+              (suffix-lines (subseq all-lines (+ line-index 2))))
+         (setf (text-editor-lines editor)
+               (append prefix-lines (list joined-line) suffix-lines))
+         (%text-editor-sync-derived-state editor :update-preferred-column t)
+         t))
+      (t nil))))
+
+(defun %text-editor-handle-key-down (editor key)
+  (or (case key
+        (:left (%text-editor-move-left editor))
+        (:right (%text-editor-move-right editor))
+        (:up (%text-editor-move-vertical editor -1))
+        (:down (%text-editor-move-vertical editor 1))
+        (:home (%text-editor-move-home editor))
+        (:end (%text-editor-move-end editor))
+        (:enter (%text-editor-insert-newline editor))
+        (:backspace (%text-editor-backspace editor))
+        (:delete (%text-editor-delete-forward editor))
+        (otherwise nil))
+      (let ((inserted-text (%text-editor-keyword->text key)))
+        (when inserted-text
+          (%text-editor-insert-text editor inserted-text)
+          t))))
 
 (defun %text-editor-set-focused-local (editor focused app-state)
   (unless (eq (text-editor-focused-p editor) focused)
@@ -232,61 +501,71 @@
       (%text-editor-measure-text editor "Mg")
     (declare (ignore sample-width))
     (let ((line-height (1+ sample-height)))
-    (%apply-widget-margins-to-size-request
-     editor
-     (%widget-size-request editor
-                           (max *text-editor-default-min-width* (text-editor-min-width editor))
-                           (max (text-editor-min-height editor)
-                                (+ line-height
-                                   (* 2 (+ 1 (text-editor-padding-y editor))))))))))
+      (%apply-widget-margins-to-size-request
+       editor
+       (%widget-size-request editor
+                             (max *text-editor-default-min-width* (text-editor-min-width editor))
+                             (max (text-editor-min-height editor)
+                                  (+ (* *text-editor-default-visible-lines* line-height)
+                                     (* 2 (+ 1 (text-editor-padding-y editor))))))))))
 
 (defmethod layout ((editor text-editor) rect)
   (setf (widget-layout-rect editor) (%apply-widget-margins-to-rect editor rect))
-  (%text-editor-clamp-caret editor)
+  (%text-editor-sync-from-text-and-position editor)
   editor)
 
 (defmethod render ((editor text-editor) backend-window)
-  (%text-editor-refresh-surface editor)
   (let* ((content (%text-editor-content-rect editor))
-         (surface (text-editor-text-surface editor)))
-    (when surface
-      (let* ((text-width (%surface-width surface))
-             (text-height (%surface-height surface))
-             (dest-x (rect-x content))
-             (dest-y (rect-y content))
-             (clip-left (max (rect-x content) dest-x))
-             (clip-top (max (rect-y content) dest-y))
-             (clip-right (min (+ (rect-x content) (rect-width content)) (+ dest-x text-width)))
-             (clip-bottom (min (+ (rect-y content) (rect-height content)) (+ dest-y text-height)))
-             (draw-width (max 0 (- clip-right clip-left)))
-             (draw-height (max 0 (- clip-bottom clip-top))))
-        (when (and (> draw-width 0) (> draw-height 0))
-          (%call-draw-surface-rect backend-window
-                                   surface
-                                   (make-rect :x (max 0 (- clip-left dest-x))
-                                              :y (max 0 (- clip-top dest-y))
-                                              :width draw-width
-                                              :height draw-height)
-                                   clip-left
-                                   clip-top))))
-    (when (and (text-editor-focused-p editor)
-               (text-editor-caret-visible-p editor))
-      (multiple-value-bind (prefix-width prefix-height)
-          (%text-editor-measure-text editor (%text-editor-caret-prefix editor))
-        (declare (ignore prefix-height))
-        (multiple-value-bind (caret-width text-height)
-            (%text-editor-measure-text editor "Mg")
-          (declare (ignore caret-width))
-        (let* ((content-left (rect-x content))
-               (content-right (+ (rect-x content) (rect-width content)))
-               (caret-x (max content-left (min (+ content-left prefix-width) content-right)))
-               (caret-height (max 1 (min (1+ text-height) (rect-height content)))))
-          (%call-fill-rect backend-window
-                           (make-rect :x caret-x
-                                      :y (rect-y content)
-                                      :width 1
-                                      :height caret-height)
-                           (text-editor-caret-color editor)))))))
+         (lines (text-editor-lines editor)))
+    (multiple-value-bind (sample-width sample-height)
+        (%text-editor-measure-text editor "Mg")
+      (declare (ignore sample-width))
+      (let ((line-height (max 1 (1+ sample-height))))
+        (loop for line in lines
+              for line-index from 0
+              for line-y = (+ (rect-y content) (* line-index line-height))
+              while (< line-y (+ (rect-y content) (rect-height content)))
+              do (let ((surface (%text-editor-render-text-surface editor line)))
+                   (when surface
+                     (let* ((text-width (%surface-width surface))
+                            (text-height (%surface-height surface))
+                            (dest-x (rect-x content))
+                            (dest-y line-y)
+                            (clip-left (max (rect-x content) dest-x))
+                            (clip-top (max (rect-y content) dest-y))
+                            (clip-right (min (+ (rect-x content) (rect-width content)) (+ dest-x text-width)))
+                            (clip-bottom (min (+ (rect-y content) (rect-height content)) (+ dest-y text-height)))
+                            (draw-width (max 0 (- clip-right clip-left)))
+                            (draw-height (max 0 (- clip-bottom clip-top))))
+                       (when (and (> draw-width 0) (> draw-height 0))
+                         (%call-draw-surface-rect backend-window
+                                                  surface
+                                                  (make-rect :x (max 0 (- clip-left dest-x))
+                                                             :y (max 0 (- clip-top dest-y))
+                                                             :width draw-width
+                                                             :height draw-height)
+                                                  clip-left
+                                                  clip-top))
+                       (%text-editor-destroy-surface surface)))))
+        (when (and (text-editor-focused-p editor)
+                   (text-editor-caret-visible-p editor))
+          (multiple-value-bind (prefix-width prefix-height)
+              (%text-editor-measure-text editor (%text-editor-caret-prefix editor))
+            (declare (ignore prefix-height))
+            (let* ((content-left (rect-x content))
+                   (content-right (+ (rect-x content) (rect-width content)))
+                   (caret-x (max content-left (min (+ content-left prefix-width) content-right)))
+                   (caret-y (+ (rect-y content) (* (text-editor-caret-line editor) line-height)))
+                   (caret-height (max 1 (min line-height (max 0 (- (+ (rect-y content) (rect-height content)) caret-y))))))
+              (when (and (> caret-height 0)
+                         (>= caret-y (rect-y content))
+                         (< caret-y (+ (rect-y content) (rect-height content))))
+                (%call-fill-rect backend-window
+                                 (make-rect :x caret-x
+                                            :y caret-y
+                                            :width 1
+                                            :height caret-height)
+                                 (text-editor-caret-color editor)))))))))
   editor)
 
 (defmethod handle-event ((editor text-editor) app-state event)
@@ -303,7 +582,9 @@
             (y (getf (rest event) :y))
             (inside (%text-editor-point-in-rect-p x y (widget-layout-rect editor))))
        (when (and (eq button :left) inside)
-         (setf (text-editor-caret-position editor) (length (text-editor-text editor)))
+         (setf (text-editor-caret-line editor) (1- (length (text-editor-lines editor)))
+               (text-editor-caret-column editor) (length (car (last (text-editor-lines editor)))))
+         (%text-editor-sync-derived-state editor :update-preferred-column t)
          (if app-state
              (%text-editor-set-focused-widget app-state editor)
              (%text-editor-set-focused-local editor t app-state))
@@ -320,11 +601,9 @@
      nil)
     (:key-down
      (when (text-editor-focused-p editor)
-       (let ((inserted-text (%text-editor-keyword->text (getf (rest event) :key))))
-         (when inserted-text
-           (%text-editor-insert-text editor inserted-text)
-           (%text-editor-reset-blink editor)
-           (%text-editor-mark-redraw app-state))))
+       (when (%text-editor-handle-key-down editor (getf (rest event) :key))
+         (%text-editor-reset-blink editor)
+         (%text-editor-mark-redraw app-state)))
      nil)
     (:tick
      (let ((now-ms (or (getf (rest event) :now-ms)

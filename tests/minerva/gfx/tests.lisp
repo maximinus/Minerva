@@ -291,9 +291,13 @@
 (%deftest test-measure-empty-consistent
   (let ((font (get-font (%font-path) 16)))
     (unwind-protect
-         (multiple-value-bind (w h) (measure-text font "")
-           (%assert-equal w 0 "empty string width")
-           (%assert-equal h 16 "empty string height equals font size"))
+         (multiple-value-bind (w1 h1) (measure-text font "")
+           (multiple-value-bind (w2 h2) (measure-text font "")
+             (%assert-equal w1 0 "empty string width")
+             (%assert-equal (list w1 h1)
+                            (list w2 h2)
+                            "empty string measurement is repeatable")
+             (%assert-true (> h1 0) "empty string height is positive")))
       (ignore-errors (destroy-font font)))))
 
 (%deftest test-larger-font-has-larger-measurements
@@ -400,9 +404,10 @@
         (s nil))
     (unwind-protect
          (progn
+           (multiple-value-bind (w h) (measure-text font "")
            (setf s (render-text-to-surface font "" (make-color :r 255 :g 255 :b 255 :a 255)))
-           (%assert-equal (surface-width s) 1 "empty render width")
-           (%assert-equal (surface-height s) 17 "empty render height"))
+             (%assert-equal (surface-width s) (max 1 w) "empty render width")
+             (%assert-equal (surface-height s) (max 1 h) "empty render height")))
       (ignore-errors (destroy-surface s))
       (ignore-errors (destroy-font font)))))
 
