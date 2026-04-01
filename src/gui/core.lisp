@@ -107,6 +107,17 @@
    :filler-min-height
    :filler-expand-x
    :filler-expand-y
+  :scroll-area
+  :scroll-area-child
+  :scroll-area-scroll-x
+  :scroll-area-scroll-y
+  :scroll-area-content-width
+  :scroll-area-content-height
+  :scroll-area-horizontal-visible-p
+  :scroll-area-vertical-visible-p
+  :scroll-area-viewport-rect
+  :scroll-area-horizontal-thumb-rect
+  :scroll-area-vertical-thumb-rect
   :image
   :image-surface
   :image-draw-rect
@@ -457,6 +468,38 @@
   (setf (widget-last-render-position widget)
         (%copy-rect (widget-layout-rect widget))))
 
+(defvar *render-clip-rect* nil)
+
+(defun %rect-empty-p (rect)
+  (or (null rect)
+      (<= (rect-width rect) 0)
+      (<= (rect-height rect) 0)))
+
+(defun %rect-intersection (a b)
+  (cond
+    ((%rect-empty-p a) nil)
+    ((%rect-empty-p b) nil)
+    (t
+     (let* ((x (max (rect-x a) (rect-x b)))
+            (y (max (rect-y a) (rect-y b)))
+            (right (min (+ (rect-x a) (rect-width a))
+                        (+ (rect-x b) (rect-width b))))
+            (bottom (min (+ (rect-y a) (rect-height a))
+                         (+ (rect-y b) (rect-height b))))
+            (w (max 0 (- right x)))
+            (h (max 0 (- bottom y))))
+       (if (or (<= w 0) (<= h 0))
+           nil
+           (make-rect :x x :y y :width w :height h))))))
+
+(defmacro %with-render-clip (clip-rect &body body)
+  `(let* ((requested-clip ,clip-rect)
+          (*render-clip-rect* (if *render-clip-rect*
+                                 (%rect-intersection *render-clip-rect* requested-clip)
+                                 (%copy-rect requested-clip))))
+     (unless (%rect-empty-p *render-clip-rect*)
+       ,@body)))
+
 (defun %align-position (start available-size child-size align)
   (case align
     (:start start)
@@ -507,17 +550,21 @@
          (fill-rect-fn (and fill-rect-symbol (fboundp fill-rect-symbol) (symbol-function fill-rect-symbol))))
     (unless fill-rect-fn
       (error "minerva.gfx:fill-rect is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
-    (destructuring-bind (r g b a)
+    (let ((final-rect (if *render-clip-rect*
+                (%rect-intersection rect *render-clip-rect*)
+                rect)))
+      (unless (%rect-empty-p final-rect)
+      (destructuring-bind (r g b a)
         (if (listp color)
-            color
-            (list (color-r color)
-                  (color-g color)
-                  (color-b color)
-                  (color-a color)))
-      (funcall fill-rect-fn
-               backend-window
-               rect
-               (make-color :r r :g g :b b :a a)))))
+          color
+          (list (color-r color)
+              (color-g color)
+              (color-b color)
+              (color-a color)))
+        (funcall fill-rect-fn
+             backend-window
+             final-rect
+             (make-color :r r :g g :b b :a a)))))))
 
 (defun %gfx-function (name)
   (let* ((gfx-package (find-package :minerva.gfx))
@@ -529,17 +576,50 @@
         (make-pos-fn (%gfx-function "MAKE-POSITION")))
     (unless (and draw-fn make-pos-fn)
       (error "minerva.gfx surface draw functions are unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
-    (funcall draw-fn
-             backend-window
-             surface
-             source-rect
-             (funcall make-pos-fn :x dest-x :y dest-y))))
+    (let* ((dest-rect (make-rect :x dest-x
+                                 :y dest-y
+                                 :width (rect-width source-rect)
+                                 :height (rect-height source-rect)))
+           (clip-rect (if *render-clip-rect*
+                          (%rect-intersection dest-rect *render-clip-rect*)
+                          dest-rect)))
+      (unless (%rect-empty-p clip-rect)
+        (let* ((dx (- (rect-x clip-rect) dest-x))
+               (dy (- (rect-y clip-rect) dest-y))
+               (clipped-source (make-rect :x (+ (rect-x source-rect) dx)
+                                          :y (+ (rect-y source-rect) dy)
+                                          :width (rect-width clip-rect)
+                                          :height (rect-height clip-rect))))
+          (funcall draw-fn
+                   backend-window
+                   surface
+                   clipped-source
+                   (funcall make-pos-fn :x (rect-x clip-rect)
+                            :y (rect-y clip-rect))))))))
 
 (defun %call-draw-surface-rect-scaled (backend-window surface source-rect dest-rect)
   (let ((draw-fn (%gfx-function "DRAW-SURFACE-RECT-SCALED")))
     (unless draw-fn
       (error "minerva.gfx:draw-surface-rect-scaled is unavailable. Load src/gfx/ffi.lisp and src/gfx/backend.lisp first."))
-    (funcall draw-fn backend-window surface source-rect dest-rect)))
+    (let ((clip-rect (if *render-clip-rect*
+                         (%rect-intersection dest-rect *render-clip-rect*)
+                         dest-rect)))
+      (unless (%rect-empty-p clip-rect)
+        (let* ((src-w (max 1 (rect-width source-rect)))
+               (src-h (max 1 (rect-height source-rect)))
+               (dst-w (max 1 (rect-width dest-rect)))
+               (dst-h (max 1 (rect-height dest-rect)))
+               (dx (- (rect-x clip-rect) (rect-x dest-rect)))
+               (dy (- (rect-y clip-rect) (rect-y dest-rect)))
+               (mapped-src-x (+ (rect-x source-rect) (floor (* dx src-w) dst-w)))
+               (mapped-src-y (+ (rect-y source-rect) (floor (* dy src-h) dst-h)))
+               (mapped-src-w (max 1 (floor (* (rect-width clip-rect) src-w) dst-w)))
+               (mapped-src-h (max 1 (floor (* (rect-height clip-rect) src-h) dst-h)))
+               (clipped-source (make-rect :x mapped-src-x
+                                          :y mapped-src-y
+                                          :width mapped-src-w
+                                          :height mapped-src-h)))
+          (funcall draw-fn backend-window surface clipped-source clip-rect))))))
 
 (defun %surface-width (surface)
   (let ((fn (%gfx-function "SURFACE-WIDTH")))

@@ -8,6 +8,10 @@
     :default-font-size
     :default-font-color
     :window-background-color
+    :scrollbar-background-color
+    :scrollbar-button-size
+    :scrollbar-scroll-step
+    :scrollbar-min-thumb-size
     :default-menu-background-highlight
     :button-nine-patch-normal
     :button-nine-patch-highlight
@@ -37,6 +41,10 @@
 (defvar default-font-size 14)
 (defvar default-font-color (make-color :r 0 :g 0 :b 0 :a 255))
 (defvar window-background-color (make-color :r 180 :g 180 :b 180 :a 255))
+(defvar scrollbar-background-color (make-color :r 180 :g 180 :b 180 :a 255))
+(defvar scrollbar-button-size 20)
+(defvar scrollbar-scroll-step 20)
+(defvar scrollbar-min-thumb-size 20)
 (defvar default-menu-background-highlight (make-color :r 200 :g 200 :b 200 :a 255))
 
 (defvar button-nine-patch-normal "/assets/button/button_normal.png")
